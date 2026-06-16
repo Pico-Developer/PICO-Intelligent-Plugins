@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "pico-spatial-agentic-tools",
+  "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
+  "version": "0.3.0",
+  "author": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "homepage": "https://developer.picoxr.com/",
+  "keywords": [
+    "pico",
+    "pico-xr",
+    "pico-spatial-agentic-tools",
+    "spatial-sdk",
+    "agentic",
+    "vr",
+    "xr",
+    "mixed-reality",
+    "openxr",
+    "android",
+    "pico-cli"
+  ],
+  "displayName": "PICO Spatial Agentic Tools",
+  "license": "Apache-2.0",
+  "category": "developer-tools",
+  "tags": [
+    "pico",
+    "spatial-sdk",
+    "agentic",
+    "xr"
+  ],
+  "defaultEnabled": true
+}

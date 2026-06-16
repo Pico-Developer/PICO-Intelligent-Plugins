@@ -1,0 +1,14 @@
+{
+  "marketplace": {"name":"pico-xr","plugins":[{"name":"pico-spatial-agentic-tools","version":"0.3.0","source":"./pico-spatial-agentic-tools"}],"hosts":{".claude-plugin":{"name":"pico-xr","plugins":[{"name":"pico-spatial-agentic-tools","version":"0.3.0","source":"./pico-spatial-agentic-tools"}]},".agents/plugins":{"name":"pico-xr","plugins":[{"name":"pico-spatial-agentic-tools","version":"0.3.0","source":""}]},".cursor-plugin":{"name":"pico-xr","plugins":[{"name":"pico-spatial-agentic-tools","version":"0.3.0","source":"pico-spatial-agentic-tools"}]},".github/plugin":{"name":"pico-xr","plugins":[{"name":"pico-spatial-agentic-tools","version":"0.3.0","source":"pico-spatial-agentic-tools"}]}}},
+  "source": {
+    "repo": "/Users/bytedance/SDKProjects/spatial-craft",
+    "ref": "HEAD",
+    "commit": "56c21f3376b2eb20bae0fbdfea07cf3567301810",
+    "commit_time": "2026-06-16T13:36:04Z",
+    "commit_author": "loushuai.dylan <loushuai.dylan@bytedance.com>"
+  },
+  "publish": {
+    "published_at": "2026-06-16T13:53:12Z",
+    "publisher": "loushuai.dylan <loushuai.dylan@bytedance.com>"
+  }
+}

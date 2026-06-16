@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pico-spatial-knowledge": {
+      "command": "npx",
+      "args": ["-y", "@picoxr/pico-cli", "mcp:spatial-knowledge"]
+    }
+  }
+}
