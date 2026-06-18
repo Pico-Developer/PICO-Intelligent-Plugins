@@ -1,0 +1,18 @@
+{
+  "$schema": "https://cursor.com/schemas/cursor-plugin/marketplace.json",
+  "name": "pico-xr",
+  "owner": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "metadata": {
+    "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows."
+  },
+  "plugins": [
+    {
+      "name": "pico-spatial-agentic-tools",
+      "source": "pico-spatial-agentic-tools",
+      "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
+      "version": "0.3.0"
+    }
+  ]
+}
