@@ -1,0 +1,49 @@
+{
+  "name": "pico-xr",
+  "owner": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "metadata": {
+    "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows."
+  },
+  "plugins": [
+    {
+      "name": "pico-spatial-agentic-tools",
+      "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
+      "version": "0.3.0",
+      "author": {
+        "name": "PICO Immersive Pte. Ltd."
+      },
+      "homepage": "https://developer.picoxr.com/",
+      "source": {
+        "source": "local",
+        "path": "./pico-spatial-agentic-tools"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "keywords": [
+        "pico",
+        "pico-xr",
+        "pico-spatial-agentic-tools",
+        "spatial-sdk",
+        "agentic",
+        "vr",
+        "xr",
+        "mixed-reality",
+        "openxr",
+        "android",
+        "pico-cli"
+      ],
+      "license": "Apache-2.0",
+      "category": "Productivity",
+      "tags": [
+        "pico",
+        "spatial-sdk",
+        "agentic",
+        "xr"
+      ]
+    }
+  ]
+}
