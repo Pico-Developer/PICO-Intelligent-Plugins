@@ -1,18 +1,37 @@
 {
-  "$schema": "https://cursor.com/schemas/cursor-plugin/marketplace.json",
+  "$schema": "https://github.com/fieldsphere/cursor-team-marketplace-template/blob/main/.cursor-plugin/marketplace.json",
   "name": "pico-xr",
   "owner": {
     "name": "PICO Immersive Pte. Ltd."
   },
   "metadata": {
-    "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows."
+    "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows."
   },
   "plugins": [
     {
       "name": "pico-spatial-agentic-tools",
       "source": "pico-spatial-agentic-tools",
-      "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-      "version": "0.3.0"
+      "version": "0.4.1",
+      "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
+      "tags": [
+        "spatial",
+        "pico",
+        "spatial-sdk",
+        "agentic",
+        "xr"
+      ]
+    },
+    {
+      "name": "pico-unity-agentic-tools",
+      "source": "pico-unity-agentic-tools",
+      "version": "0.0.2",
+      "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity project setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
+      "tags": [
+        "unity",
+        "pico",
+        "agentic",
+        "xr"
+      ]
     }
   ]
 }

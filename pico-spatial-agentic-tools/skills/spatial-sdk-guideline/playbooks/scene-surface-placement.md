@@ -32,7 +32,7 @@ Do not use when:
    - **Plane-only MVP:** detect the target surface, place visible content once, and verify orientation and stability.
    - **Persistent placement:** after the plane-only MVP works, add the persistence branch by storing and restoring the anchor identifier with a predictable rebind flow.
 6. Verify whether detected-surface placement matches the request before adding anchors.
-7. Use the curated `reference/coordinates-and-units.md` and `reference/interaction-hit-testing.md` pages, plus `pico-spatial-knowledge` MCP, to finalize transform and facing logic.
+7. Use the curated `../reference/coordinates-and-units.md` and `../reference/interaction-hit-testing.md` pages, plus `pico-dev-knowledge` MCP, to finalize transform and facing logic.
 8. Implement in this order.
    - get content visible in `Stage`
    - subscribe to plane updates and identify the intended surface
@@ -49,7 +49,7 @@ Do not use when:
 - `com.pico.spatial.core.ecs.Entity` (required)
 - `com.pico.spatial.core.ecs.TransformComponent` (required)
 
-> Note: package names can vary across Spatial SDK versions. Prefer the repo's `examples/Plane.kt` imports and the bundled API reference (or `pico-spatial-knowledge` MCP) over copying these paths verbatim.
+> Note: package names can vary across Spatial SDK versions. Prefer the repo's `examples/Plane.kt` imports and the bundled API reference (or `pico-dev-knowledge` MCP) over copying these paths verbatim.
 
 ## Recommended Examples (by complexity)
 
@@ -60,7 +60,7 @@ Do not use when:
 
 ## Required knowledge sources
 
-Pull these via curated `reference/` pages first, then `pico-spatial-knowledge` MCP for broader/version-specific lookup:
+Pull these via curated `reference/` pages first, then `pico-dev-knowledge` MCP for broader/version-specific lookup:
 
 - plane detection
 - spatial anchors

@@ -259,7 +259,7 @@ the design intent coherent.
 
 ## Verify (Updated Semantics)
 
-`scripts/verify-design-style.sh` enforces R4 with these checks:
+`../scripts/verify-design-style.sh` enforces R4 with these checks:
 
 - **Forbidden**: any `Modifier.background(<role>)` painted on a window-root
   `Box` inside a window container, **without** a sibling
@@ -277,4 +277,4 @@ the design intent coherent.
 - **Allowed**: `// design-style: opaque-root` + `Modifier.background(<role>)`
   on a root, paired with the same off-switch.
 
-See `references/compliance-signals.md` R4 for grep patterns and severity.
+See `compliance-signals.md` R4 for grep patterns and severity.

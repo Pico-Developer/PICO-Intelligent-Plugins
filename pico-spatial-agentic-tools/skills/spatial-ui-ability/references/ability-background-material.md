@@ -5,8 +5,8 @@ Capability: `Modifier.backgroundMaterial(style)` for system-rendered glass-like 
 ## Shortest Usage
 
 ```kotlin
-import com.pico.spatial.ui.foundation.backgroundMaterial
-import com.pico.spatial.ui.foundation.Material
+import com.pico.spatial.ui.foundation.material.backgroundMaterial
+import com.pico.spatial.ui.platform.Material
 
 Box(Modifier.size(150.dp).backgroundMaterial())  // Material.Regular
 ```
@@ -48,7 +48,11 @@ Box(
 - `backgroundMaterial` is rendered by the PICO OS compositor in the system process. It becomes a no-op on non-Spatial platforms.
 - The material consumes 1px of depth, which reduces the remaining max depth for children.
 - `Material.Thin` does not work for windows; it only applies at the view level.
-- Recommended modifier order: `size` → `border/background` → `backgroundMaterial` → `spatialHoverEffect`.
+- Modifier order affects the result but is not a fixed rule: because `backgroundMaterial`
+  consumes depth (see above) and runs as a layout node, its position relative to `size`,
+  `background`, and `spatialHoverEffect` changes measurement and drawing. Follow the chain
+  in this file's samples (and cross-check `pico-dev-knowledge` when available) rather than
+  assuming one canonical order.
 
 ## Material Not Showing? Check This
 
@@ -61,8 +65,8 @@ Box(
 ## Imports
 
 ```kotlin
-import com.pico.spatial.ui.foundation.backgroundMaterial
-import com.pico.spatial.ui.foundation.Material
+import com.pico.spatial.ui.foundation.material.backgroundMaterial
+import com.pico.spatial.ui.platform.Material
 ```
 
 ---

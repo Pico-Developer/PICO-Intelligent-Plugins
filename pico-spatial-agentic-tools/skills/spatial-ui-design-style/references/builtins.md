@@ -10,7 +10,7 @@
 
 1. If a built-in component fits, **do not reimplement it**. The design system
    has already tuned spacing, color, animation, audio, haptics, accessibility.
-2. Only customize when no built-in fits — see `references/custom-component.md`.
+2. Only customize when no built-in fits — see `custom-component.md`.
 3. Never fork SpatialUI library code.
 
 ## Text / Icons
@@ -53,7 +53,7 @@
 - `Augment(...)` — ornament window attached to a parent window. Lives in
   `com.pico.spatial.ui.augment.Augment`, NOT in `design.windows.*`. Glass
   toggle is the DSL parameter `enableMaterialBackground` (default `true`).
-  See `references/window-background.md` and `references/spatial-capabilities.md`.
+  See `window-background.md` and `spatial-capabilities.md`.
 
 ## Lists / Menus
 

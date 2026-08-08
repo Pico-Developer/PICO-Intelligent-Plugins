@@ -5,7 +5,7 @@ Capability: floating / sinking nodes via `Modifier.offset(z = ...)` (static) and
 ## Static Offset
 
 ```kotlin
-import androidx.compose.foundation.layout.offset
+import com.pico.spatial.ui.foundation.layout.offset
 
 Box(
     Modifier
@@ -18,7 +18,7 @@ Box(
 ## Dynamic Offset (Animation Or Gesture Driven)
 
 ```kotlin
-import com.pico.spatial.ui.foundation.zOffset
+import com.pico.spatial.ui.foundation.layout.zOffset
 
 var isFloating by remember { mutableStateOf(false) }
 val offsetZ by animateDpAsState(if (isFloating) 100.dp else 0.dp)
@@ -41,8 +41,8 @@ Box(
 ## Imports
 
 ```kotlin
-import androidx.compose.foundation.layout.offset  // for offset(z = ...)
-import com.pico.spatial.ui.foundation.zOffset     // for zOffset { ... }
+import com.pico.spatial.ui.foundation.layout.offset      // for offset(z = ...)
+import com.pico.spatial.ui.foundation.layout.zOffset     // for zOffset { ... }
 ```
 
 ---

@@ -1,15 +1,11 @@
 ---
 name: spatial-ui-design-style
 description: >-
-  Hard-constraint skill for any application that uses SpatialUI in SpatialSDK
-  to write Compose UI. Acts as the code-admission ruleset (lint-as-skill) for
-  PicoTheme usage, theme-role routing (color / typography / disabled / hover /
-  indication), built-in design component preference, custom-component
-  parameter ordering, frosted-glass window background, and SpatialUI custom
-  hover. ANY upstream skill that emits Compose code (spatial-app-onboarding,
-  screenshot-to-spatial-app, anything-to-spatial-app, manual edits) MUST consult
-  this skill before writing UI code. NOT for: 3D scene
-  authoring, asset placement, performance diagnosis.
+  Use when any upstream workflow emits or edits SpatialUI Compose UI code and
+  needs PicoTheme, SpatialUI built-in components, theme role routing,
+  hover/haptics, glass background, Material bans, or design-style verifier
+  admission. This is a mandatory Compose UI sub-contract, not a primary
+  app-generation, scaffold, design-package, or 3D scene workflow.
 license: 'Apache-2.0'
 ---
 
@@ -18,6 +14,8 @@ license: 'Apache-2.0'
 This skill is the **code-admission ruleset** for any PICO spatial application
 that emits Compose UI. It is intentionally short. Detailed guidance is split
 into [`references/`](./references); read on demand.
+
+Routing boundary: this skill is a mandatory sub-contract whenever Compose UI is emitted or edited. It should be loaded by `spatial-design-to-app`, `spatial-app-onboarding`, screenshot/Figma codegen, or manual UI-edit flows before writing UI code. It is not the primary route for app generation, scaffold creation, design-package production, container/window-model decisions, or 3D scene planning.
 
 ## Highest-Priority Decision Table (Read First)
 
@@ -168,5 +166,5 @@ Always emit, with the final code:
 
 ## Backlog
 
-Review / update history lives in [`CHANGELOG.md`](./CHANGELOG.md).
+Review / update history lives in the repository change history.
 Append new dated entries at the top using the template in that file.

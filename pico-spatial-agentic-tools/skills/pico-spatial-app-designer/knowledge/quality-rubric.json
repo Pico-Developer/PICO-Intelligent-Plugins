@@ -1,0 +1,94 @@
+{
+  "description": "The single source of truth (SSOT) for quality scoring, Preview visual metrics, and thresholds, referenced by review roles as a human-readable scoring skeleton. After the refactor there is no longer a deterministic Python gate: critics/design-critic.md and critics/prototype-qa-reviewer.md are LLM self-check prompts for the review stage, and pass/fail is determined jointly by independent review verdicts, process/originality self-check, and real human approval, recorded in roles/review-templates/design-critique-report.md. During review, one must not set up separate scores or thresholds on one's own; the threshold numbers in SKILL.md §5 also follow this file.",
+  "authority": {
+    "gate": "host_llm + independent reviewers + real human approval",
+    "self_check": "critics/design-critic.md + critics/prototype-qa-reviewer.md",
+    "note": "Scoring dimensions and Preview visual thresholds are defined only once in this file; review roles reference this file as the scoring skeleton and must not set up separate scores or thresholds in the review documents."
+  },
+  "dimensions": [
+    {
+      "key": "task_completion",
+      "label": "Task completion",
+      "max": 20,
+      "minimum": 17
+    },
+    {
+      "key": "spatial_value",
+      "label": "Spatial value",
+      "max": 15,
+      "minimum": null
+    },
+    {
+      "key": "pico_alignment",
+      "label": "PICO alignment",
+      "max": 15,
+      "minimum": 13
+    },
+    {
+      "key": "domain_depth",
+      "label": "Domain depth",
+      "max": 15,
+      "minimum": 13
+    },
+    {
+      "key": "safety_comfort",
+      "label": "Safety and comfort",
+      "max": 15,
+      "minimum": 14
+    },
+    {
+      "key": "information_hierarchy",
+      "label": "Information hierarchy and composition",
+      "max": 10,
+      "minimum": 9
+    },
+    {
+      "key": "data_trust",
+      "label": "Data trust",
+      "max": 5,
+      "minimum": null
+    },
+    {
+      "key": "engineering_feasibility",
+      "label": "Engineering feasibility",
+      "max": 5,
+      "minimum": null
+    }
+  ],
+  "gate": {
+    "total_minimum": 90,
+    "process_fidelity_minimum": 90,
+    "requirements_traceability_minimum": 95,
+    "component_structure_fidelity": "pass",
+    "preview_input_readiness": "pass",
+    "preview_implementation_fidelity": "pass",
+    "preview_blocking_rule": "Any missing core renderSpec element, operable dataBinding, fallback, variant, component-specific state, exception/safety/stable-exit path, or responsive scenario is block; it must not be offset by coverage rate, total score, or name presence."
+  },
+  "preview_visual_gate": {
+    "primary_focus_area_ratio_min": 0.12,
+    "minimum_text_px": 12,
+    "minimum_target_dp": 40,
+    "minimum_contrast_ratio": 4.5,
+    "token_consumption_percent_min": 80,
+    "unknown_primitive_count_max": 0,
+    "overflowing_component_count_max": 0,
+    "occluded_critical_control_count_max": 0,
+    "responsive_state_coverage_min": 1.0,
+    "state_transition_item_coverage_min": 1.0,
+    "render_spec_element_coverage_min": 1.0,
+    "data_binding_normal_coverage_min": 1.0,
+    "data_binding_fallback_coverage_min": 1.0,
+    "variant_component_state_coverage_min": 1.0,
+    "color_shape_label_semantic_coverage_min": 1.0
+  },
+  "design_effect_review": {
+    "spatial_composition_good_ratio": 0.36,
+    "spatial_composition_ok_ratio": 0.24,
+    "visual_hierarchy_good_ratio": 0.36,
+    "visual_hierarchy_ok_ratio": 0.24,
+    "minimum_interaction_target_good_dp": 44,
+    "minimum_interaction_target_ok_dp": 40,
+    "minimum_required_spatial_qualities": 2,
+    "minimum_score_per_dimension": 3
+  }
+}

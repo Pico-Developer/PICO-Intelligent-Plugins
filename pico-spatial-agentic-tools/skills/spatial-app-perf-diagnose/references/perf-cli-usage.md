@@ -13,11 +13,11 @@ pico-cli perf <resource> <action> [options]
 | `pico-cli perf trace record` | Capture Perfetto trace from device |
 | `pico-cli perf trace load <file>` | Load trace into a session; optionally run spatial diagnosis |
 | `pico-cli perf trace query` | Execute SQL on a trace session |
-| `pico-cli perf trace export` | Export trace session data |
+| `pico-cli perf trace decode` | Decode trace data into other format |
 | `pico-cli perf daemon start` | Start perf daemon |
 | `pico-cli perf daemon stop` | Stop perf daemon |
 | `pico-cli perf daemon status` | Check daemon status |
-| `pico-cli perf monitor run` | Fixed-duration monitoring with JSON report |
+| `pico-cli perf live run` | Capture performance data onlive |
 | `pico-cli perf doctor check` | Check the perf toolchains |
 | `pico-cli perf doctor install` | Install the missing perf toolchains |
 
@@ -33,7 +33,7 @@ pico-cli perf trace record [options]
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `-d, --duration <seconds>` | `5` | Capture duration in seconds |
+| `-d, --duration <seconds>` | `30` | Capture duration in seconds |
 | `-o, --out <path>` | `<tmpdir>/trace.pftrace` | Output file path |
 | `--pbtx <name\|path>` | — | Preset name or path to pbtx config file |
 | `--live` | `false` | Live recording mode; press Ctrl+C to stop |
@@ -106,7 +106,7 @@ pico-cli perf daemon status
 
 ## trace load — Load Trace & Spatial Diagnosis
 
-Loads a Perfetto trace file into a session and returns a session ID for subsequent `trace query` / `trace export` operations. Optionally enables spatial app rule diagnosis.
+Loads a Perfetto trace file into a session and returns a session ID for subsequent `trace query` / `trace decode` operations. Optionally enables spatial app rule diagnosis.
 
 ```bash
 pico-cli perf trace load <traceFile> [options]
@@ -189,12 +189,12 @@ pico-cli perf trace query \
 
 ---
 
-## trace export — Export Session Data
+## trace decode — Decode trace data
 
-Exports trace session data in various formats.
+Decode trace data in various formats.
 
 ```bash
-pico-cli perf trace export [options]
+pico-cli perf trace decode [options]
 ```
 
 | Option | Default | Description |
@@ -207,49 +207,37 @@ pico-cli perf trace export [options]
 ### Examples
 
 ```bash
-# Export as JSON
-pico-cli perf trace export --session <sessionId> -o ./report.json
+# Decode as .json
+pico-cli perf trace decode --session <sessionId> -o ./report.json
 
-# Export as Markdown
-pico-cli perf trace export --session <sessionId> --format markdown -o ./report.md
+# Dxport as .systrace
+pico-cli perf trace decode --session <sessionId> --format markdown -o ./report.systrace
 ```
 
 ---
 
-## monitor run — Fixed-Duration Performance Monitoring
+## live run — capture performance data onlive
 
 Collects real-time performance metrics for a fixed duration and outputs a structured report. Based on `adb logcat` data — suitable for fast performance inspection.
 
 ```bash
-pico-cli perf monitor run [options]
+pico-cli perf live run [options]
 ```
-
 | Option | Default | Description |
-|--------|---------|-------------|
-| `--app <package>` | — | Target app package name (required) |
-| `-d, --duration <seconds>` | — | Monitoring duration in seconds (required) |
-| `--device <deviceId>` | — | Target device ID (if multiple connected) |
-| `-o, --output <path>` | — | Output report file path |
+|  `--app <package_name>`    | - | Target app package name (e.g. com.picoxr.example)
+|  `--adb <path>`            | - | Path to adb executable (optional, overrides ADB_PATH/PROFILER_ADB/PATH)
+|  `--device <device_id>`    | - | Device ID to connect (if multiple connected)
+|  `-o, --output <path>`     | - | Explicit report file path (requires --save)
+|  `-d, --duration <seconds>`| - | Run for a fixed duration, then stop automatically
+|  `--save`                  | - | Save the JSON report to the default path (reports/live-report-<ISO>.json)
+|  `-h, --help`              | - | display help for command
+
 
 ### Examples
 
 ```bash
-# 30-second monitor with terminal output
-pico-cli perf monitor run --app com.pico.sample --duration 30
-
-# Export JSON report
-pico-cli perf monitor run \
-  --app com.pico.sample \
-  --duration 30 \
-  --output ./report.json
-
-# Target specific device
-pico-cli perf monitor run \
-  --app com.pico.sample \
-  --duration 60 \
-  --device 1WMHH123456789 \
-  --output ./report.json
-```
+# 30-second live capture with terminal output and save into .json
+pico-cli perf live run --app <your_app_package> --duration <seconds> --save --output <save_path>
 
 ### Report Structure
 
@@ -310,11 +298,11 @@ pico-cli perf doctor install --all
 ```
 1. Check or install toolchains
    ├── pico-cli perf doctor check
-   └── pico-cli perf doctor install xx (if missing)
+   └── pico-cli perf doctor install --tools xx (if missing)
 
-2. Capture & Monitor (run in parallel)
-   ├── pico-cli perf trace record --duration 30 -o ./trace.perfetto-trace
-   └── pico-cli perf monitor run --app <pkg> --duration 30 --output ./report.json
+2. Capture & Live (run in parallel)
+   ├── pico-cli perf trace record --duration <seconds> --output <your_trace_output_path>
+   └── pico-cli perf live run --app <pkg> --duration <seconds> --save --output <your_liveperf_output_path>
 
 3. Start daemon
    └── pico-cli perf daemon start
@@ -324,7 +312,7 @@ pico-cli perf doctor install --all
 
 5. Query & analyze
    ├── pico-cli perf trace query --session <id> --sql "SELECT ..."
-   └── pico-cli perf trace export --session <id> -o ./findings.json
+   └── pico-cli perf trace decode --session <id> --output <your_findings_output_path>
 
 6. Cleanup
    └── pico-cli perf daemon stop
@@ -335,7 +323,7 @@ pico-cli perf doctor install --all
 ## Notes
 
 - Device selection: use `PICO_CLI_DEVICE` environment variable or `--device` where available.
-- All trace analysis commands (`trace load`, `trace query`, `trace export`) require a running daemon.
+- All trace analysis commands (`trace load`, `trace query`, `trace decode`) require a running daemon.
 - To suppress Node.js experimental warnings:
   ```bash
   NODE_NO_WARNINGS=1 pico-cli perf ...

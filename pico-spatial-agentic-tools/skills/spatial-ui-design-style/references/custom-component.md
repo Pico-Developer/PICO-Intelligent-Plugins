@@ -257,4 +257,4 @@ CompositionLocalProvider(LocalContentColor provides PicoTheme.colorScheme.labelP
 
 ## 7. Advanced Hover Visuals
 
-See `references/hover.md`.
+See `hover.md`.

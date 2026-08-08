@@ -12,7 +12,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.module_dir = Path(self.temp_dir.name) / "demo"
-        self.src_dir = self.module_dir / "src/main/java/com/example"
+        self.src_dir = self.module_dir / "src/main/kotlin/com/example"
         self.src_dir.mkdir(parents=True)
 
     def tearDown(self) -> None:
@@ -46,6 +46,26 @@ class VerifyDesignStyleTest(unittest.TestCase):
                         interactionSource = remember { MutableInteractionSource() },
                         indication = LocalIndication.current,
                     ) { }
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("controllerHapticFeedback", result.stdout)
+
+    def test_clickable_trailing_lambda_without_haptic_feedback_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.clickable
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo(go: () -> Unit) {
+                PicoTheme {
+                    Modifier.clickable { go() }
                 }
             }
             """,
@@ -113,6 +133,145 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("controllerHapticFeedback", result.stdout)
+
+    def test_direct_hoverable_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.hoverable
+            import androidx.compose.foundation.interaction.MutableInteractionSource
+            import androidx.compose.runtime.remember
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    val source = remember { MutableInteractionSource() }
+                    Modifier.hoverable(source)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("R3 custom hover via hoverable()", result.stdout)
+
+    def test_chained_hoverable_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.hoverable
+            import androidx.compose.foundation.interaction.MutableInteractionSource
+            import androidx.compose.foundation.layout.padding
+            import androidx.compose.runtime.remember
+            import androidx.compose.ui.Modifier
+            import androidx.compose.ui.unit.dp
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    val source = remember { MutableInteractionSource() }
+                    Modifier.padding(4.dp).hoverable(source)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("R3 custom hover via hoverable()", result.stdout)
+
+    def test_material_v1_component_import_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.material.Button
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Button(onClick = {}) { }
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("Material (v1) component import", result.stdout)
+
+    def test_material3_component_imports_are_rejected(self) -> None:
+        for component in (
+            "Card",
+            "Surface",
+            "Scaffold",
+            "TopAppBar",
+            "NavigationBar",
+            "FloatingActionButton",
+        ):
+            with self.subTest(component=component):
+                self.write_ui(
+                    f"""
+                    import androidx.compose.material3.{component}
+                    import com.pico.spatial.ui.design.PicoTheme
+
+                    fun Demo() {{
+                        PicoTheme {{
+                            {component} {{ }}
+                        }}
+                    }}
+                    """,
+                )
+
+                result = self.run_verifier()
+
+                self.assertNotEqual(0, result.returncode, result.stdout)
+                self.assertIn("Material3 package import", result.stdout)
+
+    def test_material_v1_card_surface_scaffold_imports_are_rejected(self) -> None:
+        for component in ("Card", "Surface", "Scaffold"):
+            with self.subTest(component=component):
+                self.write_ui(
+                    f"""
+                    import androidx.compose.material.{component}
+                    import com.pico.spatial.ui.design.PicoTheme
+
+                    fun Demo() {{
+                        PicoTheme {{
+                            {component} {{ }}
+                        }}
+                    }}
+                    """,
+                )
+
+                result = self.run_verifier()
+
+                self.assertNotEqual(0, result.returncode, result.stdout)
+                self.assertIn("Material package import", result.stdout)
+
+    def test_material_icons_import_is_rejected_as_material_package(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.material.icons.Icons
+            import androidx.compose.material.icons.filled.Add
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.Icon
+
+            fun Demo() {
+                PicoTheme {
+                    Icon(imageVector = Icons.Filled.Add, contentDescription = null)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("Material package import", result.stdout)
 
 
 if __name__ == "__main__":

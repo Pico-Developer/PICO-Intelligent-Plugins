@@ -1,0 +1,35 @@
+{
+  "name": "pico-unity-agentic-tools",
+  "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity project setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
+  "version": "0.0.2",
+  "author": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "skills": [
+    "../../skills/"
+  ],
+  "mcpServers": "../../.mcp.json",
+  "homepage": "https://developer.picoxr.com/",
+  "keywords": [
+    "pico",
+    "pico-xr",
+    "pico-unity-agentic-tools",
+    "unity",
+    "agentic",
+    "vr",
+    "xr",
+    "mixed-reality",
+    "openxr",
+    "android",
+    "pico-cli"
+  ],
+  "displayName": "PICO Unity Agentic Tools",
+  "license": "Apache-2.0",
+  "category": "developer-tools",
+  "tags": [
+    "pico",
+    "unity",
+    "agentic",
+    "xr"
+  ]
+}

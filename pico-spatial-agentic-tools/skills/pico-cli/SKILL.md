@@ -14,11 +14,11 @@ This is a **routing and CLI-usage skill**, not the owner of every workflow imple
 
 Load shared references only when needed:
 
-| Reference                                                    | Load when                                                                                                          |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `../../references/shared/pico-cli/command-families.md`       | Choosing the right `pico-cli` command family or explaining what each family owns                                   |
-| `../../references/shared/pico-cli/conventions-and-safety.md` | Device targeting, output formats, verification, destructive commands, raw `adb` fallback, or long-running commands |
-| `../../references/shared/pico-cli/troubleshooting.md`        | CLI setup, unknown commands, missing devices, command discovery, or first-pass diagnosis                           |
+| Reference                              | Load when                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `references/command-families.md`       | Choosing the right `pico-cli` command family or explaining what each family owns                                   |
+| `references/conventions-and-safety.md` | Device targeting, output formats, verification, destructive commands, raw `adb` fallback, or long-running commands |
+| `references/troubleshooting.md`        | CLI setup, unknown commands, missing devices, command discovery, or first-pass diagnosis                           |
 
 ## When To Use
 
@@ -41,7 +41,10 @@ Prefer the most specific skill once the user's intent is clear:
 - Use `spatial-app-onboarding` for `pico-cli project create` or first Spatial SDK project scaffolding.
 - Use `spatial-sdk-guideline`, `spatial-ui-*`, or migration skills when the request is about app code, SDK APIs, UI implementation, or Gradle migration rather than CLI usage.
 
-If a request starts as generic `pico-cli` help but becomes an execution workflow, keep this skill as the command-selection rationale and load `spatial-emulator-usage` as the emulator-specific supplement.
+If a request starts as generic `pico-cli` help but becomes an emulator/device
+execution workflow, hand off to `spatial-emulator-usage`. A request that is
+already clearly about a multi-step emulator/device workflow may trigger
+`spatial-emulator-usage` directly without first loading this skill.
 
 ## Core Workflow
 
@@ -64,7 +67,7 @@ Use this summary for routing; load `command-families.md` for details.
 
 | Goal                                      | Start with                                                                                     |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Broad read-only environment diagnostics   | `pico-cli doctor --format json` when available; otherwise use help/version discovery           |
+| Broad environment/plugin/MCP diagnostics  | Route to `pico-env-doctor`; it owns the verify-first diagnostic workflow                       |
 | Install/update agent plugin or skills     | `pico-cli setup`, `pico-cli plugin update`                                                     |
 | Create a Spatial SDK starter project      | `pico-cli project create`                                                                      |
 | Check emulator prerequisites or lifecycle | `pico-cli emulator ...`                                                                        |

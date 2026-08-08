@@ -1,12 +1,17 @@
 ---
 name: spatial-sdk-update
-description: Upgrades and migrates older PICO Spatial SDK projects to the latest PICO Spatial SDK (PICO OS 6 environment). Must be triggered whenever the user asks to "upgrade PICO SDK", "adapt to the newest Spatial SDK version", "handle Deprecated or missing spatial APIs", "fix legacy spatial container manager errors", "update PICO Gradle/AGP dependencies", or "migrate legacy Android MR/spatial apps". Do NOT trigger for general UI creation or simple bug fixes.
+description: Upgrades existing PICO Spatial/MR projects to a newer PICO Spatial SDK and PICO OS 6-compatible toolchain. Trigger for SDK/BOM, Gradle/AGP/Kotlin/NDK, deprecated or missing Spatial APIs, legacy spatial container managers, or compatibility migration in a project that is already Spatial/MR. Do NOT trigger for converting a traditional 2D Android app into a Spatial app; use porting-android-app for that.
 license: 'Apache-2.0'
 ---
 
 # spatial-sdk-update
 
 Use this skill when you need to help the user upgrade an existing PICO Spatial SDK project (especially Android/Kotlin projects) to a newer version of the PICO Spatial SDK. This involves more than just simple API name replacements; it includes dependency resolution and project configuration upgrades.
+
+Boundary: this skill assumes the project is already a PICO Spatial/MR
+application. If the primary task is to transform a traditional Android
+phone/tablet app into Spatial containers and interaction patterns, route to
+`porting-android-app` instead.
 
 ## Macro Upgrade Flow
 

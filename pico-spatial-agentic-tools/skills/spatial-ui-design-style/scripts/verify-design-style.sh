@@ -49,6 +49,11 @@ EXCLUDES=(
   "--exclude-dir=res"
 )
 
+MODIFIER_HOVERABLE_CALL='\.hoverable[ 	]*\('
+MODIFIER_CLICKABLE_CALL='\.clickable[ 	]*[\(\{]'
+MODIFIER_BACKGROUND_COLOR_CALL='\.background[ 	]*\([ 	]*Color\(0x'
+MODIFIER_ALPHA_DISABLED_CALL='\.alpha[ 	]*\([ 	]*0\.3f[ 	]*\)'
+
 # scan <pattern> <severity:error|warning|info> <message> [paths...]
 scan() {
   local pattern="$1"; shift
@@ -151,7 +156,7 @@ scan    '@Composable\s+fun\s+My[A-Z]\w*Button' warning 'R2 custom *Button — co
 
 # ---------- R3 — custom hover MUST use spatialHoverEffect ----------
 echo "-- R3 hover effect"
-scan 'Modifier\.hoverable\(' error 'R3 custom hover via hoverable() — use Modifier.spatialHoverEffect' "${PATHS[@]}"
+scan "$MODIFIER_HOVERABLE_CALL" error 'R3 custom hover via hoverable() — use Modifier.spatialHoverEffect' "${PATHS[@]}"
 # Hand-rolled hover scale: any animateFloatAsState near scale/scaleX/scaleY,
 # combined with a hovered-state collector. Two narrower patterns instead of
 # one wide regex (the wide regex almost never matched real code).
@@ -161,7 +166,7 @@ scan 'animateFloatAsState\(' info 'R3 animateFloatAsState detected near hover sc
 # ---------- R4 — window-root background respects system glass ----------
 echo "-- R4 window-root background"
 # Forbidden: hardcoded color background anywhere
-scan_without_fixed_figma_color 'Modifier\.background\(\s*Color\(0x' error 'R4 hardcoded color literal as background; use PicoTheme.colorScheme.* and respect the system glass' "${PATHS[@]}"
+scan_without_fixed_figma_color "$MODIFIER_BACKGROUND_COLOR_CALL" error 'R4 hardcoded color literal as background; use PicoTheme.colorScheme.* and respect the system glass' "${PATHS[@]}"
 # Forbidden: stacking glass + solid color on the same chain (best-effort regex)
 scan 'backgroundMaterial\([^)]*\)[ \t\r\n.]*background\(' error 'R4 stacking backgroundMaterial + .background — pick exactly one' "${PATHS[@]}"
 
@@ -200,19 +205,19 @@ fi
 echo "-- R5 theme-role routing"
 scan_without_fixed_figma_color 'Color\(0x[0-9A-Fa-f]{6,8}\)' error 'R5 hardcoded color literal; use PicoTheme.colorScheme.* unless this is an annotated fixed Figma/screenshot color' "${PATHS[@]}"
 scan 'TextStyle\(fontSize\s*=' error 'R5 hardcoded typography; use PicoTheme.typography.*' "${PATHS[@]}"
-scan 'Modifier\.alpha\(\s*0\.3f\s*\)' error 'R5 hardcoded disabled alpha 0.3f; use LocalDisableAlpha.current' "${PATHS[@]}"
+scan "$MODIFIER_ALPHA_DISABLED_CALL" error 'R5 hardcoded disabled alpha 0.3f; use LocalDisableAlpha.current' "${PATHS[@]}"
 
 # ---------- R6 — indication / haptics ----------
 echo "-- R6 indication & haptics"
-# Per-file check: a file that uses .clickable( MUST also reference
+# Per-file check: a file that uses .clickable(...) or .clickable { ... } MUST also reference
 # LocalIndication.current and controllerHapticFeedback somewhere in the same
 # file. (The previous tree-wide `require` was too lenient and never failed in
 # practice.)
-clickable_files=$("$GREP_BIN" "${GREP_FLAGS[@]}" "${EXCLUDES[@]}" -l '\.clickable\(' "${PATHS[@]}" 2>/dev/null || true)
+clickable_files=$("$GREP_BIN" "${GREP_FLAGS[@]}" "${EXCLUDES[@]}" -l "$MODIFIER_CLICKABLE_CALL" "${PATHS[@]}" 2>/dev/null || true)
 if [[ -n "$clickable_files" ]]; then
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
-    if ! file_has_code_pattern '\.clickable\(' "$f"; then
+    if ! file_has_code_pattern "$MODIFIER_CLICKABLE_CALL" "$f"; then
       continue
     fi
     if ! file_has_code_pattern 'LocalIndication\.current' "$f"; then
@@ -232,7 +237,8 @@ scan 'import com\.pico\.spatial\.ui\.design\.tokens\.(DimensionTokens|ColorToken
 
 # ---------- R8 — migrated SpatialUI checklist heuristics ----------
 echo "-- R8 migrated SpatialUI checklist heuristics"
-scan 'import androidx\.compose\.material3\.(Button|Text|Icon|IconButton|AlertDialog|Slider|Switch|Checkbox|TextField)' error 'R8 Material3 component import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
+scan 'import[ 	]+androidx\.compose\.material3(\.|$)' error 'R8 Material3 package import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
+scan 'import[ 	]+androidx\.compose\.material(\.|$)' error 'R8 Material package import; Material (v1) component import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
 scan 'import com\.pico\.spatial\.ui\.design\.AlertDialog' error 'R8 AlertDialog belongs to com.pico.spatial.ui.design.windows.AlertDialog' "${PATHS[@]}"
 scan 'collectAsState\([ 	]*\)' warning 'R8 collectAsState() in UI; prefer collectAsStateWithLifecycle() for ViewModel state' "${PATHS[@]}"
 scan 'key[ 	]*=[ 	]*\{[ 	]*(index|it\.hashCode\(\))[ 	]*\}' warning 'R8 unstable lazy key; prefer stable item id' "${PATHS[@]}"
@@ -240,7 +246,7 @@ scan 'remember[ 	]*\{[ 	]*mutableStateOf\((true|false)\)[ 	]*\}' info 'R8 rememb
 scan '\.padding\([^)]*horizontal[ 	]*=[^)]*,[^)]*(bottom|top|start|end)[ 	]*=' error 'R8 invalid Modifier.padding overload; use start/end/top/bottom instead of mixing horizontal with side params' "${PATHS[@]}"
 scan 'PicoTheme\.colorScheme\.(accent|primary|secondary|background|surface|onSurface|onPrimary)\b' error 'R8 guessed Material-style colorScheme role; use PicoTheme roles or Vibrant' "${PATHS[@]}"
 scan '\.background\([^)]*,[ 	]*(RoundedCornerShape|CircleShape|shape)[^)]*\)\.clickable' warning 'R8 background(shape).clickable can mismatch hover/hit shape; prefer clip(shape).spatialHoverEffect().clickable().background()' "${PATHS[@]}"
-scan '\.clickable(\([^)]*\))?[ 	.]*\.spatialHoverEffect\(' warning 'R8 hover after clickable; prefer clip().spatialHoverEffect().clickable()' "${PATHS[@]}"
+scan '\.clickable[ 	]*[\(\{][^\r\n]*\.spatialHoverEffect[ 	]*\(' warning 'R8 hover after clickable; prefer clip().spatialHoverEffect().clickable()' "${PATHS[@]}"
 scan '\.background\([^)]*\)\.(fillMaxWidth|fillMaxSize|width|height|size)\(' warning 'R8 layout modifier after background; put size/layout before decoration' "${PATHS[@]}"
 scan 'modifier\.(fillMaxWidth|fillMaxSize|width|height|size)\(' info 'R8 fixed layout appended to incoming modifier; confirm caller override is not blocked or use Modifier.defaults.then(modifier)' "${PATHS[@]}"
 scan 'padding\((start|bottom|end|top)[ 	]*=[ 	]*[0-9]{2,3}\.dp' info 'R8 large directional padding detected; confirm this is not manual TabBar/Toolbar avoidance' "${PATHS[@]}"

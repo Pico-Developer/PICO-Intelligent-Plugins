@@ -1,0 +1,5 @@
+# Originality Critic
+
+Fail designs that copy an example's state sequence, layout identifiers, component sequence, toolbar structure or visual concept without requirement-based derivation. Examples may be used only after generation for blind evaluation. Require `templateReuse=false` and a similarity audit with evidence.
+
+Competitive differentiation fulfillment check: verify whether the "our differentiation opportunities" raised in the `uxr-research-report.md` §3A competitive benchmark are genuinely fulfilled in the quality contract, task model, spatial value, concept selection, and visual direction — whether competitor strengths are absorbed at the requirement / opportunity level, whether competitor anti-patterns are avoided, and whether the differentiation positioning is defensible. Also verify that the absorption does not cross the boundary: the design does not copy any competitor's layout, state graph, component combination, or visual style. If a differentiation opportunity is registered but has no downstream landing throughout, or the absorption sinks into interface copying, open a finding.

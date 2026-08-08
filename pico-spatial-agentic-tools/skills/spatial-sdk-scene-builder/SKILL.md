@@ -1,6 +1,6 @@
 ---
 name: spatial-sdk-scene-builder
-description: Plans realistic spatial layouts by measuring 3D asset bounding boxes and generating transform JSON/configuration. Use for bbox measurement, scale/position/rotation planning, or `.spatialsdk/scene_transforms.json` output.
+description: Plans realistic spatial layouts by measuring 3D asset bounding boxes and generating transform JSON/configuration. Use for bbox measurement, scale/position/rotation planning, or `.spatialsdk/scene_transforms.json` output. Route authored scene and visual content work to spatial-editor.
 license: 'Apache-2.0'
 allowed-tools: Bash(python3 ./skills/spatial-sdk-scene-builder/scripts/calculate_bbox.py *) Bash(pip3 install -r ./skills/spatial-sdk-scene-builder/scripts/requirements.txt)
 ---
@@ -17,17 +17,17 @@ Trigger this skill when a user is positioning 3D assets, transitioning UI elemen
 
 Use this skill for:
 
-- Measuring `.glb`, `.gltf`, or `.usdz` asset dimensions.
+- Measuring `.glb`, `.gltf`, `.obj`, `.spz`, `.stl`, or `.usdz` asset dimensions.
 - Converting asset dimensions into realistic human-scale transforms.
 - Producing `.spatialsdk/scene_transforms.json` or similar layout configuration files.
 - Planning scene hierarchy, positions, rotations, and scales before the scene is written anywhere.
 
 Do not use this skill for:
 
-- Importing assets into Spatial Editor or changing editor scene/entity state.
-- Requests such as "create a bedroom scene", "initialize a new editor scene", or "put this into the current scene" when the user expects real editor changes.
+- Asset generation, visual composition, material/effect authoring, editor inspection, or changing real editor scene/entity state.
+- Requests such as "create a bedroom scene", "initialize a new editor scene", or "put this into the current scene" when the user expects real editor changes. Use `spatial-editor` for that authored-content step.
 
-This skill produces only a plan, measurement result, or structured transform configuration; it does not mutate any real editor scene.
+This skill produces only a plan, measurement result, or structured transform configuration; it does not mutate any real editor scene. For requests that need both measurement and authoring, complete measurement here first, then activate `spatial-editor`.
 
 ## Available Command Tools
 
@@ -51,7 +51,7 @@ Before processing any numbers, analyze the intended scene.
 3. **Path Resolution:** Convert to **Absolute Paths**.
 4. **Unit Conversion (CRITICAL):**
    - `.usdz` output: Divide by 100 (cm to m).
-   - `.glb/.gltf` output: Use as is (m).
+   - `.glb/.gltf/.obj/.spz/.stl` output: Use as is (m).
 
 **If the tool call fails or is skipped, you must stop and inform the user that spatial layout cannot be calculated without precise bounding box data.**
 

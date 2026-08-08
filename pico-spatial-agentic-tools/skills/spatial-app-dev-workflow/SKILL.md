@@ -19,8 +19,9 @@ This skill coordinates feature work and verification. When a step needs deeper d
 - `spatial-sdk-guideline` for Stage/WindowContainer, ECS, resources, interaction, physics, coordinates, and performance-budget API patterns.
 - Use the SDK version and dependency coordinates already declared by the project; do not hard-code or introduce a fixed Spatial SDK version unless the user explicitly asks for a migration.
 - `spatial-ui-ability` / `spatial-ui-design-style` for SpatialUI Compose capabilities and visual style.
-- `spatial-sdk-guideline` playbooks (e.g. `playbooks/scene-surface-placement.md`) for wall/table/floor placement.
+- `spatial-sdk-guideline` playbooks (e.g. `../spatial-sdk-guideline/playbooks/scene-surface-placement.md`) for wall/table/floor placement.
 - `spatial-sdk-scene-builder` for measuring 3D asset bounds and producing transform config.
+- `spatial-editor` when a requirement needs editor-authored scenes, entities, asset composition, materials, effects, visual inspection, custom component declaration sync, or a packaged content handoff.
 - `spatial-emulator-usage` command guidance when device/emulator operations become the main task.
 - `spatial-app-perf-diagnose` for real-device performance diagnosis with `pico-cli perf` and Perfetto; do not use emulator-only checks as proof of frame-rate quality.
 
@@ -33,6 +34,11 @@ Before changing code:
 3. Identify package name, main launch activity, generated template/container type, and existing run commands from `AGENTS.md` or Gradle/manifest files.
 4. Confirm the current user request is a follow-up feature/fix inside this project. If the directory is empty or not a Spatial SDK app, route to `spatial-app-onboarding` instead of using this workflow.
 5. Preserve the existing scaffold and visible baseline unless the user explicitly asks for a migration.
+6. If editor-authored content already exists as co-located `.bundle` and `.scenes.json` files, consume that handoff without reopening the editor.
+7. Determine whether the increment generates, creates, composes, or materially modifies 3D content, or only controls existing content at runtime.
+8. For 3D content production, activate `spatial-editor` first, use it for every portion supported by its current runtime capabilities, then resume app implementation with its handoff.
+9. Skip the editor step only when the user explicitly rejects Spatial Editor, runtime capability inspection shows that it cannot satisfy any part of the 3D content requirement, or Spatial Editor remains actually unavailable after reasonable recovery from installation, download, startup, connection, authorization, or backend-readiness failure.
+10. Record the user direction or runtime evidence for any exception. Do not silently replace the editor step with App/ECS work.
 
 Handoff rule:
 
@@ -57,6 +63,8 @@ Prefer incremental edits over rewrites:
 
 - Keep generated project conventions.
 - Keep package names, activity names, asset paths, Gradle config, and template container shape stable unless the requirement demands otherwise.
+- Use App/ECS for runtime state, behavior, interaction, sensing, simulation, and high-frequency updates. Do not treat runtime behavior as a reason to move the underlying supported 3D content-production work out of Spatial Editor.
+- When Spatial Editor supports only part of the requirement, integrate its authored output and implement only the remaining unsupported or runtime portions in App/ECS.
 - Use `spatial-sdk-guideline` references before writing nontrivial ECS, resource loading, interaction, physics, animation, or coordinate conversion code.
 - Keep snippets idiomatic for the existing Kotlin/Compose style.
 

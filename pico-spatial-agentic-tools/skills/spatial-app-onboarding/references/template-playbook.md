@@ -39,10 +39,19 @@ For first-run onboarding, follow this workflow:
 
 1. Inspect the user prompt to classify the intent.
 2. Run `pico-cli project create --help` to discover the currently supported `--template` modes and any other scaffold options.
-3. Map the intent to a supported template using the routing table in section 2 below.
-4. Pass `--template <mode>` explicitly to `pico-cli project create`, along with other user-provided options (`--dir`, `--name`, `--package`, `--sdk`, `--force`).
+3. If the user explicitly names a template/container mode, or a calling
+   workflow supplies a resolved container contract, map it to a supported
+   template using the routing table in section 2.
+4. Always pass `--template <mode>` along with other user-provided options
+   (`--dir`, `--name`, `--package`, `--sdk`, `--force`). If neither the user nor
+   an upstream contract selected a template, use the closest default from the
+   routing table below.
 
-Use `--template` on every first-run scaffold so the generated project shape is deliberate and reproducible.
+Do not add extra questions for a generic quickstart merely to choose a template.
+Pick the closest supported mode and keep the first project runnable. For a
+generic, minimal, or unspecified quickstart, use `planar`. Do not invent
+template names such as `minimal`; use only the modes advertised by
+`pico-cli project create --help`.
 
 After the project is generated, use the generated structure as the blueprint and make minimal changes.
 Do not invent a fresh project structure.
@@ -66,6 +75,8 @@ If the advertised set does not match the list below, trust the output of `--help
 ### `planar`
 
 Use when the app is mostly 2D UI with only light 3D decoration.
+
+Default to this for generic, minimal, or unspecified quickstarts.
 
 ### `volumetric`
 

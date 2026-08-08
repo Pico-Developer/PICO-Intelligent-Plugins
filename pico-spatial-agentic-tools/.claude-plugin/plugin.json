@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "pico-spatial-agentic-tools",
-  "description": "Agentic tools for PICO Spatial SDK development (skills, MCP, and sub-agents). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-  "version": "0.3.0",
+  "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
+  "version": "0.4.1",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },

@@ -28,7 +28,7 @@ Use `pico-cli` commands to check environment like devices:
 Use `pico-cli perf` commands for performance profiling:
 
 - Check or install perf toolchains: `pico-cli perf doctor check/install ..`
-- Real-time performance diagnosis: `pico-cli perf monitor run ..`
+- Real-time performance diagnosis: `pico-cli perf live run ..`
 - Perfetto Trace capture: `pico-cli perf trace record ...`
 - Perfetto Trace analysis: `pico-cli perf trace load ...` / `pico-cli perf trace query ...`
 
@@ -75,7 +75,7 @@ Mandatory rules for 1.1:
 
   ```bash
     # Parallel Task 1: Execute Real-time Diagnosis, perform <duration> seconds of real-time performance diagnosis data collection.
-    pico-cli perf monitor run --app <package> --duration <duration> --output ./<perf_analyze>/<package>/<timestamp>/report.json
+    pico-cli perf live run --app <package> --duration <duration> --save --output ./<perf_analyze>/<package>/<timestamp>/report.json
   ```
 
   ```bash

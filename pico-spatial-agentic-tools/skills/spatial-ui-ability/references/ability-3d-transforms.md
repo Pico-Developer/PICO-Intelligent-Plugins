@@ -5,9 +5,9 @@ Capability: `Modifier.rotate3D(...)` and `Modifier.scale3D(...)`.
 ## Static Rotation
 
 ```kotlin
-import com.pico.spatial.ui.foundation.rotate3D
-import com.pico.spatial.math.RotationAxis3D
-import com.pico.spatial.math.NormalizedPoint3D
+import com.pico.spatial.ui.foundation.effect3d.rotate3D
+import com.pico.spatial.ui.foundation.geometry.RotationAxis3D
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
 
 Box(
     Modifier
@@ -20,7 +20,7 @@ Box(
 ## Animated Rotation
 
 ```kotlin
-import com.pico.spatial.math.Rotation3D
+import com.pico.spatial.ui.foundation.geometry.Rotation3D
 
 val degree by rememberInfiniteTransition().animateFloat(
     0f, 360f, infiniteRepeatable(tween(4000))
@@ -36,8 +36,8 @@ Box(
 ## 3D Scale
 
 ```kotlin
-import com.pico.spatial.ui.foundation.scale3D
-import com.pico.spatial.math.Scale3D
+import com.pico.spatial.ui.foundation.effect3d.scale3D
+import com.pico.spatial.ui.foundation.geometry.Scale3D
 
 // Uniform scaling
 Box(Modifier.size(200.dp).scale3D(scale = 0.8f))
@@ -67,12 +67,12 @@ Box(
 ## Imports
 
 ```kotlin
-import com.pico.spatial.ui.foundation.rotate3D
-import com.pico.spatial.ui.foundation.scale3D
-import com.pico.spatial.math.Rotation3D
-import com.pico.spatial.math.RotationAxis3D
-import com.pico.spatial.math.NormalizedPoint3D
-import com.pico.spatial.math.Scale3D
+import com.pico.spatial.ui.foundation.effect3d.rotate3D
+import com.pico.spatial.ui.foundation.effect3d.scale3D
+import com.pico.spatial.ui.foundation.geometry.Rotation3D
+import com.pico.spatial.ui.foundation.geometry.RotationAxis3D
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
+import com.pico.spatial.ui.foundation.geometry.Scale3D
 ```
 
 ---

@@ -12,6 +12,7 @@ This repository is for developers building **PICO OS 6** spatial apps who want r
 
 - bootstrap a first working project from templates
 - speed up day-to-day Spatial SDK development and debugging
+- author and package 3D scenes through Spatial Editor
 - place content onto detected real-world surfaces such as walls, tables, and floors
 - upgrade or migrate older Spatial SDK projects safely
 - diagnose on-device Spatial App performance bottlenecks with `pico-cli perf` and Perfetto Trace
@@ -114,10 +115,12 @@ Distributable assets live under `skills/` (each host's `plugin.json` points to t
 
 - `skills/porting-android-app/`: Porting an Android app to PICO OS with Spatial SDK, including code refactoring, SDK integration, dependency resolution, and UI adaption.
 - `skills/spatial-app-onboarding/`: Reusable onboarding skill for creating or continuing a first working Spatial SDK app from templates, especially empty-directory quickstarts, new Spatial apps, and 3D model starter demos.
-- `skills/spatial-sdk-guideline/`: Day-to-day PICO Spatial SDK 3D development guide (Stage/WindowContainer, ECS, asset loading, materials/lighting, animation, physics, interaction, coordinates/units, performance budgets, etc.). For non-trivial SDK/API facts, use `pico-spatial-knowledge` MCP as the primary retrieval source when available; use curated pages under `skills/spatial-sdk-guideline/reference/` for workflow guidance, stable examples, and fallback context. Includes the `playbooks/scene-surface-placement.md` sub-flow for placing content onto detected real-world surfaces (walls, tables, floors).
-- `skills/anything-to-spatial-app/`: Multi-source app generation and bounded panel patch skill for creating or materially updating a PICO Spatial Android/Kotlin app from Figma, screenshots/mockups, PRDs, intent-only prompts, hybrid inputs, or a constrained patch while preserving or choosing the right container, window model, panel hierarchy, and layout regions.
+- `skills/spatial-sdk-guideline/`: Day-to-day PICO Spatial SDK 3D development guide (Stage/WindowContainer, ECS, asset loading, materials/lighting, animation, physics, interaction, coordinates/units, performance budgets, etc.). For non-trivial SDK/API facts, use `pico-dev-knowledge` MCP as the primary retrieval source when available; use curated pages under `skills/spatial-sdk-guideline/reference/` for workflow guidance, stable examples, and fallback context. Includes the `skills/spatial-sdk-guideline/playbooks/scene-surface-placement.md` sub-flow for placing content onto detected real-world surfaces (walls, tables, floors).
+- `skills/spatial-design-to-app/`: Multi-source app generation and bounded panel patch skill for creating or materially updating a PICO Spatial Android/Kotlin app from Figma, screenshots/mockups, PRDs, intent-only prompts, hybrid inputs, or a constrained patch while preserving or choosing the right container, window model, panel hierarchy, and layout regions.
+- `skills/pico-spatial-app-designer/`: PICO Spatial app design package skill for designing, reviewing, repairing, or producing a structured design deliverable from requirements, prior design facts, or delivery specs, covering the intent, research, spatial-structure, composition, design-system, preview, and delivery-readiness stages before app code generation.
 - `skills/spatial-app-dev-workflow/`: Post-onboarding Spatial SDK implementation workflow for continuing from a project `AGENTS.md`, implementing one requirement at a time, building, installing/launching in the PICO emulator or device, collecting screenshot/recording/log evidence, and repairing crashes from logcat before handoff.
 - `skills/spatial-sdk-update/`: PICO Spatial SDK version update/migration assistant (with risk notes and constraints).
+- `skills/spatial-editor/`: Managed Spatial Editor workflow for authoring scenes, entities, assets, materials, effects, visual inspection, custom component declarations, and packaged editor-to-app handoffs.
 - `skills/spatial-sdk-scene-builder/`: Scene layout assistant for deriving realistic spatial transforms from 3D asset bounding boxes and generating structured scene configuration.
 - `skills/pico-env-doctor/`: Verify-first environment workflow for tasks that execute `pico-cli`, query MCP, install/update plugin hosts, or start emulator/device workflows. It checks whether `pico-cli` is installed/current, discovers supported setup/plugin/MCP commands before doctor-style checks, allows short-term session reuse of healthy results, and requires explicit authorization before running repair commands.
 - `skills/pico-cli/`: Generic `pico-cli` usage guide for command-family selection, help/version/setup discovery, output formats, device targeting, safe defaults, troubleshooting, and handoff to workflow-specific skills.
@@ -142,11 +145,14 @@ When imported manually, the host loads `skills/` and `.mcp.json` using the relat
 
 ## MCP and Plugin Audit
 
-The public `.mcp.json` starts MCP servers through `npx`:
+The public `.mcp.json` starts the knowledge and managed Spatial Editor gateway servers through `npx`:
 
 ```bash
-npx -y @picoxr/pico-cli mcp:spatial-knowledge
+npx -y @picoxr/pico-cli mcp:dev-knowledge
+npx -y @picoxr/pico-cli editor:bootstrap
 ```
+
+The editor gateway installs and starts Spatial Editor lazily when an agent calls `ensure_editor_ready`. Editor download channels are selected by the pico-cli build policy and are not user-configurable. The current rollout routes both public and internal builds to the regional beta channel.
 
 For setup and visibility support, use the user-triggered plugin audit flow:
 
@@ -175,6 +181,7 @@ Installing `pico-cli` is still the recommended setup path because setup/update c
 - "Patch this existing panel from a screenshot without changing the root container."
 - "After the onboarding demo works, add tap-to-select for the model, run it in the emulator, and fix any crash from logs before you hand it back."
 - "Continue from this Spatial SDK project's AGENTS.md and implement the next requirement; verify each step with build/install/launch evidence."
+- "Create a new authored scene in Spatial Editor, inspect it visually, and package it for this app."
 - "Should I use `Stage` or `WindowContainer` in PICO Spatial SDK? What are the constraints of each?"
 - "What's the minimal Kotlin pattern to async-load a `glb` model in `SpatialView`? Should it go in `initial` or `update`?"
 - "Why doesn't raycast/click interaction work? How should I configure `CollisionComponent` vs `InteractableComponent`?"

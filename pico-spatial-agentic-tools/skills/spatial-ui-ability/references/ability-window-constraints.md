@@ -5,9 +5,10 @@ Capability: `Modifier.windowConstraints` for `WindowContainer` / `DefaultWindowC
 ## Range Constraints
 
 ```kotlin
-import com.pico.spatial.ui.WindowContainer
-import com.pico.spatial.ui.ContainerResizeType
-import com.pico.spatial.ui.foundation.windowConstraints
+import com.pico.spatial.ui.foundation.dsl.WindowContainer
+import com.pico.spatial.ui.platform.resize.ContainerResizeType
+// `windowConstraints` needs no import: it is a member extension of the
+// WindowContainer / DefaultWindowContainer content-lambda scope.
 
 WindowContainer(id = "main", resizeType = ContainerResizeType.ContentSize) {
     Box(
@@ -32,7 +33,7 @@ WindowContainer(id = "main", resizeType = ContainerResizeType.ContentSize) {
 ## DefaultWindowContainer Usage
 
 ```kotlin
-import com.pico.spatial.ui.DefaultWindowContainer
+import com.pico.spatial.ui.foundation.dsl.DefaultWindowContainer
 
 // manifest: pico.spatial.windowcontainer.resizetype = 2 (ContentSize)
 DefaultWindowContainer {
@@ -56,10 +57,10 @@ DefaultWindowContainer {
 ## Imports
 
 ```kotlin
-import com.pico.spatial.ui.WindowContainer
-import com.pico.spatial.ui.DefaultWindowContainer
-import com.pico.spatial.ui.ContainerResizeType
-import com.pico.spatial.ui.foundation.windowConstraints
+import com.pico.spatial.ui.foundation.dsl.WindowContainer
+import com.pico.spatial.ui.foundation.dsl.DefaultWindowContainer
+import com.pico.spatial.ui.platform.resize.ContainerResizeType
+// `windowConstraints` is a scope member extension — no import required.
 ```
 
 ---
