@@ -52,7 +52,11 @@ working context.
 
 ## Combining Multiple Capabilities
 
-If the user explicitly composes multiple domains, open each matching reference
-on demand and stitch the snippets following the recommended modifier order
-documented in [`references/troubleshooting.md`](references/troubleshooting.md).
-Do not embed a pre-built combo example here.
+If the user explicitly composes multiple domains (including depth layout and
+`zOffset`, not just visual/gesture domains), open each matching reference on
+demand and stitch the snippets using the modifier chain each reference's official
+sample already shows. SpatialUI does **not** define a single canonical modifier
+order, so keep each snippet's source ordering unless there is a concrete reason to
+change it; see [`references/troubleshooting.md`](references/troubleshooting.md) for
+the Compose layout/drawing implications of modifier order and how depth/3D modifiers
+participate in measurement. Do not embed a pre-built combo example here.

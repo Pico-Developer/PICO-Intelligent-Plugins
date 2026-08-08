@@ -25,7 +25,7 @@ Review and redact transcript exports before sharing them externally.
 The public plugin starts MCP servers through the public npm package:
 
 ```bash
-npx -y @picoxr/pico-cli mcp:spatial-knowledge
+npx -y @picoxr/pico-cli mcp:dev-knowledge
 ```
 
 Public marketplace releases must not contain private package scopes, private registries, private repository URLs, or internal service URLs.

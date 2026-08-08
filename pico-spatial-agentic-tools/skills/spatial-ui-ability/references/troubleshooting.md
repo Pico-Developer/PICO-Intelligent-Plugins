@@ -6,8 +6,16 @@ Open this file **first** for any "not working / nothing renders" symptom. Most i
 
 1. **Spatial platform**: are you running on PICO OS simulator or a real device? Many capabilities (`vibrantEffect`, `backgroundMaterial`, `spatialHoverEffect`, `scale3D`, `Augment`) are no-ops on non-Spatial platforms.
 2. **Container**: is the content hosted inside a `WindowContainer` (or `DefaultWindowContainer` / `SpatialScene`)? Out-of-container content cannot participate in spatial features.
-3. **Recommended modifier order** (use this when composing multiple spatial capabilities on the same node):
-   `size → border/background → backgroundMaterial → vibrantEffect → rotate3D / scale3D → spatialHoverEffect → pointerInput`.
+3. **Modifier order affects layout and drawing** (Compose semantics). SpatialUI does
+   **not** define a single canonical order for spatial capabilities: official SDK
+   samples place `pointerInput` both before and after `rotate3D` / `scale3D`, and
+   some demos deliberately compare `scale3D → backgroundMaterial` against the reverse
+   to show the visual difference. When composing capabilities on one node, follow the
+   modifier chain shown in the matching `ability-*.md` official sample instead of a
+   fixed global order, and cross-check with `pico-dev-knowledge` when available. Note
+   that `backgroundMaterial`, `rotate3D`, `scale3D`, `depth` / `depthIn` /
+   `requiredDepth` / `padding3D` / `alignDepth` participate in 3D measurement, so
+   their relative position can change measured size, thickness, and placement.
 4. **Direct root child rule**: `windowConstraints` only takes effect when attached to the **direct child** of a `WindowContainer` / `DefaultWindowContainer`.
 5. **`resizeType` / manifest**: window-size APIs require `ContainerResizeType.ContentSize` and a matching `pico.spatial.windowcontainer.resizetype` value (`0` Disabled, `1` User, `2` ContentSize).
 6. **DSL stability**: hover DSL blocks must declare the **same number of effects** in both `isActive = true` and `false` branches; only vary the values, not the structure.
@@ -30,4 +38,9 @@ Open this file **first** for any "not working / nothing renders" symptom. Most i
 
 ## Composing Multiple Capabilities
 
-When stitching snippets from multiple `ability-*.md` files onto the same node, follow the **modifier order** above and the per-domain rules in each reference. Do not pre-load combo examples — open only the references that match the user's explicit request.
+When stitching snippets from multiple `ability-*.md` files onto the same node, follow
+the modifier chain each reference's official sample uses, and mind the layout/drawing
+implications in check 3 above. SpatialUI does not enforce one global order, so do not
+reorder a snippet away from its source sample without a concrete reason (visual result,
+measurement, or verified `pico-dev-knowledge` guidance). Do not pre-load combo examples
+— open only the references that match the user's explicit request.

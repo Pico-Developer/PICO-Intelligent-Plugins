@@ -26,7 +26,7 @@ When asked a concrete question, respond with:
 1. **Recommended approach** (what to use, where it lives, why).
 2. **Minimal implementation pattern** (small Kotlin snippet or pseudocode).
 3. **Checklist** to validate assumptions and catch common gotchas.
-4. Links to the most relevant curated pages under `reference/`, plus any deeper support retrieved via `pico-spatial-knowledge` MCP when the question needs broader or version-specific lookup.
+4. Links to the most relevant curated pages under `reference/`, plus any deeper support retrieved via `pico-dev-knowledge` MCP when the question needs broader or version-specific lookup.
 
 For **model loading** answers, do not stop at the API call. Explicitly cover all of these points in the prose:
 
@@ -221,4 +221,4 @@ Use this as a pre-flight checklist:
 - [Coordinates and Units](reference/coordinates-and-units.md)
 - [Performance Budgets and Optimization Checklist](reference/performance-budgets.md)
 
-For deeper dives, prefer querying `pico-spatial-knowledge` MCP for broader or version-specific documentation, and when source validation is needed, follow the file paths returned in `pico-spatial-knowledge` results.
+For deeper dives, prefer querying `pico-dev-knowledge` MCP for broader or version-specific documentation, and when source validation is needed, follow the file paths returned in `pico-dev-knowledge` results.

@@ -1,15 +1,15 @@
 # Spatial Capabilities (3D / Containers / Content)
 
 Application-side spatial APIs. For window root background see
-`references/window-background.md`. For hover see `references/hover.md`.
+`window-background.md`. For hover see `hover.md`.
 
 ## 1. 3D Modifiers
 
 Packages:
 
-- `com.pico.spatial.ui.foundation.layout.*` — `depth`, `padding3D`, `alignDepth`, `Box3D`, `layout3D`
+- `com.pico.spatial.ui.foundation.layout.*` — `depth`, `padding3D`, `alignDepth`, `Box3D`, `layout3D`, `zOffset`
 - `com.pico.spatial.ui.foundation.geometry.*` — `DpOffset3D`, `IntOffset3D`, `Offset3D`, `Rotation3D`, `Scale3D`, `NormalizedPoint3D`
-- 3D transform / Z-offset modifiers (`zOffset`, `rotate3D`, `scale3D`) live under the foundation namespace; pin them by IDE auto-import.
+- `com.pico.spatial.ui.foundation.effect3d.*` — `rotate3D`, `scale3D` (NOT `foundation.layout`)
 
 ```kotlin
 Modifier
@@ -32,7 +32,7 @@ component. It is a separate ornament window attached to a parent window.
 
 - Package: `com.pico.spatial.ui.augment.Augment`
 - Signature (verify with IDE auto-complete on the current SDK; window-level
-  semantics are summarized in `anything-to-spatial-app/references/spatial-windows-guide.md`):
+  semantics are summarized in `spatial-design-to-app/references/spatial-windows-guide.md`):
 
 ```kotlin
 import com.pico.spatial.ui.augment.Augment
@@ -71,7 +71,7 @@ no public `WindowMaterials` symbol. It is toggled per container:
 - `Stage { ... }` → no `enableMaterialBackground` switch; do not paint a
   background on the Stage root.
 
-See `references/window-background.md`. `WindowMaterials.kt` is an internal
+See `window-background.md`. `WindowMaterials.kt` is an internal
 SDK file name only and is not part of the application-facing API.
 
 ## 4. SpatialView / SpatialModelView / AttachmentPanel
@@ -84,10 +84,10 @@ SDK file name only and is not part of the application-facing API.
 ## 5. Vibrant and Material Modifiers
 
 For Vibrant levels, propagation, imports, mixing rules, and Figma / screenshot
-color inference, see `references/vibrant-guide.md`.
+color inference, see `vibrant-guide.md`.
 
 Material modifier (note: it is **view-level**, not a window-root API; see
-`references/window-background.md`):
+`window-background.md`):
 
 - `Modifier.backgroundMaterial(enable: Boolean = true, style: Material = Material.Regular)`
   — package `com.pico.spatial.ui.foundation.material`. Use it for cards

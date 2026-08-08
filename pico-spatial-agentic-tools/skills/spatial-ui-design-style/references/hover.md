@@ -7,6 +7,12 @@ your own with `Modifier.hoverable + animateFloatAsState(scale)`.
 `spatialHoverEffect` only has visual effect on PICO OS and degrades to a
 no-op on other platforms — no manual platform branching needed.
 
+> **Built-in components already have hover.** SpatialUI components such as
+> `Button`, `IconButton`, `Card`, and `ToggleableChip` apply
+> `spatialHoverEffect` internally. Do NOT add `Modifier.spatialHoverEffect`
+> on top of them — it double-applies the effect. Use `spatialHoverEffect`
+> only on your own custom composables that do not already ship the effect.
+
 ## 1. Preset Styles (Recommended)
 
 Verified against `spatial-ui-ability/SKILL.md §3`:

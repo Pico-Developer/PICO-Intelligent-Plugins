@@ -1,0 +1,419 @@
+{
+  "version": "2.2.0",
+  "description": "The single source of truth (SSOT) of knowledge facts for PICO spatial design rules, referenced by each reasoning and review role as a constraint basis. After the refactor there is no longer a deterministic Python validator: severity (hard/error) indicates the rule's priority and the seriousness of the consequences of violating it, judged accordingly by review roles in the design critique report rather than determined by code at runtime. The rule field is a human-readable constraint statement.",
+  "rules": [
+    {
+      "id": "PICO-ACCESS-001",
+      "category": "accessibility",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "Reduce Motion must be provided."
+    },
+    {
+      "id": "PICO-ACCESS-002",
+      "category": "accessibility",
+      "severity": "hard",
+      "source": "project",
+      "rule": "Controller Fallback must be provided."
+    },
+    {
+      "id": "PICO-ACCESS-003",
+      "category": "accessibility",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "A text scaling (textScaling) capability must be provided."
+    },
+    {
+      "id": "PICO-ACCESS-004",
+      "category": "accessibility",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "A stable exit (stableExit) path must be provided."
+    },
+    {
+      "id": "PICO-ATTACHMENT-001",
+      "category": "window_attachment",
+      "severity": "hard",
+      "source": "official-capabilities+project",
+      "rule": "TabBar, Toolbar, Subwindow, SpatialPopup, Augment, Sheet/Dialog, and Coachmark are all optional and semantically different; before use, an attachment decision must be completed, recording why the other options or None are not used."
+    },
+    {
+      "id": "PICO-ATTACHMENT-002",
+      "category": "window_attachment",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Every attachment decision must include selectedType, rationale, and at least two rejected alternatives."
+    },
+    {
+      "id": "PICO-AUGMENT-001",
+      "category": "augment",
+      "severity": "hard",
+      "source": "official-design",
+      "rule": "Augment is used for spatial semantic supplements around the associated window; it must specify a clear host and avoid interfering with the primary content; it must not carry primary navigation, long text, or critical forms."
+    },
+    {
+      "id": "PICO-AUGMENT-002",
+      "category": "augment",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "The Augment distance value must provide a provenance statement (distanceProvenance)."
+    },
+    {
+      "id": "PICO-AUGMENT-003",
+      "category": "augment",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "Augment must declare its task purpose (purpose) and behavior degradation (behavior)."
+    },
+    {
+      "id": "PICO-AUGMENT-DECISION-001",
+      "category": "augment",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Augment must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-COACHMARK-001",
+      "category": "coachmark",
+      "severity": "error",
+      "source": "official-capability",
+      "rule": "Coachmark must declare its host and UI anchor."
+    },
+    {
+      "id": "PICO-COACHMARK-DECISION-001",
+      "category": "coachmark",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Coachmark must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-COLOR-001",
+      "category": "accessibility",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "Important states cannot be expressed through color alone."
+    },
+    {
+      "id": "PICO-CONTAINER-001",
+      "category": "container",
+      "severity": "hard",
+      "source": "official",
+      "rule": "A state must be bound to an existing container."
+    },
+    {
+      "id": "PICO-DATA-001",
+      "category": "data",
+      "severity": "hard",
+      "source": "data-trust",
+      "rule": "Real-time or network data must declare a complete set of data freshness states."
+    },
+    {
+      "id": "PICO-DATA-002",
+      "category": "data",
+      "severity": "hard",
+      "source": "data-trust",
+      "rule": "Real-time data must declare the required freshness, stale, and critical-source trust policy."
+    },
+    {
+      "id": "PICO-DIALOG-001",
+      "category": "sheet_dialog",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "AlertDialog must declare its host and the decision that must be responded to."
+    },
+    {
+      "id": "PICO-DIALOG-DECISION-001",
+      "category": "sheet_dialog",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "AlertDialog must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-MOTION-001",
+      "category": "comfort",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "Automatically moving the virtual camera is prohibited."
+    },
+    {
+      "id": "PICO-MOTION-002",
+      "category": "comfort",
+      "severity": "hard",
+      "source": "safety",
+      "rule": "Continuous full-screen flashing and infinite risk pulsing are prohibited."
+    },
+    {
+      "id": "PICO-MOTION-003",
+      "category": "comfort",
+      "severity": "error",
+      "source": "safety",
+      "rule": "Every motion effect must declare trigger, purpose, reduceMotionFallback, and performanceFallback."
+    },
+    {
+      "id": "PICO-POPUP-001",
+      "category": "spatial_popup",
+      "severity": "hard",
+      "source": "official-capability",
+      "rule": "SpatialPopup must declare its host container and anchor."
+    },
+    {
+      "id": "PICO-POPUP-DECISION-001",
+      "category": "spatial_popup",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "SpatialPopup must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-SHEET-001",
+      "category": "sheet_dialog",
+      "severity": "error",
+      "source": "official-capability",
+      "rule": "Sheet must declare its host and the centralized task purpose."
+    },
+    {
+      "id": "PICO-SHEET-DECISION-001",
+      "category": "sheet_dialog",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Sheet must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-STAGE-001",
+      "category": "stage",
+      "severity": "hard",
+      "source": "project+comfort",
+      "rule": "Stage must be entered through an explicit user action and have a stable exit path."
+    },
+    {
+      "id": "PICO-SUBWINDOW-001",
+      "category": "subwindow",
+      "severity": "hard",
+      "source": "official-capability",
+      "rule": "Subwindow must bind to a valid WindowContainer host."
+    },
+    {
+      "id": "PICO-SUBWINDOW-002",
+      "category": "subwindow",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Subwindow must declare its left/right position and fill the host window's height."
+    },
+    {
+      "id": "PICO-SUBWINDOW-DECISION-001",
+      "category": "subwindow",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Subwindow must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-TABBAR-001",
+      "category": "tabbar",
+      "severity": "hard",
+      "source": "official-capability",
+      "rule": "TabBar must bind to a valid WindowContainer host."
+    },
+    {
+      "id": "PICO-TABBAR-002",
+      "category": "tabbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "TabBar must conform to the top-center floating relationship of the WindowContainer."
+    },
+    {
+      "id": "PICO-TABBAR-DECISION-001",
+      "category": "tabbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "TabBar must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-TABBAR-SEMANTIC-001",
+      "category": "tabbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "TabBar can only be used for navigation between different pages or views."
+    },
+    {
+      "id": "PICO-TOOLBAR-001",
+      "category": "toolbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Toolbar must bind to a valid WindowContainer host."
+    },
+    {
+      "id": "PICO-TOOLBAR-003",
+      "category": "toolbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Toolbar must conform to the bottom-center floating relationship of the WindowContainer."
+    },
+    {
+      "id": "PICO-TOOLBAR-DECISION-001",
+      "category": "toolbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Toolbar must be traceable to the window attachment decision matrix."
+    },
+    {
+      "id": "PICO-TOOLBAR-SEMANTIC-001",
+      "category": "toolbar",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Toolbar content must be high-frequency commands or tool modes for the current workspace."
+    },
+    {
+      "id": "PICO-WINDOW-001",
+      "category": "window",
+      "severity": "hard",
+      "source": "project+attention",
+      "rule": "The default number of windows is determined by task collaboration and attention cost; multiple windows must explain their independent tasks, coexistence value, and placement relationships."
+    },
+    {
+      "id": "PICO-WINDOW-002",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Window size must be determined according to the PICO spatial window sizing methodology: for Planar 2D/productivity tasks, 1280x720dp is the official default baseline, calibrating default/min/max and ResizeRestriction together with scene tier, clear field of view, content density, viewing conditions, and interaction goals."
+    },
+    {
+      "id": "PICO-WINDOW-003",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-example",
+      "rule": "1600x900 is only a configuration example in the DefaultWindowContainer documentation; it cannot be used as the Skill default value or a baseline for all projects."
+    },
+    {
+      "id": "PICO-WINDOW-004",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "The default number of primary windows must not exceed the project quality contract limit."
+    },
+    {
+      "id": "PICO-WINDOW-005",
+      "category": "window",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "Multiple default windows must explain their task collaboration and attention cost."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-001",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Window sizing must complete its decision according to the PICO spatial window sizing methodology: first declare the content type, scene tier, official baseline, and scalable range, then give at least three default/min/max candidates and calibrate them with content and field of view."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-002",
+      "category": "window",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "The window must declare an aspect-ratio policy (aspectRatioPolicy) and Resize behavior."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-003",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Window size cannot be described as a fixed value for all projects; Planar 2D tasks can use 1280x720dp as the official default baseline, but it must be calibrated by scene tier, clear field of view, content density, and the readable/clickable minimums."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-004",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "The width and height of a Planar WindowContainer must fall within the official allowed range of 320x180dp to 2700x1800dp; the default baseline for 2D/productivity tasks is 1280x720dp; Planar depth is fixed at 640dp and cannot be customized."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-005",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Window size under Shared Space must declare the default viewing distance, worldScale, clear field of view validation for core content (horizontal 65° / vertical 40°), and the peripheral field of view boundary for secondary content (horizontal 85° / vertical 55°)."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-006",
+      "category": "window",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "The minimum window size must be derived backward from the readable/clickable minimums: interaction hit targets no smaller than 56x56dp, body text no smaller than 12dp; when shrinking, it must be handled through reflow, collapsing, layering, or internal scrolling, and text and targets must not be scaled as a whole."
+    },
+    {
+      "id": "PICO-WINDOW-SIZING-007",
+      "category": "window",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "When multiple WindowContainers coexist by default, they must declare adjacent spacing, the risk of occluding the real environment or other apps, and attention cost; the default spacing between adjacent windows must not be lower than 56dp, unless there is an explicit official or implementation constraint explanation."
+    },
+    {
+      "id": "PICO-MATERIAL-001",
+      "category": "material",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "The glass background material is a PICO spatial platform system capability: treatment=glass must select a glassStyle from the four system tiers Thin/Regular/Thick/Thickest, and hand off to the implementer to call the system Modifier.backgroundMaterial / enableMaterialBackground; it must not self-draw CSS blur to impersonate the system material."
+    },
+    {
+      "id": "PICO-MATERIAL-002",
+      "category": "material",
+      "severity": "hard",
+      "source": "official-capability+project",
+      "rule": "Panels carrying critical states, body text, or forms must, in a passthrough / MR environment, provide a contrast ruling (choose a thicker tier or overlay a solid backing that guarantees contrast); they must not rely on color alone."
+    },
+    {
+      "id": "PICO-MATERIAL-003",
+      "category": "material",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "The glass tier must map to depth-hierarchy semantics (the thicker the tier = the more blurred the background / the more focused the foreground, the thinner = the closer to the environment layer); the glass effect must not be applied arbitrarily; where platform known display issues exist, such as SpatialUI Tab Bar glass, a degradation must be declared."
+    },
+    {
+      "id": "PICO-SPACESTATE-001",
+      "category": "space_state",
+      "severity": "hard",
+      "source": "official",
+      "rule": "The container architecture must declare whether it runs in Shared Space or Full Space, and the combination must be legal: Shared Space only supports Planar/Volumetric and must not contain Stage; containing Stage means Full Space (single-app exclusive)."
+    },
+    {
+      "id": "PICO-SPACESTATE-002",
+      "category": "space_state",
+      "severity": "hard",
+      "source": "official+comfort",
+      "rule": "Choosing Stage means actively switching to Full Space and occupying the space exclusively; it must declare the entry value, an explicit entry action, and a stable exit (close Stage to return to Shared Space) path; it must not open Stage gratuitously just to be \"more immersive\"."
+    },
+    {
+      "id": "PICO-CONTAINER-002",
+      "category": "container",
+      "severity": "hard",
+      "source": "official-capability",
+      "rule": "The PICO official form baseline must not be violated: Planar depth is fixed at 640dp (the depth parameter has no effect on Planar), depth only takes effect on Volumetric, and Volumetric scaling is always proportional; Planar 1280x720x640dp is the official default baseline for 2D/productivity tasks, which must be calibrated by scene, field of view, and content, and must not be treated as the final fixed size for all projects."
+    },
+    {
+      "id": "PICO-VIBRANT-001",
+      "category": "material",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "Monochrome panels and text on passthrough / MR or highly dynamic complex backgrounds should preferentially use PICO SpatialUI's Vibrant Style (dynamic color-mixing system capability) to guarantee readability, and must not self-draw CSS blending; Vibrant only supports a single color, not images or gradients, and areas containing images/gradients must switch to a solid backing or a thicker glass tier."
+    },
+    {
+      "id": "PICO-MATERIAL-004",
+      "category": "material",
+      "severity": "error",
+      "source": "official-capability+project",
+      "rule": "The background of a component within a window is optional: it can be unset (none), set to a custom color background (customColor, with the color defined by the component and not limited to solid colors), or a glass background material (glassStyle four tiers), but the same component must not layer a custom color + glass simultaneously; choose one; the glass background material is only available within a WindowContainer."
+    },
+    {
+      "id": "PICO-VISUAL-LAYOUT-001",
+      "category": "visual",
+      "severity": "hard",
+      "source": "project",
+      "rule": "The visual design must express the window structure and intra-window layout: each major WindowContainer provides a window shell (form/default/min/max/contentInset/docked attachments, with sizes referencing the interaction spec's PICO-methodology window sizing) and an intra-window layout structure diagram (solid boxes = window/region boundaries, dashed boxes = component placeholders), and provides a region→component mapping (no orphan regions, no unplaced components); prose must not replace structure diagrams."
+    },
+    {
+      "id": "PICO-VISUAL-METRICS-001",
+      "category": "visual",
+      "severity": "hard",
+      "source": "project",
+      "rule": "Each core component must provide internal metrics (dp/sp): icon size, text/font size/font (referencing the typography role), corner radius, padding, internal element spacing, stroke, and minimum hit target; spacing/corner radius/icons reference a unified scale, and corner radius and hit targets must fall within the PICO platform numeric spec; component sizing/metrics must fall within the owning WindowContainer's default/min/max content area, and it is prohibited to write prose like \"a bit large\" or \"leave some margin\" or to write magic numbers per component."
+    }
+  ]
+}

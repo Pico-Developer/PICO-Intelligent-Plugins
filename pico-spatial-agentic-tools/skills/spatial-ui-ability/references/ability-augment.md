@@ -5,10 +5,10 @@ Capability: companion windows attached to a `WindowContainer` via `Augment(...)`
 ## Custom Augment
 
 ```kotlin
-import com.pico.spatial.ui.augment.Augment
-import com.pico.spatial.ui.augment.AugmentContentAlignment
-import com.pico.spatial.math.NormalizedPoint3D
-import com.pico.spatial.math.DpOffset3D
+import com.pico.spatial.ui.foundation.window.Augment
+import com.pico.spatial.ui.foundation.window.AugmentContentAlignment
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
+import com.pico.spatial.ui.foundation.geometry.DpOffset3D
 
 Augment(
     anchor = NormalizedPoint3D.TopFront,
@@ -25,7 +25,7 @@ Augment(
 ## TabBar
 
 ```kotlin
-import com.pico.spatial.ui.augment.TabBar
+import com.pico.spatial.ui.design.windows.TabBar
 
 TabBar {
     item(selected = current == 0, onClick = { current = 0 }, mainContent = { Text("Home") })
@@ -36,7 +36,7 @@ TabBar {
 ## Toolbar
 
 ```kotlin
-import com.pico.spatial.ui.augment.Toolbar
+import com.pico.spatial.ui.design.windows.Toolbar
 
 Toolbar {
     IconButton(onClick = ::play) { Icon(Icons.Default.PlayArrow, null) }
@@ -47,8 +47,8 @@ Toolbar {
 ## Subwindow (Side Panel)
 
 ```kotlin
-import com.pico.spatial.ui.augment.Subwindow
-import com.pico.spatial.ui.augment.SubwindowPlacement
+import com.pico.spatial.ui.design.windows.Subwindow
+import com.pico.spatial.ui.design.windows.SubwindowPlacement
 
 Subwindow(placement = SubwindowPlacement.Right) {
     LazyColumn(Modifier.fillMaxHeight().width(360.dp)) {
@@ -87,14 +87,14 @@ Augment(
 ## Imports
 
 ```kotlin
-import com.pico.spatial.ui.augment.Augment
-import com.pico.spatial.ui.augment.AugmentContentAlignment
-import com.pico.spatial.ui.augment.TabBar
-import com.pico.spatial.ui.augment.Toolbar
-import com.pico.spatial.ui.augment.Subwindow
-import com.pico.spatial.ui.augment.SubwindowPlacement
-import com.pico.spatial.math.NormalizedPoint3D
-import com.pico.spatial.math.DpOffset3D
+import com.pico.spatial.ui.foundation.window.Augment
+import com.pico.spatial.ui.foundation.window.AugmentContentAlignment
+import com.pico.spatial.ui.design.windows.TabBar
+import com.pico.spatial.ui.design.windows.Toolbar
+import com.pico.spatial.ui.design.windows.Subwindow
+import com.pico.spatial.ui.design.windows.SubwindowPlacement
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
+import com.pico.spatial.ui.foundation.geometry.DpOffset3D
 ```
 
 ---

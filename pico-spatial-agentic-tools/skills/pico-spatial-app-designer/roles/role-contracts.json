@@ -1,0 +1,243 @@
+{
+  "principle": "Professional roles generate, independent roles review, and delivery status is derived from review gates. No deterministic code gates remain; reasoning is carried only in roles/review-templates/*.md.",
+  "note": "This is a pure-LLM-reasoning-driven architecture. Roles no longer produce JSON Schema / YAML instances, and there is no design_graph / specification compilation output; each generation role writes its reasoning conclusions directly into the role Markdown sections it owns. This file defines the allowed boundaries of roles (responsibilities, inputs, decision authority, prohibitions, allowed handoff/review targets); actual stage routing and carrier documents follow workflow.json.",
+  "globalHardGates": {
+    "reasoningStageCompletion": "A reasoning stage can only be recorded as completed/blocked through a complete stage receipt; it must not write pass directly or reconstruct the trace in bulk after the fact",
+    "minimumCompleteness": "Every owned output must pass the minimumCompletenessGate in its template; placeholders, empty sample tables, and summaries substituting for item-by-item facts are all block",
+    "independentReviewEvidence": "Every review stage must record a fresh_context/isolated_subagent invocationId, the exact reviewedRevision, evidenceRebuilt=yes, and recommendation; if missing, the whole thing is review_blocked",
+    "previewDenominator": "When the Coverage Manifest is missing, the denominator has no basis and is 0, the generation side and QA rebuilt denominators are inconsistent, or the five maps are incomplete, designStatus=invalid",
+    "hostAcceptance": "A worker must not approve its own delivery; only after the main thread re-reads trace/critique/preview QA and derives ready_for_design_delivery is external app generation allowed"
+  },
+  "roles": [
+    {
+      "id": "product_strategist",
+      "kind": "generation",
+      "mission": "Turn the request and evidence into product outcomes, boundaries, success criteria, and risk requirements.",
+      "ownedOutputs": ["roles/review-templates/pm-requirement-spec.md (intent definition, quality contract sections)"],
+      "requiredInputs": ["user's original request", "research evidence", "domain model"],
+      "decisionAuthority": ["product outcomes", "success criteria", "risk boundaries", "originality target"],
+      "forbiddenDecisions": ["layout", "components", "visual direction", "delivery status"],
+      "evidenceRequired": ["user need", "usage context", "risk"],
+      "outputRequirements": ["decision rationale", "assumptions", "handoff constraints"],
+      "selfCheck": ["outcomes are measurable", "unknowns remain explicit", "differentiation target anchors §3A competitive benchmark"],
+      "handoffPolicy": {
+        "allowedToRoles": ["research_analyst", "task_decision_designer", "interaction_xr_designer", "visual_designer"],
+        "allowedReviewerRoles": ["evidence_integrity_reviewer"]
+      }
+    },
+    {
+      "id": "research_analyst",
+      "kind": "generation",
+      "mission": "Provide traceable user, market, domain, platform, and safety evidence, a competitive benchmark, and a structured domain model.",
+      "ownedOutputs": ["roles/review-templates/uxr-research-report.md (five categories of evidence, §3A competitive benchmark, domain model sections)"],
+      "requiredInputs": ["intent definition", "user materials", "official platform rules"],
+      "decisionAuthority": ["evidence classification", "confidence", "scope", "evidence gaps", "competitive takeaways"],
+      "forbiddenDecisions": ["business priority", "layout", "visual direction", "delivery status"],
+      "evidenceRequired": ["source", "source type", "scope"],
+      "outputRequirements": ["claims", "sources", "confidence", "validation plans", "≥3 competitors across function/interaction/visual/spatial dimensions"],
+      "selfCheck": ["assumptions are not presented as facts", "competitive patterns are absorbed only at the requirement/opportunity layer and never copied as UI"],
+      "handoffPolicy": {
+        "allowedToRoles": ["product_strategist", "task_decision_designer", "interaction_xr_designer", "visual_designer"],
+        "allowedReviewerRoles": ["evidence_integrity_reviewer"]
+      }
+    },
+    {
+      "id": "task_decision_designer",
+      "kind": "generation",
+      "mission": "Turn product intent and evidence into tasks, decisions, dependencies, consequences, and time scales.",
+      "ownedOutputs": ["roles/review-templates/interaction-spatial-spec.md (Section 3 Task / Decision Model)"],
+      "requiredInputs": ["intent definition", "quality contract", "research evidence", "domain model"],
+      "decisionAuthority": ["task priority", "decision inputs", "decision outcomes", "failure consequences"],
+      "forbiddenDecisions": ["container type", "layout", "visual direction", "delivery status"],
+      "evidenceRequired": ["product outcome", "domain workflow", "decision-time basis"],
+      "outputRequirements": ["task graph", "decision graph", "handoff constraints"],
+      "selfCheck": ["tasks describe user decisions rather than screens", "coverage is checked against §3A competitor function analysis"],
+      "handoffPolicy": {
+        "allowedToRoles": ["interaction_xr_designer", "spatial_design_system_designer"],
+        "allowedReviewerRoles": ["spatial_concept_reviewer"]
+      }
+    },
+    {
+      "id": "interaction_xr_designer",
+      "kind": "generation",
+      "mission": "Turn tasks into spatial value, concepts, containers, window accessories, sizing, states, and flows.",
+      "ownedOutputs": ["roles/review-templates/interaction-spatial-spec.md (Section 2 Design Principles, 4 Spatial Value, 5 Hypotheses, 6 Concept Selection, 7 Experience and Container Architecture, 8 Window Attachment, 9 Window Sizing, 10 State Graph / Transition Graph, 11 User Flow)"],
+      "requiredInputs": ["task / decision model", "research evidence", "quality contract", "official platform rules"],
+      "decisionAuthority": ["spatial necessity", "2D alternative", "container boundaries", "window accessories", "state flow"],
+      "forbiddenDecisions": ["product outcomes", "complete visual system", "delivery status"],
+      "evidenceRequired": ["task", "posture", "comfort", "2D alternative"],
+      "outputRequirements": ["rationale", "rejected alternatives", "handoff constraints", "market differentiation citing §3A"],
+      "selfCheck": ["Stage is used only with spatial value", "every flow has a stable return", "spatial opportunities are contrasted with competitors' spatial usage"],
+      "handoffPolicy": {
+        "allowedToRoles": ["visual_designer", "spatial_design_system_designer"],
+        "allowedReviewerRoles": ["spatial_concept_reviewer", "design_coherence_reviewer"]
+      }
+    },
+    {
+      "id": "visual_designer",
+      "kind": "generation",
+      "mission": "Turn the selected concept into a project-specific visual direction and an approved visual reference.",
+      "ownedOutputs": ["roles/review-templates/visual-system-spec.md (Section 2 Spatial Visual Direction Candidates, Section 3 Design Tokens in collaboration with spatial_design_system_designer)"],
+      "requiredInputs": ["selected concept", "experience and container architecture", "research evidence", "quality contract"],
+      "decisionAuthority": ["visual hierarchy", "typography", "color semantics", "materials"],
+      "forbiddenDecisions": ["task priority", "state flow", "delivery status"],
+      "evidenceRequired": ["selected concept", "environment", "risk semantics"],
+      "outputRequirements": ["candidate directions", "rejected directions", "handoff constraints"],
+      "selfCheck": ["directions differ beyond color", "meaning is not color-only", "competitor visuals are used as a differentiation foil only, never reused"],
+      "handoffPolicy": {
+        "allowedToRoles": ["interaction_xr_designer", "spatial_design_system_designer", "prototype_frontend_engineer"],
+        "allowedReviewerRoles": ["design_coherence_reviewer"]
+      }
+    },
+    {
+      "id": "spatial_design_system_designer",
+      "kind": "generation",
+      "mission": "Synthesize composition, layout, components, visual grammar, interaction, motion, and data trust from approved design facts, and perform bounded graph patches.",
+      "ownedOutputs": [
+        "roles/review-templates/interaction-spatial-spec.md (Section 9 Window Sizing, 12 Eye-Hand Interaction, 13 Motion, 14 Layout Skeleton and Placement Geometry)",
+        "roles/review-templates/visual-system-spec.md (Section 3 Design Tokens, 5 Structured Component Anatomy, 6 Materials and Depth Semantics, 7 Data Display and Semantic Contract)"
+      ],
+      "requiredInputs": ["task / decision model", "state graph", "PICO-methodology window sizing (default/min/max, content area, reflow)", "approved visual reference", "domain model", "research evidence"],
+      "decisionAuthority": ["layout derivation", "component anatomy", "responsive behavior", "motion degradation", "bounded graph patch"],
+      "forbiddenDecisions": ["new product outcomes", "new concepts", "delivery status"],
+      "evidenceRequired": ["task relations", "data relations", "spatial constraints"],
+      "outputRequirements": ["derivations", "the incompressible complete structure block of each core component", "component structural integrity checklist", "bindings", "variants", "fallbacks", "coverage reconciliation tables A/B/C"],
+      "selfCheck": ["components trace to tasks and data", "each core component preserves the full anatomy/sizing/metrics/renderSpec/dataBindings/variants/states structure", "component sizing/metrics fit the owning WindowContainer default/min/max content area", "common tables never replace component-specific facts", "Reduce Motion is specified", "patches are local and never rewrite the whole design"],
+      "handoffPolicy": {
+        "allowedToRoles": ["prototype_frontend_engineer"],
+        "allowedReviewerRoles": ["design_coherence_reviewer", "delivery_readiness_reviewer"]
+      }
+    },
+    {
+      "id": "prototype_frontend_engineer",
+      "kind": "generation",
+      "mission": "Generate a single-file Web validation prototype that only consumes design facts from the role documents.",
+      "ownedOutputs": ["preview.html", "roles/review-templates/preview-qa-report.md (generation-side coverage record)"],
+      "requiredInputs": ["design system review pass", "Preview input readiness table all pass", "design system facts", "PICO-methodology window sizing (default/min/max, content area, reflow)", "approved visual reference"],
+      "decisionAuthority": ["Web implementation structure", "audit banner", "fact-constrained sample data"],
+      "forbiddenDecisions": ["new design facts", "PICO runtime behavior", "device evidence", "parity conclusions", "delivery status"],
+      "evidenceRequired": ["state and transition IDs", "renderSpec.elements[] IDs", "dataBindings[] paths and fallbacks", "variants and component-specific states", "visual tokens", "responsive window-tier and Reduce Motion facts"],
+      "outputRequirements": ["input readiness table", "state/transition implementation map", "renderSpec-to-DOM map", "dataBindings/fallback map", "variants/component-state behavior map", "responsive window-tier/Reduce Motion map", "stable preview selectors", "web_design_validation_only scope label"],
+      "selfCheck": ["no domain template is used", "no device or parity claim is made", "coverage denominator comes from individual design facts rather than component names", "every declared fallback and component-specific state is demonstrable"],
+      "handoffPolicy": {
+        "allowedToRoles": [],
+        "allowedReviewerRoles": ["prototype_qa_reviewer", "delivery_readiness_reviewer"]
+      }
+    },
+    {
+      "id": "evidence_integrity_reviewer",
+      "kind": "review",
+      "reviewOnly": true,
+      "mission": "Independently review intent, quality contract, research evidence, the competitive benchmark, and the domain model.",
+      "ownedOutputs": ["roles/review-templates/design-critique-report.md (problem and evidence gate findings + patch goals)"],
+      "requiredInputs": ["intent definition", "quality contract", "research evidence", "domain model"],
+      "decisionAuthority": ["review recommendation", "evidence findings"],
+      "forbiddenDecisions": ["artifact mutation", "product priority", "delivery status"],
+      "evidenceRequired": ["source records", "claim references", "§3A benchmark coverage"],
+      "outputRequirements": ["findings", "impact", "evidence", "patch goals"],
+      "selfCheck": ["review does not rewrite artifacts", "verifies ≥3 competitors, four-dimension coverage, and bounded adoption"],
+      "independenceRequirements": [
+        "must run in fresh_context or isolated_subagent",
+        "must not reuse generator conclusions as evidence",
+        "must record invocationId and reviewed artifact revision",
+        "must return block when independent invocation is unavailable"
+      ],
+      "handoffPolicy": {
+        "allowedToRoles": ["product_strategist", "research_analyst"],
+        "allowedReviewerRoles": []
+      }
+    },
+    {
+      "id": "spatial_concept_reviewer",
+      "kind": "review",
+      "reviewOnly": true,
+      "mission": "Independently review task decisions, spatial value, alternatives, and concept selection.",
+      "ownedOutputs": ["roles/review-templates/design-critique-report.md (spatial concept gate findings + patch goals)"],
+      "requiredInputs": ["task / decision model", "spatial value justification", "design hypotheses", "selected concept"],
+      "decisionAuthority": ["review recommendation", "concept findings"],
+      "forbiddenDecisions": ["artifact mutation", "concept replacement", "delivery status"],
+      "evidenceRequired": ["task evidence", "2D alternatives", "decision matrix"],
+      "outputRequirements": ["findings", "impact", "evidence", "patch goals"],
+      "selfCheck": ["reviewer role differs from artifact owner"],
+      "independenceRequirements": [
+        "must run in fresh_context or isolated_subagent",
+        "must not reuse generator conclusions as evidence",
+        "must record invocationId and reviewed artifact revision",
+        "must return block when independent invocation is unavailable"
+      ],
+      "handoffPolicy": {
+        "allowedToRoles": ["task_decision_designer", "interaction_xr_designer"],
+        "allowedReviewerRoles": []
+      }
+    },
+    {
+      "id": "design_coherence_reviewer",
+      "kind": "review",
+      "reviewOnly": true,
+      "mission": "Independently review coherence across visual direction, architecture, states, layout, components, interaction, and data.",
+      "ownedOutputs": ["roles/review-templates/design-critique-report.md (design system gate findings + patch goals)"],
+      "requiredInputs": ["approved visual reference", "experience and container architecture", "state graph", "design system facts"],
+      "decisionAuthority": ["review recommendation", "coherence findings"],
+      "forbiddenDecisions": ["artifact mutation", "new visual direction", "delivery status"],
+      "evidenceRequired": ["traceability", "visual references", "state/component relationships"],
+      "outputRequirements": ["per-component structural fidelity verification", "findings", "impact", "evidence", "patch goals"],
+      "selfCheck": ["review does not become a redesign", "any missing core-component structure produces block before coverage or scoring"],
+      "independenceRequirements": [
+        "must run in fresh_context or isolated_subagent",
+        "must not reuse generator conclusions as evidence",
+        "must record invocationId and reviewed artifact revision",
+        "must return block when independent invocation is unavailable"
+      ],
+      "handoffPolicy": {
+        "allowedToRoles": ["visual_designer", "interaction_xr_designer", "spatial_design_system_designer"],
+        "allowedReviewerRoles": []
+      }
+    },
+    {
+      "id": "prototype_qa_reviewer",
+      "kind": "review",
+      "reviewOnly": true,
+      "mission": "Independently review whether the Web prototype accurately consumes and covers the declared design facts.",
+      "ownedOutputs": ["roles/review-templates/preview-qa-report.md (preview coverage, requirements traceability, device validation boundary)"],
+      "requiredInputs": ["design system facts", "Web validation prototype"],
+      "decisionAuthority": ["review recommendation", "prototype coverage findings"],
+      "forbiddenDecisions": ["prototype mutation", "design-fact mutation", "device validation", "delivery status"],
+      "evidenceRequired": ["input readiness evidence", "independently verified state/transition selectors", "per-element renderSpec evidence", "per-binding normal and fallback evidence", "variants/component-specific state triggers", "responsive/Reduce Motion assertions", "requirement traceability"],
+      "outputRequirements": ["preview implementation fidelity gate recommendation", "independent per-item evidence tables", "findings", "coverage", "patch goals", "deviceValidation.status = not_performed"],
+      "selfCheck": ["Preview PASS is not described as PICO runtime validation", "component or state name presence is never counted as implementation evidence", "any missing critical element/binding/fallback/exception/safety/stable-exit behavior produces block"],
+      "independenceRequirements": [
+        "must run in fresh_context or isolated_subagent",
+        "must not reuse generator conclusions as evidence",
+        "must record invocationId and reviewed artifact revision",
+        "must return block when independent invocation is unavailable"
+      ],
+      "handoffPolicy": {
+        "allowedToRoles": ["prototype_frontend_engineer"],
+        "allowedReviewerRoles": []
+      }
+    },
+    {
+      "id": "delivery_readiness_reviewer",
+      "kind": "review",
+      "reviewOnly": true,
+      "mission": "Independently run the delivery self-check (process/originality/design critic) and the final delivery readiness review.",
+      "ownedOutputs": ["roles/review-templates/design-critique-report.md (delivery self-check and delivery readiness gate findings + patch goals + package consistency recommendation)"],
+      "requiredInputs": ["all reasoning documents", "Web validation prototype", "each gate's review verdict"],
+      "decisionAuthority": ["review recommendation", "delivery findings"],
+      "forbiddenDecisions": ["artifact mutation", "delivery status"],
+      "evidenceRequired": ["review records", "traceability", "known limitations"],
+      "outputRequirements": ["findings", "impact", "patch goals", "package recommendation"],
+      "selfCheck": ["delivery status is derived from review gates", "verifies differentiation opportunities are realized without copying competitor UI"],
+      "independenceRequirements": [
+        "must run in fresh_context or isolated_subagent",
+        "must not reuse generator conclusions as evidence",
+        "must record invocationId and reviewed artifact revision",
+        "must return block when independent invocation is unavailable"
+      ],
+      "handoffPolicy": {
+        "allowedToRoles": ["spatial_design_system_designer", "prototype_frontend_engineer"],
+        "allowedReviewerRoles": []
+      }
+    }
+  ]
+}

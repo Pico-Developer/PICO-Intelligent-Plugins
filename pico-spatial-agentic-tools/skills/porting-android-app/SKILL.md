@@ -21,6 +21,9 @@ Use this skill when:
 DO NOT use this skill when:
 
 - the project is a brand-new Spatial app with no existing Android structure to port
+- the project is already a PICO Spatial/MR app and the task is primarily an SDK,
+  Gradle/toolchain, deprecated-API, or PICO OS version upgrade; use
+  `spatial-sdk-update`
 - the task is only about adding a single isolated SDK API without broader app migration concerns
 - the target platform and SDK version are unknown and cannot yet be confirmed
 
@@ -39,7 +42,7 @@ Before making changes, collect the following information from the project or the
   - Groovy or Kotlin DSL
   - whether `libs.versions.toml` is used
 - target Spatial SDK baseline
-  - default `0.11.7` unless the project has another approved version
+  - default `6.0.0` unless the project has another approved version
 - current UI technology
   - Views, Fragments, Compose, or mixed UI
 - Spatial feature scope
@@ -115,13 +118,13 @@ dependencyResolutionManagement {
 
 If the project uses a version catalog, update `gradle/libs.versions.toml` with the Spatial SDK version entry.
 
-Keep the version variable-based, with `0.11.7` as the default value.
+Keep the version variable-based, with `6.0.0` as the default value.
 
 Example:
 
 ```toml
 [versions]
-spatialBom = "0.11.7"
+spatialBom = "6.0.0"
 ```
 
 If the project does not use a version catalog, define an equivalent version variable in the module build file and reference it from the BOM dependency.
@@ -455,7 +458,7 @@ When using this skill, produce output in this structure:
 - DO NOT port a single-Activity navigation model directly into multiple Spatial containers
 - DO NOT assume mobile-style system Back behavior exists on the Spatial runtime
 - DO NOT keep major UI ownership tightly coupled to Activity lifecycle code if the UI is being split across containers
-- DO NOT hardcode the SDK version in multiple dependency locations; keep it variable-based with `0.11.7` as the default
+- DO NOT hardcode the SDK version in multiple dependency locations; keep it variable-based with `6.0.0` as the default
 - DO NOT add Compose exclusions unless dependency conflicts actually require them
 - DO NOT call Spatial-only APIs on standard Android devices
 - DO NOT treat the migration as only a rendering task; interaction and navigation changes are part of the port

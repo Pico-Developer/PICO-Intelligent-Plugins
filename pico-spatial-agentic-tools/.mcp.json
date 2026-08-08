@@ -1,8 +1,14 @@
 {
   "mcpServers": {
-    "pico-spatial-knowledge": {
+    "pico-dev-knowledge": {
       "command": "npx",
-      "args": ["-y", "@picoxr/pico-cli", "mcp:spatial-knowledge"]
+      "args": ["-y", "@picoxr/pico-cli", "mcp:dev-knowledge"],
+      "startup_timeout_sec": 60
+    },
+    "pico-spatial-editor": {
+      "command": "npx",
+      "args": ["-y", "@picoxr/pico-cli", "editor:bootstrap"],
+      "startup_timeout_sec": 60
     }
   }
 }

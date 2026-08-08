@@ -1,6 +1,13 @@
 ---
 name: spatial-app-onboarding
-description: Create, bootstrap, scaffold, or quickstart a first working PICO Spatial SDK Android/Kotlin project through `pico-cli project create`, letting the CLI own initial template selection. All generated 2D UI must be built entirely with SpatialUI (`com.pico.spatial.ui.*`) and wrapped in `PicoTheme`; Material/Material3 is forbidden. Use for empty directories, new Spatial apps, first runnable demos, 3D model starter apps, or any request to try/start/initialize a PICO Spatial project quickly.
+description: >-
+  Use when creating, bootstrapping, scaffolding, initializing, quickstarting,
+  or repairing the first runnable PICO Spatial SDK Android/Kotlin project
+  through `pico-cli project create`, especially for empty directories,
+  scaffold-only demos, first runnable examples, or first-run build/install/launch
+  stabilization. NOT for product-specific PRD/Figma/intent-to-app generation,
+  existing-module layout/window-model updates, or bounded panel patches after
+  the scaffold has completed its first runnable loop.
 license: 'Apache-2.0'
 allowed-tools: Bash(pico-cli project create *) Bash(adb *)
 ---
@@ -11,6 +18,16 @@ You are a **Spatial advisor and rapid executor**.
 
 Your job is to get the user to a **working first Spatial project on the shortest stable path**.
 Do not turn onboarding into a long interview. Start with `pico-cli project create`, keep the workflow reliable, and leave behind a project that is easy to continue.
+
+`pico-cli project create` command shape:
+
+```bash
+pico-cli project create --name <name> --package <package> --template <planar|volumetric|stage> [--dir <path>] [--sdk <version>] [--force]
+```
+
+Do not pass the project name as a positional argument. Do not invent template
+names such as `minimal` or `quickstart`. For a generic, minimal, or unspecified
+quickstart, use `--template planar`.
 
 Deliver:
 
@@ -40,6 +57,8 @@ Generated-project SpatialUI self-check (run before declaring onboarding done):
 
 This skill is reusable across projects. Do not create, delete, or depend on marker files inside the skill folder.
 
+Routing boundary: this skill owns the first runnable scaffold and first-run stability loop. A scaffold is considered complete only after a generated Spatial SDK project exists and build/install/launch has passed, or an external prerequisite has been explicitly recorded as blocking the first-run loop. Once that completion point is reached, product behavior, layout, window model, panel hierarchy, visual-reference implementation, PRD-to-app generation, or bounded panel patches route to `spatial-design-to-app` instead of continuing onboarding. Continue here only for scaffold repair, first launch/build/install completion, or small changes needed to make the initial generated project understandable and runnable.
+
 Use this skill when the user asks to create, bootstrap, scaffold, initialize, quickstart, or try a PICO Spatial SDK project, especially from an empty directory or from a 3D model/demo prompt.
 
 At the start of each run:
@@ -48,6 +67,7 @@ At the start of each run:
 2. If the project is empty or not yet a Spatial SDK project, run the onboarding workflow
 3. If the project already has a Spatial SDK scaffold, continue from the current project state instead of restarting or overwriting it
 4. If the target directory already contains project guidance, generate project files in that same directory; use the project name for `--name`, not as a child `--dir`, unless the user explicitly asks for a child directory
+5. Inspect the complete request for work that generates, creates, composes, or materially modifies 3D content; route that content-production step through `spatial-editor` after scaffolding
 
 ## 1. Available Materials and Priority
 
@@ -66,11 +86,18 @@ Current explicit entry points:
 
 Tooling rule for onboarding:
 
-- For the first-run quickstart path, do **not** use the `Agent` tool or launch `Explore`/`Plan` subagents.
+- Template selection is part of the required `pico-cli project create` command.
+  Keep the choice lightweight: inspect `pico-cli project create --help`, map the
+  user prompt or upstream container contract to a supported template, and pass
+  `--template`.
+- Delegation is controlled by the active host/workflow, graph/orchestration
+  plan, `.agents` roles, or explicit user request. This skill adds no extra
+  delegation rule of its own.
 - Before scaffolding, inspect `pico-cli project create --help` to discover the available `--template` modes and supported options.
-- Choose a template based on the user prompt (see `references/template-playbook.md`) and pass it explicitly with `--template`.
+- Always pass a supported `--template`. If the user does not specify one, choose
+  `planar` for a generic/minimal quickstart, or the closest default from
+  `references/template-playbook.md` when the prompt implies a specific shape.
 - Pass user-provided creation facts such as `--dir`, `--name`, `--package`, `--sdk`, and `--force` when appropriate.
-- Use subagents only in later, clearly broader follow-up work where the extra search cost is necessary.
 
 ## 2. Workflow Rules
 
@@ -78,15 +105,28 @@ Tooling rule for onboarding:
 
 Default rhythm:
 
-`quick judgment → scaffold MVP → build/install/launch → show result → suggest next steps → continue`
+`quick judgment → scaffold MVP → route 3D content production → integrate → build/install/launch → show result → continue`
 
 Target: let the user see something working within about 3 turns whenever possible.
+
+The shortest-path goal applies to project scaffolding, not to bypassing the preferred 3D content-production workflow. The user does not need to mention Spatial Editor. When the full request includes 3D content production, finish the runnable scaffold, activate `spatial-editor`, and resume app integration after its handoff.
+
+Skip that editor step only when:
+
+1. The user explicitly asks not to use Spatial Editor.
+2. Runtime capability inspection shows that Spatial Editor cannot satisfy any part of the 3D content requirement.
+3. Spatial Editor is actually unavailable after reasonable recovery from installation, download, startup, connection, authorization, or backend-readiness failure.
+
+If Spatial Editor can satisfy part of the requirement, use it for that part. Exceptions 2 and 3 require runtime evidence from the editor workflow.
 
 ### 2.2 Keep the core file generic
 
 Keep domain-specific decision logic out of this main file.
 When the workflow reaches a branch that depends on product shape, API usage, or implementation direction, consult the playbook in `references/` instead of embedding that knowledge here.
-For first-run scaffolding, delegate template choice to `pico-cli project create` unless the user explicitly names a template mode.
+For first-run scaffolding, choose one supported `pico-cli project create`
+template with the playbook when the user did not specify one. Do not invent
+template names; current public modes are `planar`, `volumetric`, and `stage`
+when advertised by `pico-cli project create --help`.
 
 Use the playbook for:
 
@@ -104,15 +144,21 @@ Do not invent a fresh project structure or manually choose among bundled templat
 
 Once the path is clear, start. Do not require an extra plan-confirmation turn.
 
-For the generic "I have a 3D model file" quickstart request, run `pico-cli project create` without forcing `--template`; let the CLI choose the initial template and keep the first pass bundle-based, placeholder-friendly, and immediately runnable.
+For the generic "I have a 3D model file" quickstart request, choose the closest
+supported 3D/model-friendly template from `pico-cli project create --help`, then
+run `pico-cli project create` with that `--template` and keep the first pass
+bundle-based, placeholder-friendly, and immediately runnable.
 
 Execution order:
 
 1. Run `pico-cli project create` with the target directory/name/package options known from the user prompt; when onboarding an existing target folder, omit `--dir` so files are generated beside the existing project guidance
-2. Let `project.create` choose the template unless the user explicitly requested a template mode
-3. Modify only what the MVP needs: package name, entry logic, assets, required config, and required tests
-4. Place user assets where the generated project and docs expect them
-5. Remove sample code or assets that distract from the first MVP
+2. Choose and pass one supported `--template` value; use the user's explicit
+   template/container mode, a calling workflow's resolved container contract, or
+   the closest playbook default
+3. When the complete request includes 3D content production, activate `spatial-editor` and obtain its authored-content handoff or documented exception
+4. Modify only what the MVP needs: package name, entry logic, handoff integration, required config, and required tests
+5. Place user assets where the generated project and docs expect them
+6. Remove sample code or assets that distract from the first MVP
 
 Package-name rules:
 

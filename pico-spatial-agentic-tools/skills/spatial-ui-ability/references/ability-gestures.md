@@ -5,11 +5,11 @@ Capability: tap / drag / rotate / scale / combined transform on Composables targ
 ## Prerequisite: Make The Entity Interactable
 
 ```kotlin
-import com.pico.spatial.core.Entity
-import com.pico.spatial.core.component.InteractableComponent
-import com.pico.spatial.core.component.CollisionComponent
-import com.pico.spatial.core.resource.ShapeResource
-import com.pico.spatial.core.resource.PhysicsMaterialResource
+import com.pico.spatial.core.ecs.Entity
+import com.pico.spatial.core.ecs.InteractableComponent
+import com.pico.spatial.core.ecs.CollisionComponent
+import com.pico.spatial.core.ecs.resource.ShapeResource
+import com.pico.spatial.core.ecs.resource.PhysicsMaterialResource
 
 val entity = Entity()
 entity.components.set(InteractableComponent())
@@ -45,7 +45,7 @@ Box(
 
 ```kotlin
 import com.pico.spatial.ui.foundation.gesture.detectSpatialDragGesture
-import com.pico.spatial.math.Offset3D
+import com.pico.spatial.ui.geometry.Offset3D
 
 val context = LocalContext.current
 var offset3D by remember { mutableStateOf(Offset3D.Zero) }
@@ -67,8 +67,8 @@ Box(
 
 ```kotlin
 import com.pico.spatial.ui.foundation.gesture.detectSpatialRotateGesture
-import com.pico.spatial.math.Rotation3D
-import com.pico.spatial.math.RotationAxis3D
+import com.pico.spatial.ui.foundation.geometry.Rotation3D
+import com.pico.spatial.ui.foundation.geometry.RotationAxis3D
 
 val context = LocalContext.current
 var rotation by remember { mutableStateOf(Rotation3D.identity()) }
@@ -89,7 +89,7 @@ Box(
 
 ```kotlin
 import com.pico.spatial.ui.foundation.gesture.detectSpatialScaleGesture
-import com.pico.spatial.math.NormalizedPoint3D
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
 
 val context = LocalContext.current
 var scale by remember { mutableFloatStateOf(1f) }
@@ -112,8 +112,8 @@ Box(
 
 ```kotlin
 import com.pico.spatial.ui.foundation.gesture.detectSpatialTransformGesture
-import com.pico.spatial.ui.SpatialModelView
-import com.pico.spatial.core.resource.Source
+import com.pico.spatial.ui.foundation.content.SpatialModelView
+import com.pico.spatial.ui.foundation.content.Source
 
 val context = LocalContext.current
 var rotation by remember { mutableStateOf(Rotation3D.identity()) }
@@ -161,10 +161,10 @@ import com.pico.spatial.ui.foundation.gesture.detectSpatialRotateGesture
 import com.pico.spatial.ui.foundation.gesture.detectSpatialScaleGesture
 import com.pico.spatial.ui.foundation.gesture.detectSpatialTransformGesture
 import com.pico.spatial.ui.foundation.gesture.TargetEntity
-import com.pico.spatial.math.Offset3D
-import com.pico.spatial.math.Rotation3D
-import com.pico.spatial.math.RotationAxis3D
-import com.pico.spatial.math.NormalizedPoint3D
+import com.pico.spatial.ui.geometry.Offset3D
+import com.pico.spatial.ui.foundation.geometry.Rotation3D
+import com.pico.spatial.ui.foundation.geometry.RotationAxis3D
+import com.pico.spatial.ui.foundation.geometry.NormalizedPoint3D
 ```
 
 ---

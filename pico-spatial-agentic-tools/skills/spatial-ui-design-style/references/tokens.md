@@ -33,7 +33,7 @@ Box(Modifier.background(Color(0xFF1A1A1A)))
 
 > Scope reminder: `fillPrimary / fillSecondary / fillTertiary` are intended for
 > business cards and inner containers, not the window root. The window root
-> is already glass by default (see `references/window-background.md`).
+> is already glass by default (see `window-background.md`).
 
 ## 2. Typography Roles (`PicoTheme.typography.*`)
 

@@ -1,0 +1,503 @@
+{
+  "max_patch_rounds": 4,
+  "orchestration": {
+    "orchestrator": "host_llm",
+    "model": "agnostic",
+    "role_contracts": "roles/role-contracts.json",
+    "contract": "The host LLM orchestrates all stages. Professional roles generate, independent roles review; delivery status is derived entirely from review gate results. There are no more deterministic Python gates; reasoning information is carried only in the workflow-corresponding role Markdown, and the outputs declared by each engine are described directly as structured Markdown.",
+    "reasoning_transport": "roles/review-templates/*.md",
+    "stage_kinds": {
+      "reasoning": "The host LLM completes reasoning using the declared professional role and engine, and writes the conclusions directly into the corresponding sections of the corresponding role Markdown.",
+      "review": "The independent reviewer role (different from the generator) only outputs findings, impact, evidence, and patch goals, written into the design critique report."
+    },
+    "execution_trace": {
+      "document": "roles/review-templates/execution-trace.md",
+      "write_timing": "open_receipt_before_stage_and_close_immediately_after_stage",
+      "retroactive_reconstruction_forbidden": true,
+      "required_stage_receipt_fields": [
+        "stageId",
+        "kind",
+        "role",
+        "startedAt",
+        "completedAt",
+        "requiredInputsRead",
+        "instructionFilesRead",
+        "artifactWrites",
+        "artifactRevisionAfter",
+        "result"
+      ],
+      "reasoning_result_values": ["completed", "blocked"],
+      "review_result_values": ["pass", "changes_requested", "block"],
+      "completion_rule": "missing_or_out_of_order_receipt_makes_design_status_invalid",
+      "direct_pass_without_receipt_forbidden": true
+    },
+    "design_status_model": {
+      "field": "designStatus",
+      "allowed": [
+        "draft",
+        "invalid",
+        "review_blocked",
+        "changes_requested",
+        "ready_for_design_delivery"
+      ],
+      "invalid_status": "invalid",
+      "invalid_when": [
+        "missing_stage_receipt",
+        "receipt_missing_required_field",
+        "receipt_out_of_order_or_reconstructed",
+        "artifact_revision_missing_or_stale",
+        "core_document_minimum_completeness_failed",
+        "preview_coverage_manifest_missing",
+        "preview_denominator_mismatch"
+      ],
+      "review_blocked_when": [
+        "independent_reviewer_evidence_missing",
+        "review_context_unavailable",
+        "required_review_gate_blocked"
+      ],
+      "changes_requested_when": [
+        "no_invalid_or_review_blocked_condition_and_active_patch_goals_exist"
+      ],
+      "ready_rule": "all_17_stage_receipts_valid_and_all_minimum_document_gates_pass_and_all_required_review_evidence_valid_and_preview_denominators_reconcile_and_all_required_review_gates_pass_and_no_active_blocking_findings_and_host_acceptance_pass",
+      "precedence": [
+        "invalid",
+        "review_blocked",
+        "changes_requested",
+        "ready_for_design_delivery",
+        "draft"
+      ],
+      "self_asserted_pass_forbidden": true
+    },
+    "review_isolation": {
+      "required": true,
+      "accepted_modes": ["fresh_context", "isolated_subagent"],
+      "same_context_roleplay_is_independent": false,
+      "fallback_when_unavailable": "block",
+      "required_trace_fields": [
+        "reviewerRole",
+        "invocationId",
+        "contextPolicy",
+        "reviewedRevision",
+        "evidenceRebuilt"
+      ]
+    },
+    "review_evidence_gate": {
+      "required_for_every_review_stage": true,
+      "required_fields": [
+        "reviewerRole",
+        "invocationId",
+        "contextPolicy",
+        "reviewedRevision",
+        "evidenceRebuilt",
+        "recommendation"
+      ],
+      "accepted_context_policies": ["fresh_context", "isolated_subagent"],
+      "evidence_rebuilt_required_value": true,
+      "missing_evidence_status": "review_blocked",
+      "same_context_roleplay_status": "review_blocked",
+      "generator_summary_is_not_reviewer_evidence": true
+    },
+    "minimum_document_thresholds": {
+      "policy": "The following thresholds are Markdown structure and evidence denominators, not word-count scoring. Whenever any required section is missing, still a placeholder, a key table has only an empty sample row, or an evidence anchor is missing, minimumCompletenessGate=block, which makes designStatus=invalid.",
+      "documents": {
+        "pm-requirement-spec.md": [
+          "Background and Problem six items complete",
+          "Frozen intent fields complete",
+          "Assumptions each include confidence/impact/validation plan",
+          "Quality contract nine items complete and acceptable",
+          "Every mandatory requirement enters the traceability table"
+        ],
+        "uxr-research-report.md": [
+          "market/user/domain/platform/safety all five categories have evidence or an explicit gap",
+          "No fewer than three competitors, or an explanation of a blocking gap",
+          "Domain workflow/decision variables/data entity timeliness/professional risks/anti-patterns complete",
+          "Persona/Journey/duration baseline and safety boundaries have evidence"
+        ],
+        "interaction-spatial-spec.md": [
+          "Design principles have basis/landing point/conflict precedence",
+          "Every task has a decision output and failure consequence",
+          "At least three substantially different assumptions and a completed selection matrix",
+          "Container/attachment/sizing/state/transition/exception/exit complete",
+          "Layout/interaction/motion are all implementable"
+        ],
+        "visual-system-spec.md": [
+          "Visual direction candidates and rejection rationale complete",
+          "tokens/typography/colorSemantics/materials directly consumable",
+          "Every major window has a structure diagram and reflow",
+          "Every core component's fixed eight-segment structure complete",
+          "Structure list and coverage reconciliation A/B/C all pass"
+        ],
+        "design-critique-report.md": [
+          "Every required review gate has independent invocation evidence",
+          "Hard Gate Summary has evidence and a verdict for each item",
+          "Active blocking findings and patch goals are traceable",
+          "designStatus is derived by precedence rather than filled in by hand"
+        ],
+        "preview-qa-report.md": [
+          "Input readiness table all pass",
+          "Coverage Manifest lists each design fact",
+          "Five implementation maps filled in item by item",
+          "QA independently rebuilds the denominator and the difference is zero",
+          "Every declarative check row has source fact/selector/trigger/expected/actual/verdict"
+        ]
+      }
+    },
+    "loop": {
+      "stage": "patch",
+      "bound_by": "max_patch_rounds",
+      "exit_condition": "reviews_and_self_check_pass",
+      "authority": "host_llm + independent reviewers (recorded in design-critique-report.md)",
+      "postPatchRerunStages": [
+        "preview_build",
+        "preview_review",
+        "delivery_self_review"
+      ]
+    },
+    "change_control": {
+      "max_rounds": 2,
+      "note": "When frozen reasoning changes, affected prior reviews must be marked invalid and the relevant stages re-run. Whenever any prototype implementation input fact changes, regardless of whether the product semantics change, the old preview.html, preview_review, and delivery_self_review conclusions are immediately invalidated, and preview_build, preview_review, and delivery_self_review must be re-run.",
+      "frozen_reasoning": [
+        "intent definition",
+        "quality contract",
+        "research evidence",
+        "selected concept",
+        "approved visual reference"
+      ],
+      "preview_implementation_facts": [
+        "states and transitions",
+        "window/layout and responsiveness",
+        "component anatomy.layout",
+        "component sizing",
+        "component metrics",
+        "renderSpec.elements[]",
+        "dataBindings[] and fallback",
+        "variants",
+        "component-specific states and stacking precedence",
+        "Design Tokens / colorSemantics / materials",
+        "interaction and Reduce Motion"
+      ],
+      "preview_fact_change_rerun_stages": [
+        "preview_build",
+        "preview_review",
+        "delivery_self_review"
+      ],
+      "artifact_revision_policy": {
+        "revision_format": "positive_integer_per_artifact",
+        "review_must_reference_exact_revision": true,
+        "derived_artifact_must_reference_source_revisions": true,
+        "stale_review_status": "invalidated",
+        "missing_revision_status": "block"
+      },
+      "preview_source_artifacts": [
+        "interaction-spatial-spec.md",
+        "visual-system-spec.md",
+        "design-critique-report.md#design_system_review"
+      ]
+    },
+    "delivery_status_model": {
+      "allowed": [
+        "draft",
+        "invalid",
+        "review_blocked",
+        "changes_requested",
+        "ready_for_design_delivery"
+      ],
+      "success_status": "ready_for_design_delivery",
+      "success_rule": "all_required_review_gates_pass_and_no_active_blocking_findings",
+      "forbidden_phrases": [
+        "ready for app generation",
+        "device validated",
+        "pico runtime verified"
+      ],
+      "downstream_handoff_note": "design_delivery_ready_does_not_mean_app_generation_ready"
+    },
+    "host_acceptance_gate": {
+      "authority": "main_thread_host_llm",
+      "required_before_downstream_handoff": true,
+      "required_design_status": "ready_for_design_delivery",
+      "must_read": [
+        "review/execution-trace.md",
+        "review/design-critique-report.md",
+        "review/preview-qa-report.md"
+      ],
+      "checks": [
+        "rederive_design_status_from_hard_gate_evidence",
+        "confirm_all_17_stage_receipts_are_real_and_ordered",
+        "confirm_all_review_invocations_are_independent",
+        "confirm_minimum_document_thresholds_pass",
+        "confirm_preview_denominators_reconcile",
+        "confirm_no_active_blocking_findings"
+      ],
+      "pass_record_required": true,
+      "downstream_app_generation_when_not_passed": "forbidden",
+      "worker_self_assertion_is_not_host_acceptance": true
+    }
+  },
+  "generation_policy": {
+    "reuse": "process_only",
+    "template_reuse": false,
+    "examples_available_during_generation": false,
+    "output_boundary": {
+      "allowed": [
+        "roles/review-templates/*.md instantiated as review/*.md",
+        "review/execution-trace.md",
+        "preview.html"
+      ],
+      "forbidden": [
+        "design-spec.json",
+        "design-graph.json",
+        "android project",
+        "pico runtime code",
+        "downstream app-generation handoff"
+      ],
+      "downstream_adapter_owner": "external_skill_after_ready_for_design_delivery"
+    }
+  },
+  "reasoning_documents": [
+    "roles/review-templates/index.md",
+    "roles/review-templates/pm-requirement-spec.md",
+    "roles/review-templates/uxr-research-report.md",
+    "roles/review-templates/interaction-spatial-spec.md",
+    "roles/review-templates/visual-system-spec.md",
+    "roles/review-templates/design-critique-report.md",
+    "roles/review-templates/preview-qa-report.md"
+  ],
+  "stages": [
+    {
+      "id": "intent",
+      "kind": "reasoning",
+      "primaryRole": "product_strategist",
+      "engine": "engines/01-intent-interpreter.md",
+      "requiredInputs": ["user's original request"],
+      "output": "Intent definition (domain, users, scenarios, tasks, risks, data, permissions, assumptions list)",
+      "documentedIn": "roles/review-templates/pm-requirement-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "research",
+      "kind": "reasoning",
+      "primaryRole": "research_analyst",
+      "engines": ["engines/02a-domain-research-engine.md", "engines/02-domain-engine.md"],
+      "requiredInputs": ["intent definition", "user materials", "official platform rules"],
+      "output": "Five categories of research evidence (market/user/domain/platform/safety, including evidence gaps) + domain model (workflows, decision variables, data entities and timeliness, professional risks, anti-patterns)",
+      "documentedIn": "roles/review-templates/uxr-research-report.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "quality_contract",
+      "kind": "reasoning",
+      "primaryRole": "product_strategist",
+      "engine": "engines/00-quality-contract-engine.md",
+      "requiredInputs": ["intent definition", "research evidence", "domain model"],
+      "output": "Quality contract (mandatory outcomes, success criteria, risk boundaries, platform constraints, originality requirements, acceptance plan)",
+      "documentedIn": "roles/review-templates/pm-requirement-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "problem_evidence_review",
+      "kind": "review",
+      "reviewerRole": "evidence_integrity_reviewer",
+      "mustDifferFromPrimaryRole": true,
+      "engine": "critics/evidence-integrity-reviewer.md",
+      "requiredInputs": ["intent definition", "quality contract", "research evidence", "domain model"],
+      "output": "Problem and evidence gate review verdict",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    },
+    {
+      "id": "task_model",
+      "kind": "reasoning",
+      "primaryRole": "task_decision_designer",
+      "engine": "engines/03-task-decision-engine.md",
+      "requiredInputs": ["intent definition", "quality contract", "research evidence", "domain model"],
+      "output": "Task / decision model (subject, scenario, inputs, decision outputs, failure consequences, frequency, dependencies)",
+      "documentedIn": "roles/review-templates/interaction-spatial-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "concept_formation",
+      "kind": "reasoning",
+      "primaryRole": "interaction_xr_designer",
+      "engines": [
+        "engines/03-spatial-value-engine.md",
+        "engines/03a-design-hypothesis-engine.md",
+        "engines/03b-concept-selection-engine.md"
+      ],
+      "requiredInputs": ["task / decision model", "research evidence"],
+      "output": "Spatial value justification (per-task judgment + 2D counterfactual) + ≥3 substantially different design hypotheses + concept selection matrix + selected concept + market differentiation + rejected-alternative rationale",
+      "documentedIn": "roles/review-templates/interaction-spatial-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "spatial_concept_review",
+      "kind": "review",
+      "reviewerRole": "spatial_concept_reviewer",
+      "mustDifferFromPrimaryRole": true,
+      "reviewsRoles": ["task_decision_designer", "interaction_xr_designer"],
+      "engine": "critics/spatial-concept-reviewer.md",
+      "requiredInputs": ["task / decision model", "spatial value justification", "design hypotheses", "selected concept"],
+      "output": "Spatial concept gate review verdict",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    },
+    {
+      "id": "visual_direction",
+      "kind": "reasoning",
+      "primaryRole": "visual_designer",
+      "engine": "engines/03c-visual-direction-engine.md",
+      "requiredInputs": ["selected concept", "research evidence", "quality contract"],
+      "output": "2–3 spatial visual direction candidates (including rejected directions) + approved visual reference (selected direction + selection rationale, must have manual confirmation or a structured design-effect review)",
+      "documentedIn": "roles/review-templates/visual-system-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "spatial_structure",
+      "kind": "reasoning",
+      "primaryRole": "interaction_xr_designer",
+      "engines": [
+        "engines/04-experience-engine.md",
+        "engines/05-container-engine.md",
+        "engines/05a-window-attachment-engine.md",
+        "engines/07b-window-sizing-engine.md",
+        "engines/06-screen-graph-engine.md"
+      ],
+      "requiredInputs": ["selected concept", "approved visual reference", "task / decision model"],
+      "output": "Experience hierarchy + container architecture (WindowContainer form Planar/Volumetric, Stage, default visibility) + window attachment decision matrix (differentiated by placement mode, including explicit comparison with None / InlineControl) + PICO-methodology window sizing (per-window content type, scene tier, official baseline / range, default / min / max, clear field of view validation, hit target / minimum font size, aspect-ratio policy, reflow fallback) + state graph / transition graph",
+      "documentedIn": "roles/review-templates/interaction-spatial-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "composition_synthesis",
+      "kind": "reasoning",
+      "primaryRole": "spatial_design_system_designer",
+      "engine": "engines/07a-composition-engine.md",
+      "requiredInputs": ["state graph", "PICO-methodology window sizing (default/min/max, content area, reflow)", "approved visual reference"],
+      "output": "Layout composition (each layout includes task/data/interaction-frequency/spatial-constraint derivation, single primary focus, regions, rejected alternatives)",
+      "documentedIn": "roles/review-templates/interaction-spatial-spec.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "design_system",
+      "kind": "reasoning",
+      "primaryRole": "spatial_design_system_designer",
+      "engines": [
+        "engines/07-layout-engine.md",
+        "engines/08-component-engine.md",
+        "engines/09-visual-engine.md",
+        "engines/10-interaction-engine.md",
+        "engines/11-motion-engine.md",
+        "engines/12-data-trust-engine.md"
+      ],
+      "requiredInputs": ["layout composition", "state graph", "PICO-methodology window sizing (default/min/max, content area, reflow)", "approved visual reference", "research evidence"],
+      "output": "Design system facts (layout, the incompressible complete structure block of each core component, where component sizing/metrics must be constrained by the window default/min/max and content area + structural integrity checklist + coverage reconciliation, visual grammar tokens, interaction, motion, data-display semantic contract)",
+      "documentedIn": [
+        "roles/review-templates/visual-system-spec.md (component anatomy, Design Tokens, materials, data-display semantic contract)",
+        "roles/review-templates/interaction-spatial-spec.md (layout skeleton, eye-hand interaction, motion spec)"
+      ],
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "design_system_review",
+      "kind": "review",
+      "reviewerRole": "design_coherence_reviewer",
+      "mustDifferFromPrimaryRole": true,
+      "reviewsRoles": ["visual_designer", "interaction_xr_designer", "spatial_design_system_designer"],
+      "engine": "critics/design-coherence-reviewer.md",
+      "requiredInputs": ["approved visual reference", "experience and container architecture", "PICO-methodology window sizing (default/min/max, content area, reflow)", "state graph", "design system facts"],
+      "output": "Design system gate review verdict (first check each component for structural fidelity and whether sizing/metrics fall within the window default/min/max content area; any core component missing a fixed structure is block, then re-review coverage and cross-document consistency)",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    },
+    {
+      "id": "preview_build",
+      "kind": "reasoning",
+      "primaryRole": "prototype_frontend_engineer",
+      "engine": "engines/14-prototype-engine.md",
+      "requiredInputs": ["design system review pass", "Preview input readiness table all pass", "design system facts", "PICO-methodology window sizing (default/min/max, content area, reflow)", "approved visual reference"],
+      "output": "Single-file Web validation prototype preview.html + generation-side five implementation maps (item-by-item coverage of states/transitions, renderSpec, dataBindings/fallback, variants/component-specific states, responsive window tiers default/min/max + Reduce Motion)",
+      "mustNotProduce": ["pico-runtime", "device-evidence", "parity-report"],
+      "receiptRequired": true,
+      "roleTraceRequired": true
+    },
+    {
+      "id": "preview_review",
+      "kind": "review",
+      "reviewerRole": "prototype_qa_reviewer",
+      "mustDifferFromPrimaryRole": true,
+      "reviewsRoles": ["prototype_frontend_engineer"],
+      "engine": "critics/prototype-qa-reviewer.md",
+      "requiredInputs": ["design system facts", "PICO-methodology window sizing (default/min/max, content area, reflow)", "Web validation prototype"],
+      "output": "Preview implementation fidelity gate verdict + independent per-item evidence table + responsive window-tier verification + requirements traceability + Web logic tolerance + device validation boundary (not_performed); any missing core implementation fact is block",
+      "documentedIn": "roles/review-templates/preview-qa-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    },
+    {
+      "id": "delivery_self_review",
+      "kind": "review",
+      "reviewerRole": "delivery_readiness_reviewer",
+      "engines": [
+        "critics/process-audit-critic.md",
+        "critics/originality-critic.md",
+        "critics/design-critic.md"
+      ],
+      "requiredInputs": ["all reasoning documents"],
+      "output": "Process audit (whether independently derived) + originality audit verdict + quality-dimension self-check scores + item-by-item \"good UI\" scores + pass/risk verdict",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    },
+    {
+      "id": "patch",
+      "kind": "reasoning",
+      "primaryRole": "spatial_design_system_designer",
+      "engine": "critics/graph-patch-engine.md",
+      "requiredInputs": ["review findings and patch goals"],
+      "output": "Bounded patch (corresponding problem, target node, expected improvement; does not rewrite the entire design)",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "roleTraceRequired": true,
+      "repeat_until": "reviews_and_self_check_pass"
+    },
+    {
+      "id": "delivery_readiness_review",
+      "kind": "review",
+      "reviewerRole": "delivery_readiness_reviewer",
+      "mustDifferFromPrimaryRole": true,
+      "reviewsRoles": ["spatial_design_system_designer", "prototype_frontend_engineer"],
+      "engine": "critics/delivery-readiness-reviewer.md",
+      "requiredInputs": ["all reasoning documents", "Web validation prototype", "review verdicts"],
+      "output": "Delivery readiness gate review verdict + package consistency recommendation",
+      "documentedIn": "roles/review-templates/design-critique-report.md",
+      "receiptRequired": true,
+      "independentInvocationRequired": true
+    }
+  ],
+  "quality_gate": {
+    "authority": "host_llm + independent reviewers",
+    "note": "There are no more deterministic runtime-code gates; pass/fail is derived jointly from structured Markdown evidence, independent review, process/originality self-check, delivery readiness review, and main-thread acceptance. None of the blocking_gates can be offset by a total score, file length, or worker self-assessment.",
+    "blocking_gates": [
+      "execution_trace_fidelity = pass",
+      "core_document_minimum_completeness = pass",
+      "independent_review_evidence = pass",
+      "component_structure_fidelity = pass",
+      "preview_input_readiness = pass",
+      "preview_implementation_fidelity = pass",
+      "review_denominator_reconciliation = pass",
+      "artifact_revision_freshness = pass",
+      "host_acceptance = pass"
+    ]
+  }
+}

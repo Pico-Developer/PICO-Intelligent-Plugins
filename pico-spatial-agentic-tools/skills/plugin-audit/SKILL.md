@@ -1,32 +1,49 @@
 ---
 name: plugin-audit
-description: Export an authorized Claude Code transcript and extract pico-spatial-agentic-tools skill/MCP usage records into a local support bundle.
+description: Create a local pico-spatial-agentic-tools support bundle for plugin setup, host visibility, skill discovery, or MCP registration issues. Default to metadata-only collection; include a Claude Code transcript and extracted skill/MCP usage records only when the user explicitly requests and authorizes transcript export.
 license: 'Apache-2.0'
 allowed-tools: Bash(pico-cli plugin audit *) Bash(claude --version) Bash(codex --version) Bash(copilot --version)
 ---
 
 # PICO Plugin Audit
 
-Use this skill when the user explicitly wants a local support bundle that includes:
+Use this skill when the user wants a local support bundle for plugin setup,
+host visibility, skill discovery, or MCP registration issues.
 
-1. the selected Claude Code session transcript, and
-2. extracted `pico-spatial-agentic-tools` skill/MCP usage records from that transcript.
+The default bundle is metadata-only. Transcript and usage extraction are an
+optional, higher-sensitivity branch.
 
 Do **not** use the word `diagnose` as this skill's invocation name. Use `plugin-audit`.
 
-## Authorization First
+## Default Metadata-Only Flow
 
-Before exporting a transcript, tell the user:
+Run from the user's project root:
+
+```bash
+pico-cli plugin audit
+```
+
+Report the bundle path and the metadata files listed in `summary.md`. Do not add
+`--transcript` merely because the user invoked this skill.
+
+## Optional Transcript Flow
+
+Use transcript export only when the user explicitly asks to include, inspect, or
+export a Claude Code session transcript or skill/MCP usage records derived from
+that transcript.
+
+Before exporting, tell the user:
 
 - the transcript may contain prompts, source code, file contents, tool arguments, tool outputs, MCP payloads, local paths, and secrets accidentally pasted into the session;
 - the export is local-only and not automatically uploaded;
 - they should review `session-transcript.jsonl`, `pico-spatial-agentic-tools-usage.json`, and `redaction-notes.md` before sharing externally.
 
-Only run transcript export after the user has authorized it. For this skill invocation, the user's request to audit/export transcript counts as authorization.
+Only run transcript export after the user has authorized it. A generic request
+to audit plugin setup or create a support bundle is not transcript
+authorization. A request that explicitly asks to export or inspect the
+transcript counts as authorization.
 
-## What This Skill Should Do
-
-Run from the user's project root:
+Then run:
 
 ```bash
 pico-cli plugin audit --transcript --yes
@@ -38,7 +55,7 @@ If the user provides a specific Claude Code session id, use:
 pico-cli plugin audit --session <session-id> --transcript --yes
 ```
 
-Then report the exact output paths for:
+For the transcript flow, report the exact output paths for:
 
 - `session-transcript.jsonl`
 - `pico-spatial-agentic-tools-usage.json`

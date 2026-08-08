@@ -26,8 +26,8 @@
 | Stacking `backgroundMaterial(...) + .background(<role>)` on the same node | Pick exactly one |
 | Reimplementing hover with `Modifier.hoverable + animateFloatAsState(scale)` | `Modifier.spatialHoverEffect` — highest-priority hover API |
 | Using `MaterialTheme.colorScheme.*` / `MaterialTheme.typography.*` | `PicoTheme.colorScheme.*` / `PicoTheme.typography.*` |
-| Listing fictitious components such as `Timepicker` (lowercase `p`), `WheelPicker`, `ProgressPageControl`, `SymbolicCircularProgressIndicator`, `HeadImageSheet`, `WindowSizeBehaviors` | Use only the components verified in `references/builtins.md`; verify with IDE auto-complete on the current SDK before adopting any other name |
+| Listing fictitious components such as `Timepicker` (lowercase `p`), `WheelPicker`, `ProgressPageControl`, `SymbolicCircularProgressIndicator`, `HeadImageSheet`, `WindowSizeBehaviors` | Use only the components verified in `builtins.md`; verify with IDE auto-complete on the current SDK before adopting any other name |
 | Hardcoding `Color(0xFF333333)` for hierarchy text or treating Spatial OS semantic colors as fixed literals | Use `PicoTheme.colorScheme.<role>` or `Color.Vibrant.withVibrant(...)`; preserve literal colors only when the design explicitly requires fixed color |
 | Forking SpatialUI source code | Wrap from app code; file an issue / send an MR |
 
-For machine-readable detection rules see `references/compliance-signals.md`.
+For machine-readable detection rules see `compliance-signals.md`.

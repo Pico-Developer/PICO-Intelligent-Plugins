@@ -1,7 +1,7 @@
 # Compliance Signals (Machine-Readable Rules)
 
 Each rule below maps the four highest-priority constraints and migrated
-SpatialUI D2C checklist items into grep-able patterns. Used by `scripts/verify-design-style.sh`, the upstream
+SpatialUI D2C checklist items into grep-able patterns. Used by `../scripts/verify-design-style.sh`, the upstream
 `d2c_verify_code` `ruleContext`, evals, and CI hooks.
 
 > Scope: application source trees only — typically
@@ -28,7 +28,7 @@ SpatialUI D2C checklist items into grep-able patterns. Used by `scripts/verify-d
 | Type | Pattern | Rule |
 | --- | --- | --- |
 | Allowed | `Modifier\.spatialHoverEffect` | Highest-priority hover API |
-| Forbidden | `Modifier\.hoverable\(` | Reimplemented hover |
+| Forbidden | `\.hoverable[ \t]*\(` | Reimplemented hover, including chained `Modifier.padding(...).hoverable(...)` |
 | Forbidden | `animateFloatAsState\([^)]*scale[^)]*hover` | Custom hover scale animation |
 
 ## R4 — Window / container root background: respect the system glass
@@ -62,7 +62,7 @@ Scope: outermost `Box` inside `DefaultWindowContainer { ... }`,
 | --- | --- | --- |
 | Forbidden (reviewer-only — semantic) | `Modifier\.background\(\s*PicoTheme\.colorScheme\.` directly inside the root `Box` of a window container, **without** a nearby `// design-style: opaque-root` comment | Painting solid color over the system glass. **Note**: this rule needs context-aware scope (root Box vs. inner card). The shell verifier does not run this grep — it is delegated to the reviewer LLM. |
 | Forbidden | `backgroundMaterial\([^)]*\)[ \t\r\n.]*background\(` (multi-line) | Stacking glass + solid color |
-| Forbidden | `Modifier\.background\(\s*Color\(0x` | Hardcoded color literal as background |
+| Forbidden | `\.background[ \t]*\([ \t]*Color\(0x` | Hardcoded color literal as background, including chained `.background(Color(...))` |
 | Allowed exception | `// design-style: opaque-root` immediately above a root `Modifier.background(PicoTheme.colorScheme.<role>)` | Documented opt-out (must pair with the right off-switch) |
 | Allowed | `Modifier\.backgroundMaterial\(enable\s*=\s*true,\s*style\s*=\s*Material\.` on the root | Custom glass style (must pair with the right off-switch) |
 | Info reminder (`DefaultWindowContainer` scope) | Custom glass / opaque-root override | Reviewer should confirm `pico.spatial.windowcontainer.materialbackground="0"` exists in the launcher `<activity>` of the matching `AndroidManifest.xml` |
@@ -90,14 +90,14 @@ it apply to grayscale text/fill roles that have named PICO tokens.
 | Forbidden | `Color\(0x[0-9A-Fa-f]{6,8}\)` without `// design-style: fixed-figma-color ...` on the same line | Hardcoded color |
 | Allowed exception | `Color(0x...) // design-style: fixed-figma-color <source>` | Explicit Figma / screenshot fixed color for non-root decorative fidelity |
 | Forbidden | `TextStyle\(fontSize\s*=` | Hardcoded typography |
-| Forbidden | `Modifier\.alpha\(\s*0\.3f\s*\)` | Hardcoded disabled alpha — use `LocalDisableAlpha.current` |
+| Forbidden | `\.alpha[ \t]*\([ \t]*0\.3f[ \t]*\)` | Hardcoded disabled alpha — use `LocalDisableAlpha.current` |
 
 ## R6 — Indication & haptics shared interactionSource
 
 | Type | Pattern | Rule |
 | --- | --- | --- |
-| Required when `clickable {` exists in custom component | `indication\s*=\s*LocalIndication\.current` | PicoIndication routing |
-| MUST appear in the same file when custom `.clickable(` is used | `controllerHapticFeedback` | SpatialUI haptic routing; must share the clickable `MutableInteractionSource` |
+| Required when custom `.clickable(...)` or `.clickable { ... }` exists | `indication\s*=\s*LocalIndication\.current` | PicoIndication routing |
+| MUST appear in the same file when custom `.clickable(...)` or `.clickable { ... }` is used | `controllerHapticFeedback` | SpatialUI haptic routing; must share the clickable `MutableInteractionSource` |
 | Inspect | two distinct `remember { MutableInteractionSource() }` in same Composable, one feeding `clickable`, another feeding `controllerHapticFeedback` | Likely desync — should share one source |
 
 ## R7 — Library-private tokens MUST NOT be imported
@@ -114,7 +114,8 @@ judgement.
 
 | Type | Pattern | Rule |
 | --- | --- | --- |
-| Forbidden | `import androidx\.compose\.material3\.(Button|Text|Icon|IconButton|AlertDialog|Slider|Switch|Checkbox|TextField)` | Prefer SpatialUI design built-ins |
+| Forbidden | `import\s+androidx\.compose\.material3(\.|$)` | Material3 package import; prefer SpatialUI design built-ins |
+| Forbidden | `import\s+androidx\.compose\.material(\.|$)` | Material v1 package import; prefer SpatialUI design built-ins |
 | Forbidden | `import com\.pico\.spatial\.ui\.design\.AlertDialog` | `AlertDialog` lives in `design.windows` |
 | Inspect | `collectAsState\(\)` | Prefer `collectAsStateWithLifecycle()` for ViewModel state |
 | Inspect | `key = { index }` / `key = { it.hashCode() }` | Lazy keys should use stable item IDs |
@@ -122,7 +123,7 @@ judgement.
 | Forbidden | `.padding(horizontal = ..., bottom|top|start|end = ...)` | Invalid Compose padding overload; use explicit sides |
 | Forbidden | `PicoTheme.colorScheme.(accent|primary|secondary|background|surface|onSurface|onPrimary)` | Guessed Material-style role; use PicoTheme roles or Vibrant |
 | Inspect | `.background(..., shape).clickable` | Prefer `clip(shape).spatialHoverEffect().clickable().background()` |
-| Inspect | `.clickable...spatialHoverEffect(` | Hover should precede clickable |
+| Inspect | `.clickable(...)...spatialHoverEffect(` / `.clickable { ... }...spatialHoverEffect(` | Hover should precede clickable |
 | Inspect | `.background(...).fillMaxWidth|size|height|width` | Put layout before decoration |
 | Inspect | `modifier.fillMaxWidth|size|height|width` | Ensure caller override is not blocked; consider defaults + `.then(modifier)` |
 | Inspect | large directional `padding(start|bottom|end|top = N.dp)` | Confirm this is not manual TabBar / Toolbar avoidance |

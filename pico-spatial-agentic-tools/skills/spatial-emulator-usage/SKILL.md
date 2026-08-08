@@ -1,14 +1,20 @@
 ---
 name: spatial-emulator-usage
-description: Supplements pico-cli with detailed emulator and device operation guidance. Invoke when the user needs multi-step emulator, app, files, capture, or log workflows.
+description: PICO emulator and device operation workflow. Invoke for starting/stopping the PICO emulator, installing or launching APKs/apps on the emulator or current device, checking devices, moving files, capturing screenshots/recordings, collecting logcat/emulator logs, or cleaning up emulator resources.
 license: 'Apache-2.0'
 ---
 
 # Spatial Emulator Usage Skill
 
-Use this skill as a **supplement to `pico-cli`** when the task is about operating the local **PICO emulator**, a connected **ADB device**, or the app/files/logging workflows around them through real `pico-cli` commands.
+Use this skill for operating the local **PICO emulator**, a connected **ADB
+device**, or the app/files/logging workflows around them through real
+`pico-cli` commands.
 
-This skill is for **execution-oriented environment work**, not for general Kotlin/UI feature implementation. Use `pico-cli` first for command-family routing, then load this skill when the emulator flow becomes multi-step, stateful, or failure-prone.
+This skill is for **execution-oriented environment work**, not for general
+Kotlin/UI feature implementation. Trigger it directly when the requested
+emulator/device workflow is already clear. When a request begins as generic
+`pico-cli` help, `pico-cli` may route here after identifying this command
+family.
 
 ## What This Skill Should Do
 

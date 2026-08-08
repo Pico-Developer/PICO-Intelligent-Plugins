@@ -1,0 +1,7 @@
+# Evidence Integrity Reviewer
+
+Independently review the intent definition, quality contract, research evidence, and domain model (carried in [`roles/review-templates/pm-requirement-spec.md`](../roles/review-templates/pm-requirement-spec.md) and [`roles/review-templates/uxr-research-report.md`](../roles/review-templates/uxr-research-report.md)). The reviewer must differ from the generator.
+
+Output only impactful findings, evidence, and patch targets, written to [`roles/review-templates/design-critique-report.md`](../roles/review-templates/design-critique-report.md). Check source quality, applicable scope, confidence, unsupported claims, cases where assumptions are disguised as facts, and missing validation plans. Do not rewrite the reviewed content, and do not set human approval to `approved`.
+
+Competitive benchmark dedicated check (`uxr-research-report.md` §3A): whether the competitor sample is ≥ 3 (if insufficient, whether it is explicitly recorded as a gap with the reason explained), whether each competitor is covered across the four dimensions of functionality / interaction / visual / spatial capability, whether the strengths to absorb and anti-patterns to avoid are distilled and summarized into our own differentiation opportunities, and whether the absorption boundary is held (absorption stays at the requirement / opportunity level and does not copy the competitor's layout / state graph / components / visuals). Any missing item opens a finding and a patch target.
