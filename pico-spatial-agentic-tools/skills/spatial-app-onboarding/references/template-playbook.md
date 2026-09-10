@@ -10,6 +10,10 @@ It contains the domain-specific protocol for:
 - migration choices in later turns
 - deciding whether to ask a clarifying question at all
 
+Named capabilities and branch examples in this playbook classify an existing
+requirement. They do not add interaction, physics, tracking, scene content, or
+acceptance requirements that are absent from the user request or upstream contract.
+
 ## 1. Decision protocol
 
 ### 1.1 Ask only when a real branch exists
@@ -100,7 +104,9 @@ Use when the project needs entity behavior, collision, rigid body physics, inter
 
 ### `VolumetricWindowContainer` → `FullStage`
 
-Typical trigger: the user wants floor contact, bounce, grab/throw behavior, or room-scale context.
+Typical trigger: the accepted requirement needs physics-driven contact or
+manipulation, environment-aware placement, or room-scale context that the
+current bounded container cannot provide.
 
 Migration rule: use the `FullStage` template as the reference, preserve confirmed assets and package naming, and do not improvise a new Stage project from scratch.
 

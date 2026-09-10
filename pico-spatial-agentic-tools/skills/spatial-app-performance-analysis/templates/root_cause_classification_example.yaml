@@ -1,0 +1,23 @@
+# Standalone artifact: session-output-<timestamp>/root-cause-classification.yaml
+# 最终根因分类的独立产物，不混入 final-summary.md / report.html / 单个 topic header。
+# 契约见 references/routing/root-cause-classification-contract.md
+# L1 resource_type: cpu | gpu | memory | undetermined
+# L2 bottleneck_category 必须是所属 L1 的合法子项；先判定预算绑定侧，再选择最具体的证据签名
+# evidence_refs 回指底层 topic 的 evidence id（跨 topic 用前缀去重，如 spatial-engine:e1）
+
+schema_version: 2
+session_dir: "session-output-20260730-223412"
+final_summary: "./final-summary.md"   # 溯源链接；final-summary 本身不内嵌该分类
+
+root_cause_classification:
+  - resource_type: gpu
+    bottleneck_category: gpu_geometry_complexity
+    conclusion_level: likely
+    time_window: "2026-07-30 22:15:08 ~ 2026-07-30 22:15:11"
+    evidence_refs: ["spatial-engine:e1", "spatial-engine:e3"]
+    note: "场景切换时 Triangle/Vertex 峰值升高，gpu_frame_end 绑定 GPU 侧。"
+  - resource_type: cpu
+    bottleneck_category: cpu_gc_storm
+    conclusion_level: candidate
+    evidence_refs: ["memory:e1"]
+    note: "concurrent copying STW 与 Late Frame 簇同窗，占用主 cluster CPU。"

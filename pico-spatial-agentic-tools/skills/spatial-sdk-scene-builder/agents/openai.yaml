@@ -1,0 +1,4 @@
+interface:
+  display_name: 'PICO Spatial SDK Scene Builder'
+  short_description: 'Build Kotlin Entity scenes and repair precise placement'
+  default_prompt: 'Use $spatial-sdk-scene-builder to implement a Kotlin Entity scene or repair bounds-aware placement and verify the result.'

@@ -8,7 +8,7 @@
     {
       "name": "pico-spatial-agentic-tools",
       "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "author": {
         "name": "PICO Immersive Pte. Ltd."
       },
@@ -42,8 +42,8 @@
     },
     {
       "name": "pico-unity-agentic-tools",
-      "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity project setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
-      "version": "0.0.2",
+      "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity PICO Spatial setup, Spatial Adapter runtime APIs, PICO XR building blocks, Unity OpenXR setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
+      "version": "0.0.3",
       "author": {
         "name": "PICO Immersive Pte. Ltd."
       },
@@ -52,8 +52,12 @@
       "keywords": [
         "pico",
         "pico-xr",
+        "pico-spatial",
         "pico-unity-agentic-tools",
+        "spatial-adapter",
+        "spatialadapter",
         "unity",
+        "unity-spatial",
         "agentic",
         "vr",
         "xr",
@@ -76,7 +80,7 @@
     }
   ],
   "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "metadata": {
     "pluginRoot": "./"
   }

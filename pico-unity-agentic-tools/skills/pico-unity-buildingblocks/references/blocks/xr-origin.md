@@ -33,6 +33,32 @@ the XRI Starter Assets prefab. No separate `pico_xr_*` tool call is needed
 to create the Origin itself — the block tools (VST, Controller, etc.) will
 trigger `EnsureXROrigin()` internally.
 
+## Notes — PXR_Manager on every XR Origin
+
+`EnsureXROrigin()` mounts the PICO SDK **`PXR_Manager`** component on the XR
+Origin **root** GameObject (above the Main Camera) — on both the create path
+and the reuse path, so pre-existing rigs are upgraded in place. `PXR_Manager`
+is the runtime event dispatcher: its `PollEvent()` fires the static
+`SpatialMeshDataUpdated` / `PlaneDetectionDataUpdated` events that the Spatial
+Mesh and Plane drivers subscribe to. Mounting it once here (rather than per
+block) means **every** agent-generated XR Origin can drive the MR sense-data
+features, not just VST/SpatialMesh/Plane.
+
+- Reflection-resolved (`ByteDance.PICO.XR.PXR_Manager`, R3); silently skipped
+  if the PICO SDK is not installed.
+- Idempotent (R1): mounted only if absent.
+- Non-destructive (R2): block `disable` never removes the shared
+  `PXR_Manager` — only the per-block capability flag is cleared (see the VST /
+  Spatial Mesh / Plane block docs).
+
+The per-feature checkboxes shown in the `PXR_Manager` Inspector
+(Video Seethrough / Spatial Mesh / Plane Detection / Hand Tracking …) are NOT
+fields on the component — they are `bool` flags on the `PXR_ProjectSetting`
+ScriptableObject, consumed at BUILD time by `PXR_BuildProcessor` to emit the
+Android manifest `<meta-data>` + permissions. Each block turns on its own flag
+on enable; without it the OS delivers no sense data even though the driver is
+mounted.
+
 ## Typical pipeline — ensure XR Origin (when `xr_origin` is missing)
 
 ```
@@ -58,7 +84,7 @@ VST passthrough). So `EnsureXROrigin()` — which runs on **every** block
 enable/configure, not just first creation — collapses the scene to a single
 active camera:
 
-- Every *other* enabled scene camera has `Camera.enabled` set to `false`
+- Every _other_ enabled scene camera has `Camera.enabled` set to `false`
   (and its paired `AudioListener` disabled). Cameras belonging to the agent
   XR Origin subtree are never touched.
 - This is **non-destructive** (R2): foreign camera GameObjects are never
@@ -72,11 +98,11 @@ active camera:
 
 Observability: `pico_xr_status` returns `data.camera`:
 
-| field | meaning |
-|-------|---------|
-| `activeCameras` | cameras currently active-and-enabled (should be `1`) |
-| `managedDisabled` | foreign cameras the MCP layer is holding disabled |
-| `single` | `true` when exactly one active camera remains |
+| field             | meaning                                              |
+| ----------------- | ---------------------------------------------------- |
+| `activeCameras`   | cameras currently active-and-enabled (should be `1`) |
+| `managedDisabled` | foreign cameras the MCP layer is holding disabled    |
+| `single`          | `true` when exactly one active camera remains        |
 
 Note: `disable`-ing a block (e.g. `pico_xr_vst(disable)`) does **not**
 auto-restore foreign cameras — as long as the agent XR Origin and its Main

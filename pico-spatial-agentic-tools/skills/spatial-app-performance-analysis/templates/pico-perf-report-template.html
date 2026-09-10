@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PICO OS6 Performance Report Template</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d0d0f;
+      --card: #161618;
+      --card2: #1e1e21;
+      --text: #ffffff;
+      --muted: #8b8b96;
+      --muted2: #666670;
+      --border: rgba(255,255,255,0.06);
+      --blue: #3b82f6;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .app-shell {
+      width: min(1480px, calc(100% - 32px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 20px;
+      padding: 24px 0 36px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      min-height: calc(100vh - 48px);
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #111113;
+    }
+    .brand {
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-kicker {
+      color: var(--muted);
+      font: 700 11px/1 var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .brand-title {
+      margin-top: 10px;
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    .nav {
+      display: grid;
+      gap: 4px;
+      margin-top: 16px;
+    }
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: background 140ms ease, color 140ms ease;
+    }
+    .nav a::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted2);
+    }
+    .nav a:hover { background: var(--card2); color: var(--text); }
+    .nav a:hover::before { background: var(--blue); }
+    .sidebar-footer {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      color: var(--muted2);
+      font: 11px/1.5 var(--mono);
+    }
+
+    .main { min-width: 0; }
+    .hero {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font: 700 11px/1 var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+    h1 {
+      margin: 14px 0 8px;
+      max-width: 960px;
+      font-size: clamp(32px, 3.2vw, 48px);
+      line-height: 1.02;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+    .hero-summary {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font: 11px/1.25 var(--mono);
+    }
+    .meta-item strong { color: var(--muted2); font-weight: 700; }
+    .meta-sep { color: rgba(255,255,255,.16); }
+    .badge-list { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card2);
+      color: #c9c9d1;
+      font: 700 10px/1 var(--mono);
+    }
+
+    .section {
+      margin-top: 18px;
+      scroll-margin-top: 24px;
+    }
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    .section-note { color: var(--muted2); font: 11px/1 var(--mono); }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .metric-card {
+      padding: 14px;
+      min-height: 126px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .metric-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .status-pill {
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--status-color), transparent 70%);
+      color: var(--status-color);
+      background: color-mix(in srgb, var(--status-color), transparent 92%);
+      font: 700 10px/1 var(--mono);
+    }
+    .metric-value {
+      margin-top: 16px;
+      color: var(--status-color);
+      font-size: 40px;
+      line-height: .92;
+      font-weight: 780;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-unit {
+      margin-left: 4px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+    .metric-desc {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .chart-span-full {
+      grid-column: 1 / -1;
+    }
+    .panel {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; letter-spacing: 0; }
+    .panel-sub { color: var(--muted2); font: 11px/1 var(--mono); }
+    .chart-wrap { position: relative; height: 270px; }
+    .chart-wrap.sm { height: 230px; }
+    .chart-wrap.xs { height: 150px; }
+    .chart-caption {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .finding-layout {
+      display: grid;
+      gap: 12px;
+    }
+    .root-cause {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid rgba(245,158,11,.2);
+      border-left: 3px solid var(--yellow);
+      border-radius: var(--radius-sm);
+      background: rgba(245,158,11,.06);
+    }
+    .root-cause-main {
+      min-width: 0;
+    }
+    .root-cause .panel-title { font-size: 16px; }
+    .root-cause p { margin: 7px 0 0; color: #dddde4; font-size: 15px; line-height: 1.6; }
+    .confidence {
+      display: inline-flex;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: var(--yellow);
+      background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.18);
+      font: 700 11px/1 var(--mono);
+    }
+    .e-desc { color: #d7d7df; font-size: 13px; line-height: 1.55; }
+
+    .detail-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .detail-row-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .detail-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .spr-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .spr-stat-card {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card2);
+    }
+    .spr-stat-label {
+      color: var(--muted2);
+      font: 11px/1.3 var(--mono);
+      text-transform: uppercase;
+    }
+    .spr-stat-value {
+      margin-top: 10px;
+      color: var(--text);
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 780;
+      letter-spacing: 0;
+    }
+    .spr-stat-unit {
+      margin-left: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .detail-summary {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .detail-tabs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+    }
+    .detail-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 10px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font: 700 12px/1 var(--mono);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .detail-tab:hover {
+      color: var(--text);
+      border-bottom-color: rgba(59,130,246,.4);
+    }
+    .detail-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--blue);
+    }
+    .detail-tab-panel {
+      display: none;
+    }
+    .detail-tab-panel.active {
+      display: block;
+    }
+    .render-counter-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+    .render-counter-grid .panel {
+      min-width: 0;
+    }
+    .render-counter-head {
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .render-counter-title {
+      min-width: 0;
+    }
+    .render-counter-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      justify-content: flex-end;
+      color: var(--muted);
+      font: 11px/1.4 var(--mono);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .render-counter-meta strong {
+      color: var(--text);
+      font-weight: 760;
+    }
+    .render-counter-collapsed {
+      margin-top: 12px;
+    }
+    .render-counter-collapsed summary {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    details {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    summary {
+      cursor: pointer;
+      padding: 15px 16px;
+      list-style: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "Expand / Collapse";
+      float: right;
+      color: var(--muted2);
+      font: 11px/1.3 var(--mono);
+    }
+    .table-scroll { overflow-x: auto; border-top: 1px solid var(--border); }
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: #d5d5dc; background: #1b1b1e; font-weight: 700; }
+    tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
+    td { color: #c6c6cf; }
+    code { color: #93c5fd; font-family: var(--mono); }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .list-panel { padding: 16px; }
+    .list-panel ul { margin: 12px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.75; }
+    .list-panel li::marker { color: var(--blue); }
+    .next-action-list {
+      font-size: 15px;
+      line-height: 1.75;
+    }
+    .analysis-notes {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      color: var(--muted2);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .analysis-notes-title {
+      margin-bottom: 6px;
+      color: var(--muted);
+      font: 700 10px/1.4 var(--mono);
+    }
+    .list-panel .analysis-notes ul {
+      margin: 0;
+      padding-left: 16px;
+      color: var(--muted2);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .list-panel .analysis-notes li {
+      margin-bottom: 2px;
+    }
+    .analysis-notes li::marker { color: var(--muted2); }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 18px;
+      color: var(--muted2);
+      font: 11px/1.4 var(--mono);
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    /* Analysis report body (flow mode) */
+    .analysis-flow {
+      padding: 2px 0;
+    }
+    .analysis-section {
+      padding: 10px 2px;
+    }
+    .analysis-section-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+    .analysis-section.emphasis-section .analysis-section-title {
+      font-size: 16px;
+    }
+    .evidence-scroll {
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-color: rgba(255,255,255,.22) transparent;
+      scrollbar-width: thin;
+    }
+    .evidence-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .evidence-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .evidence-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255,255,255,.18);
+    }
+    .analysis-sep {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 12px 0;
+    }
+
+    /* Analysis clue tabs */
+    .topic-tabs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+    }
+    .topic-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 10px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font: 700 12px/1 var(--mono);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .topic-tab-title {
+      font-size: 14px;
+      line-height: 1;
+    }
+    .topic-tab:hover {
+      color: var(--text);
+      border-bottom-color: rgba(59,130,246,.4);
+    }
+    .topic-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--blue);
+    }
+    .topic-panel {
+      display: none;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .topic-panel.active {
+      display: block;
+    }
+
+    .analysis-item {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .analysis-title {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+    .analysis-desc {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .emphasis-section .analysis-desc {
+      font-size: 15px;
+    }
+    .analysis-ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.75;
+    }
+    .emphasis-section .analysis-ul {
+      font-size: 15px;
+    }
+    .analysis-ul li::marker { color: var(--blue); }
+    .analysis-ul li { margin-bottom: 10px; }
+    .e-kv {
+      display: grid;
+      grid-template-columns: 78px minmax(0, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .e-k {
+      color: var(--muted2);
+      font: 11px/1.5 var(--mono);
+      text-transform: lowercase;
+    }
+    .e-v {
+      color: #d7d7df;
+      font-size: 13px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+    .level-badge {
+      display: inline-flex;
+      margin-top: 12px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: var(--level-color);
+      background: color-mix(in srgb, var(--level-color), transparent 92%);
+      border: 1px solid color-mix(in srgb, var(--level-color), transparent 74%);
+      font: 700 11px/1 var(--mono);
+    }
+
+    @media (max-width: 1280px) {
+      .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .spr-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; min-height: auto; }
+      .sidebar-footer { position: static; margin-top: 18px; }
+      .nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .nav a { justify-content: center; }
+      .nav a::before { display: none; }
+      .detail-row-2, .detail-row-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 860px) {
+      .metric-grid, .chart-grid, .two-col, .analysis-grid, .spr-stat-grid, .render-counter-grid { grid-template-columns: 1fr; }
+      .nav { grid-template-columns: 1fr; }
+      .chart-wrap, .chart-wrap.sm { height: 250px; }
+      .root-cause { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-kicker">PICO OS6</div>
+        <div class="brand-title">Performance Report</div>
+      </div>
+      <nav class="nav" aria-label="Report navigation">
+        <a href="#overview">Quick Diagnosis</a>
+        <a href="#details">Data Overview</a>
+        <a href="#findings">Findings</a>
+        <a href="#actions">Next Suggestions</a>
+      </nav>
+      <div class="sidebar-footer">spatial-app-performance-analysis<br />analysis-protocol v0.4.0</div>
+    </aside>
+
+    <main class="main">
+      <header class="hero">
+        <div class="eyebrow">Performance Intelligence Report</div>
+        <h1 id="reportTitle">PICO OS6 Performance Report</h1>
+        <p class="hero-summary" id="reportSummary"></p>
+        <div class="meta-bar" id="metaBar" aria-label="Report metadata"></div>
+      </header>
+
+      <section class="section" id="overview">
+        <div class="section-head"><h2>Quick Diagnosis</h2><div class="section-note">quick diagnosis json</div></div>
+        <div class="metric-grid" id="metricGrid"></div>
+        <div class="chart-grid">
+          <div class="panel"><div class="panel-head"><div class="panel-title">FPS Trend</div><div class="panel-sub">time / fps</div></div><div class="chart-wrap"><canvas id="fpsChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><div class="panel-title">CPU Metrics Trend</div><div class="panel-sub">time / percent</div></div><div class="chart-wrap"><canvas id="cpuChart"></canvas></div></div>
+          <div class="panel chart-span-full"><div class="panel-head"><div class="panel-title">GPU Metrics Trend</div><div class="panel-sub">load percent / freq MHz</div></div><div class="chart-wrap"><canvas id="gpuChart"></canvas></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="details">
+        <div class="section-head"><h2>Data Overview</h2><div class="section-note">app + spr complete detail view</div></div>
+        <div class="detail-tabs" id="detailTabs" aria-label="Data overview categories">
+          <button class="detail-tab active" type="button" data-tab="frame-pipeline">Frames</button>
+          <button class="detail-tab" type="button" data-tab="render-load">Render Loads</button>
+        </div>
+        <div class="detail-tab-panel active" id="detailTab-frame-pipeline">
+          <div class="detail-grid">
+            <div class="detail-row-2">
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">App Main Thread Frame Duration Distribution</div><div class="panel-sub">app_frame_buckets</div></div>
+                <div class="chart-wrap sm"><canvas id="appFrameBucketChart"></canvas></div>
+                <div class="chart-caption">Shows the main-thread doFrame count in each duration bucket. Over-budget buckets use red/yellow tones, while in-budget buckets use blue.</div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">Main Thread Over-Budget Frame dur_ms Distribution</div><div class="panel-sub">budget: 11.11ms</div></div>
+                <div class="chart-wrap sm"><canvas id="frameDurChart"></canvas></div>
+                <div class="chart-caption">F1, F2, and later labels are time-ordered App main-thread frame sample indexes, not frame IDs. Blue bars are within budget; red bars exceed the budget. Longer red clusters usually mean more visible stutter risk.</div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><div class="panel-title">SPR Process Stats</div><div class="panel-sub">spr_stats</div></div>
+              <div class="spr-stat-grid" id="sprStats"></div>
+              <div class="detail-summary">Summarizes SPR frame count, average frame time, CPU/GPU stage average duration, and frame-time bounds.</div>
+            </div>
+
+            <div class="detail-row-3">
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">SPR Frame Type Share</div><div class="panel-sub">spr_frame_types</div></div>
+                <div class="chart-wrap sm"><canvas id="sprFrameTypeChart"></canvas></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">SPR Frame Duration Distribution</div><div class="panel-sub">spr_frame_buckets</div></div>
+                <div class="chart-wrap sm"><canvas id="sprFrameBucketChart"></canvas></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">CPU / GPU Stage Notes</div><div class="panel-sub">distribution notes</div></div>
+                <div class="detail-summary" id="sprStageSummary"></div>
+              </div>
+            </div>
+
+            <div class="detail-row-2">
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">SPR CPUTime Distribution</div><div class="panel-sub">spr_cpu_buckets</div></div>
+                <div class="chart-wrap sm"><canvas id="sprCpuBucketChart"></canvas></div>
+              </div>
+              <div class="panel">
+                <div class="panel-head"><div class="panel-title">SPR GPUTime Distribution</div><div class="panel-sub">spr_gpu_buckets</div></div>
+                <div class="chart-wrap sm"><canvas id="sprGpuBucketChart"></canvas></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-tab-panel" id="detailTab-render-load">
+          <div class="topic-tabs" id="renderLoadTabs"></div>
+          <div id="renderLoadPanels"></div>
+        </div>
+      </section>
+
+      <section class="section" id="findings">
+        <div class="section-head"><h2 id="findingsTitle">Findings</h2><div class="section-note">root cause / clues / actions</div></div>
+        <div class="finding-layout">
+          <div class="root-cause" id="rootCause"></div>
+          <div class="topic-tabs" id="analysisTopicTabs"></div>
+          <div id="analysisTopicPanels"></div>
+        </div>
+      </section>
+
+      <section class="section" id="actions">
+        <div class="section-head"><h2>Next Suggestions</h2><div class="section-note">next actions</div></div>
+        <div class="card list-panel">
+          <ul id="nextSteps" class="next-action-list"></ul>
+          <div class="analysis-notes">
+            <div class="analysis-notes-title">Notes</div>
+            <ul id="limitations"></ul>
+          </div>
+        </div>
+      </section>
+
+      <footer id="footer"><div id="toolInfo"></div><div id="versionInfo"></div></footer>
+    </main>
+  </div>
+
+  <script>
+    const reportData = {
+      header: { appPackage: "", appName: "PICO Spatial App", deviceModel: "", osVersion: "", analysisTime: "", traceFileName: "", activeProtocols: [], summary: "" },
+      quickDiagnosis: { metrics: [], timeline: [], fps: [], appFps: [], sprFps: [], cpuLoad: [], appCpuLoad: [], systemCpuLoad: [], gpuLoad: [], gpuFreq: [], gpuTemp: [] },
+      findings: { frameSummary: { late: 0, miss: 0, discard: 0 }, evidence: [], rootCause: { description: "", confidence: "" } },
+
+      analysisTopics: [],
+
+      analysisReport: {},
+
+      details: {
+        frameBudgetMs: 11.11,
+        frameDurations: [],
+        app_frame_buckets: {},
+        mesh_draw_call_count_series: [],
+        mesh_draw_call_count_stats: {},
+        render_load_counter_groups: [],
+        spr_frame_buckets: {},
+        spr_frame_types: {},
+        spr_cpu_buckets: {},
+        spr_gpu_buckets: {},
+        spr_stats: {}
+      },
+      recommendations: { limitations: [], nextSteps: [] },
+      footer: { generatedBy: "spatial-app-performance-analysis Skill", protocolVersion: "analysis-protocol v0.4.0 · report-template v0.2.0" }
+    };
+
+    const injectedReportData = {
+      quickDiagnosis: {},
+      details: {},
+      header: {},
+      findings: {}
+    };
+
+    const statusMap = { normal: { text: "Normal", color: "#10b981" }, warning: { text: "Warning", color: "#f59e0b" }, abnormal: { text: "Abnormal", color: "#ef4444" } };
+    const evidenceColor = { Jank: "#ef4444", Blocked: "#f59e0b", GC: "#10b981", Binder: "#8b5cf6", Scheduling: "#3b82f6" };
+    const appBucketOrder = ["200ms+", "100~200ms", "33~100ms", "22~33ms", "11~22ms", "<11ms"];
+    const sprFrameBucketOrder = ["33~50ms", "22~33ms", "11~22ms", "<11ms"];
+    const stageBucketOrder = [">16ms", "12~16ms", "8~12ms", "4~8ms", "<4ms"];
+    const frameTypeOrder = ["Normal", "Late", "Miss", "Early", "Discard"];
+    const maxRenderedCounterPoints = 1200;
+    const $ = id => document.getElementById(id);
+
+    const isPlainObject = value => !!value && Object.prototype.toString.call(value) === "[object Object]";
+    const mergeInto = (target, source) => {
+      if (!isPlainObject(target) || !isPlainObject(source)) return target;
+      Object.keys(source).forEach(key => {
+        const sourceValue = source[key];
+        if (isPlainObject(sourceValue) && isPlainObject(target[key])) {
+          mergeInto(target[key], sourceValue);
+        } else {
+          target[key] = sourceValue;
+        }
+      });
+      return target;
+    };
+
+    mergeInto(reportData.quickDiagnosis, injectedReportData.quickDiagnosis || {});
+    mergeInto(reportData.details, injectedReportData.details || {});
+    mergeInto(reportData.header, injectedReportData.header || {});
+    mergeInto(reportData.findings, injectedReportData.findings || {});
+
+    $("reportTitle").textContent = `${reportData.header.appName} Performance Report`;
+    $("reportSummary").textContent = reportData.header.summary;
+    const deviceOs = [reportData.header.deviceModel, reportData.header.osVersion].filter(v => v && String(v).trim()).join(" · ");
+    const infoItems = [["PKG", reportData.header.appPackage], ["DEVICE/OS", deviceOs], ["TIME", reportData.header.analysisTime], ["TRACE", reportData.header.traceFileName]].filter(([, value]) => value && String(value).trim());
+    const infoHtml = infoItems.map(([label, value]) => `<span class="meta-item"><strong>${label}</strong> ${value}</span>`).join('<span class="meta-sep">/</span>');
+    const badges = (reportData.header.activeProtocols || []).map(tag => `<span class="badge">${tag}</span>`).join("");
+    $("metaBar").innerHTML = `${infoHtml}<span class="meta-sep">/</span><span class="badge-list">${badges}</span>`;
+
+    const metricList = Array.isArray(reportData.quickDiagnosis.metrics) ? reportData.quickDiagnosis.metrics : [];
+    const hasQuickDiagnosisData = metricList.length > 0
+      || (Array.isArray(reportData.quickDiagnosis.timeline) && reportData.quickDiagnosis.timeline.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.appFps) && reportData.quickDiagnosis.appFps.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.fps) && reportData.quickDiagnosis.fps.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.sprFps) && reportData.quickDiagnosis.sprFps.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.cpuLoad) && reportData.quickDiagnosis.cpuLoad.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.appCpuLoad) && reportData.quickDiagnosis.appCpuLoad.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.systemCpuLoad) && reportData.quickDiagnosis.systemCpuLoad.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.gpuLoad) && reportData.quickDiagnosis.gpuLoad.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.gpuFreq) && reportData.quickDiagnosis.gpuFreq.length > 0)
+      || (Array.isArray(reportData.quickDiagnosis.gpuTemp) && reportData.quickDiagnosis.gpuTemp.length > 0);
+    if (!hasQuickDiagnosisData) {
+      $("overview").hidden = true;
+      document.querySelector('a[href="#overview"]')?.remove();
+    } else {
+      $("metricGrid").innerHTML = metricList.length ? metricList.map(metric => { const status = statusMap[metric.status] || statusMap.normal; return `<article class="metric-card"><div class="metric-top"><div class="label">${metric.label}</div><div class="status-pill" style="--status-color:${status.color}">${status.text}</div></div><div class="metric-value" style="--status-color:${status.color}">${metric.value}<span class="metric-unit">${metric.unit}</span></div><div class="metric-desc">${metric.description}</div></article>`; }).join("") : `<div class="metric-desc" style="color: var(--muted);">No quick diagnosis metrics.</div>`;
+    }
+    $("rootCause").innerHTML = `<div class="root-cause-main"><div class="panel-title">Root Cause</div><p>${reportData.findings.rootCause.description}</p></div><div class="confidence">Confidence: ${reportData.findings.rootCause.confidence}</div>`;
+
+    const analysisBlocks = [
+      { key: "cause", title: "Cause" },
+      { key: "existing_evidence", title: "Evidence" },
+      { key: "actions", title: "Actions" }
+    ];
+
+    const escapeHtml = (s) => {
+      if (s === null || s === undefined) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    };
+
+    const levelMeta = {
+      confirmed: { text: "Evidence: High", color: "#10b981" },
+      likely: { text: "Evidence: Medium", color: "#f59e0b" },
+      candidate: { text: "Evidence: Medium", color: "#3b82f6" },
+      insufficient_evidence: { text: "Evidence: Medium", color: "#666670" }
+    };
+
+    const clueTitleMap = {
+      app_jank: "App Main Thread Jank",
+      "app-jank": "App Main Thread Jank",
+      kotlin_spatial_app_jank: "App Main Thread Jank",
+      "kotlin-spatial-app-jank": "App Main Thread Jank",
+      binder: "Binder Wait",
+      memory: "Memory Pressure",
+      cpu_scheduling: "CPU Scheduling",
+      "cpu-scheduling": "CPU Scheduling",
+      spatial_audio: "Spatial Audio",
+      "spatial-audio": "Spatial Audio",
+      spatial_engine: "Spatial Runtime",
+      "spatial-engine": "Spatial Runtime",
+      spatial_runtime: "Spatial Runtime",
+      "spatial-runtime": "Spatial Runtime"
+    };
+
+    const renderEvidenceList = (arr) => {
+      const list = Array.isArray(arr) ? arr : [];
+      if (!list.length) return `<div class="analysis-desc" style="color: var(--muted);">None</div>`;
+      return `
+        <div class="evidence-scroll">
+          <ul class="analysis-ul">
+            ${list.map(e => {
+              const type = escapeHtml(e?.type || "");
+              const finding = escapeHtml(e?.finding || "");
+              return `
+                <li>
+                  <div class="e-kv"><span class="e-k">type</span><span class="e-v"><code>${type}</code></span></div>
+                  <div class="e-kv"><span class="e-k">finding</span><span class="e-v">${finding}</span></div>
+                </li>
+              `;
+            }).join("")}
+          </ul>
+        </div>
+      `;
+    };
+
+    const renderActions = (arr) => {
+      const list = Array.isArray(arr) ? arr : [];
+      if (!list.length) return `<div class="analysis-desc" style="color: var(--muted);">None</div>`;
+      return `<ul class="analysis-ul">${list.map(s => `<li>${escapeHtml(s)}</li>`).join("")}</ul>`;
+    };
+
+    const renderTextBlock = (text) => `<div class="analysis-desc">${escapeHtml(text || "")}</div>`;
+
+    const renderCause = (report) => {
+      const symptom = escapeHtml(report?.symptom || "");
+      const judgment = escapeHtml(report?.root_cause_judgment?.one_line || "");
+      return `
+        <div class="analysis-desc">${symptom}</div>
+        <div class="analysis-desc" style="margin-top: 10px;">${judgment}</div>
+      `;
+    };
+
+    const renderAnalysisFlow = (report) => {
+      const sections = analysisBlocks.map(({ key, title }) => {
+        let contentHtml = "";
+        if (key === "cause") contentHtml = renderCause(report || {});
+        else if (key === "existing_evidence") contentHtml = renderEvidenceList(report?.[key]);
+        else if (key === "actions") contentHtml = renderActions(report?.[key]);
+        else contentHtml = renderTextBlock(report?.[key]);
+
+        return `
+          <div class="analysis-section ${key === "cause" || key === "actions" ? "emphasis-section" : ""}">
+            <div class="analysis-section-title">${title}</div>
+            ${contentHtml}
+          </div>
+        `;
+      });
+
+      return `<div class="analysis-flow">${sections.join('<hr class="analysis-sep" />')}</div>`;
+    };
+
+    const topics = Array.isArray(reportData.analysisTopics)
+      ? reportData.analysisTopics.filter(topic => topic && topic.report)
+      : [];
+
+    const tabBar = $("analysisTopicTabs");
+    const panels = $("analysisTopicPanels");
+
+    const renderTab = (topic, index) => {
+      const level = topic?.conclusion_level || topic?.report?.root_cause_judgment?.conclusion_level || "insufficient_evidence";
+      const meta = levelMeta[level] || { text: "Evidence: Medium", color: "#666670" };
+      const topicKey = String(topic?.topic || "").trim();
+      const title = escapeHtml(clueTitleMap[topicKey] || topicKey || `Finding ${index + 1}`);
+      return `
+        <button class="topic-tab" type="button" data-index="${index}">
+          <span class="topic-tab-title">${title}</span>
+          <span class="level-badge" style="--level-color:${meta.color}; margin-top: 0; padding: 4px 6px; font-size: 10px;">${meta.text}</span>
+        </button>
+      `;
+    };
+
+    const renderPanel = (topic, index) => {
+      return `
+        <div class="topic-panel" data-index="${index}">
+          ${renderAnalysisFlow(topic?.report || {})}
+        </div>
+      `;
+    };
+
+    const setActiveTopic = (index) => {
+      const tabs = tabBar.querySelectorAll(".topic-tab");
+      const panelNodes = panels.querySelectorAll(".topic-panel");
+      tabs.forEach(btn => btn.classList.toggle("active", Number(btn.dataset.index) === index));
+      panelNodes.forEach(p => p.classList.toggle("active", Number(p.dataset.index) === index));
+    };
+
+    if (topics.length) {
+      $("findingsTitle").textContent = `Findings · ${topics.length}`;
+      tabBar.innerHTML = topics.map(renderTab).join("");
+      panels.innerHTML = topics.map(renderPanel).join("");
+      tabBar.addEventListener("click", (e) => {
+        const btn = e.target?.closest?.(".topic-tab");
+        if (!btn) return;
+        setActiveTopic(Number(btn.dataset.index) || 0);
+      });
+      setActiveTopic(0);
+    } else {
+      const ar = reportData.analysisReport || {};
+      $("findingsTitle").textContent = "Findings";
+      tabBar.innerHTML = "";
+      panels.innerHTML = `<div class="topic-panel active" data-index="0">${renderAnalysisFlow(ar)}</div>`;
+    }
+    $("limitations").innerHTML = reportData.recommendations.limitations.map(item => `<li>${item}</li>`).join("");
+    $("nextSteps").innerHTML = reportData.recommendations.nextSteps.map(item => `<li>${item}</li>`).join("");
+    $("toolInfo").textContent = `Generated by: ${reportData.footer.generatedBy}`;
+    $("versionInfo").textContent = `Protocol version: ${reportData.footer.protocolVersion}`;
+
+    const sprStats = reportData.details.spr_stats || {};
+    const statItems = [
+      ["Total Frames", sprStats.total_frames, "frames"],
+      ["Avg Frame", sprStats.avg_frame_ms, "ms"],
+      ["Avg CPU", sprStats.avg_cpu_ms, "ms"],
+      ["Avg GPU", sprStats.avg_gpu_ms, "ms"],
+      ["Min Frame", sprStats.min_frame_ms, "ms"],
+      ["Max Frame", sprStats.max_frame_ms, "ms"]
+    ];
+    $("sprStats").innerHTML = statItems.map(([label, value, unit]) => `<div class="spr-stat-card"><div class="spr-stat-label">${label}</div><div class="spr-stat-value">${value ?? 0}<span class="spr-stat-unit">${unit}</span></div></div>`).join("");
+
+    const bucketTotal = obj => Object.values(obj || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+    const appOverBudget = bucketTotal(reportData.details.app_frame_buckets) - Number((reportData.details.app_frame_buckets || {})["<11ms"] || 0);
+    const sprLateFrames = Number((reportData.details.spr_frame_types || {}).Late || 0) + Number((reportData.details.spr_frame_types || {}).Miss || 0) + Number((reportData.details.spr_frame_types || {}).Discard || 0);
+    $("sprStageSummary").innerHTML = `App doFrame has <strong>${appOverBudget}</strong> over-budget frames, indicating sustained App-side over-budget samples. SPR abnormal frames (Late/Miss/Discard) total <strong>${sprLateFrames}</strong>. Compare the CPUTime and GPUTime distributions below to identify which side carries more pressure. If CPU and GPU high-duration buckets rise together, scene workload and submission pipeline pressure are likely overlapping.`;
+
+    Chart.defaults.color = "#8b8b96";
+    Chart.defaults.borderColor = "rgba(255,255,255,0.06)";
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+
+    const commonOptions = { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: "index" }, plugins: { legend: { labels: { color: "#8b8b96", boxWidth: 9, boxHeight: 9, usePointStyle: true, pointStyle: "circle", font: { size: 11 } } }, tooltip: { backgroundColor: "#161618", borderColor: "rgba(255,255,255,.08)", borderWidth: 1, titleColor: "#fff", bodyColor: "#d4d4dc", padding: 10 } }, scales: { x: { grid: { color: "rgba(255,255,255,.035)" }, ticks: { color: "#8b8b96", font: { size: 10 } } }, y: { grid: { color: "rgba(255,255,255,.055)" }, ticks: { color: "#8b8b96", font: { size: 10 } } } } };
+    const makeBarOptions = ({ horizontal = false, min = 0, max = undefined, tickSuffix = "", stacked = false } = {}) => ({
+      ...commonOptions,
+      indexAxis: horizontal ? "y" : "x",
+      scales: {
+        x: horizontal ? { ...commonOptions.scales.x, beginAtZero: true, stacked, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}${tickSuffix}` } } : { ...commonOptions.scales.x, stacked },
+        y: horizontal ? { ...commonOptions.scales.y, stacked } : { ...commonOptions.scales.y, beginAtZero: true, min, max, stacked, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}${tickSuffix}` } }
+      }
+    });
+    const formatNumber = value => {
+      if (value === null || value === undefined || value === "") return "NA";
+      const number = Number(value);
+      if (!Number.isFinite(number)) return String(value);
+      return Number.isInteger(number) ? String(number) : String(Math.round(number * 1000) / 1000);
+    };
+    const isMemoryUnit = unit => String(unit || "").toLowerCase() === "bytes";
+    const formatCounterValue = (value, unit) => {
+      if (value === null || value === undefined || value === "") return { value: "NA", unit };
+      if (!isMemoryUnit(unit)) return { value: formatNumber(value), unit };
+      const number = Number(value);
+      if (!Number.isFinite(number)) return { value: String(value), unit };
+      return { value: formatNumber(number / 1000000), unit: "M" };
+    };
+    const formatCounterLabel = (value, unit) => {
+      const formatted = formatCounterValue(value, unit);
+      return `${formatted.value} ${formatted.unit}`;
+    };
+    const renderCounterPalette = [
+      { match: name => name.includes("draw call"), color: "#3b82f6", fill: "rgba(59,130,246,.08)" },
+      { match: name => name.includes("triangle"), color: "#f59e0b", fill: "rgba(245,158,11,.08)" },
+      { match: name => name.includes("vertex"), color: "#8b5cf6", fill: "rgba(139,92,246,.08)" },
+      { match: name => name.includes("texture2d"), color: "#10b981", fill: "rgba(16,185,129,.08)" },
+      { match: name => name.includes("mesh memory"), color: "#06b6d4", fill: "rgba(6,182,212,.08)" },
+      { match: name => name.includes("scene graph"), color: "#f97316", fill: "rgba(249,115,22,.08)" }
+    ];
+    const getRenderCounterColor = counterName => {
+      const normalized = String(counterName || "").toLowerCase();
+      return renderCounterPalette.find(item => item.match(normalized)) || { color: "#10b981", fill: "rgba(16,185,129,.08)" };
+    };
+    const isCounterWithSamples = counter => Array.isArray(counter?.series) && counter.series.length;
+    const isZeroOnlyCounter = counter => {
+      if (!isCounterWithSamples(counter)) return false;
+      const statsMax = Number(counter?.stats?.max);
+      if (Number.isFinite(statsMax)) return statsMax === 0;
+      return counter.series.every(item => Number(item?.value || 0) === 0);
+    };
+    const downsampleEvenly = (items, maxPoints) => {
+      if (!Array.isArray(items) || items.length <= maxPoints) return Array.isArray(items) ? items : [];
+      if (maxPoints < 2) return items.slice(0, maxPoints);
+      const result = [];
+      const lastIndex = items.length - 1;
+      for (let i = 0; i < maxPoints; i += 1) {
+        result.push(items[Math.round((i * lastIndex) / (maxPoints - 1))]);
+      }
+      return result;
+    };
+
+    const renderLoadCharts = new Set();
+    let renderLoadGroups = [];
+    const renderCounterPanel = (counter, group, panelId, index) => {
+      const series = Array.isArray(counter?.series) ? counter.series : [];
+      const stats = counter?.stats || {};
+      const unit = counter?.unit_label || group?.unit_label || "value";
+      const avg = formatCounterValue(stats.avg, unit);
+      const max = formatCounterValue(stats.max, unit);
+      const chartId = `renderCounterChart-${panelId}-${index}`;
+      return `
+        <div class="panel">
+          <div class="panel-head render-counter-head">
+            <div class="render-counter-title">
+              <div class="panel-title">${escapeHtml(counter?.name || stats.counter_name || "Counter")}</div>
+              <div class="panel-sub">${escapeHtml(counter?.process_name || stats.process_name || "")}</div>
+            </div>
+            <div class="render-counter-meta"><span>Avg <strong>${avg.value}</strong> ${avg.unit}</span><span>Max <strong>${max.value}</strong> ${max.unit}</span></div>
+          </div>
+          <div class="chart-wrap xs"><canvas id="${chartId}"></canvas></div>
+        </div>
+      `;
+    };
+    const getRenderLoadGroups = () => {
+      const groups = Array.isArray(reportData.details.render_load_counter_groups) ? reportData.details.render_load_counter_groups : [];
+      if (groups.length) return groups;
+      const legacySeries = Array.isArray(reportData.details.mesh_draw_call_count_series) ? reportData.details.mesh_draw_call_count_series : [];
+      const legacyStats = reportData.details.mesh_draw_call_count_stats || {};
+      return [{
+        id: "3d-render",
+        label: "3D Render",
+        process_name: legacyStats.process_name || "com.pico.spatial.runtime",
+        counters: [{
+          name: legacyStats.counter_name || "3D Mesh Draw Call Count",
+          process_name: legacyStats.process_name || "com.pico.spatial.runtime",
+          unit_label: "count",
+          series: legacySeries,
+          stats: legacyStats
+        }]
+      }];
+    };
+    const renderRenderLoadGroup = (groupIndex) => {
+      const group = renderLoadGroups[groupIndex];
+      const counters = Array.isArray(group?.counters) ? group.counters.filter(isCounterWithSamples) : [];
+      counters.forEach((counter, counterIndex) => {
+        const series = Array.isArray(counter?.series) ? counter.series : [];
+        if (!series.length) return;
+        const panelId = String(group.id || `group-${groupIndex + 1}`).replace(/[^a-zA-Z0-9_-]/g, "-");
+        const chartSeries = downsampleEvenly(series, maxRenderedCounterPoints);
+        const chartElement = $(`renderCounterChart-${panelId}-${counterIndex}`);
+        if (!chartElement) return;
+        if (renderLoadCharts.has(chartElement.id) || chartElement.offsetParent === null) return;
+        const stats = counter?.stats || {};
+        const unit = counter?.unit_label || group?.unit_label || "value";
+        const palette = getRenderCounterColor(counter?.name || stats.counter_name);
+        new Chart(chartElement.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: chartSeries.map(item => `${formatNumber(item.time_s)}s`),
+            datasets: [{
+              label: counter?.name || stats.counter_name || "Counter",
+              data: chartSeries.map(item => item.value),
+              borderColor: palette.color,
+              backgroundColor: palette.fill,
+              fill: true,
+              tension: .22,
+              borderWidth: 1.5,
+              pointRadius: chartSeries.length > 240 ? 0 : 1,
+              pointHoverRadius: 3,
+              pointBackgroundColor: palette.color,
+              pointBorderColor: "#0d0d0f",
+              pointBorderWidth: 1
+            }]
+          },
+          options: {
+            ...commonOptions,
+            plugins: {
+              ...commonOptions.plugins,
+              legend: { display: false },
+              tooltip: {
+                ...commonOptions.plugins.tooltip,
+                callbacks: {
+                  label: item => `${item.dataset.label}: ${formatCounterLabel(item.raw, unit)}`,
+                  afterBody: items => {
+                    const item = chartSeries[items?.[0]?.dataIndex || 0] || {};
+                    return [`ts_ns: ${item.ts_ns || ""}`];
+                  }
+                }
+              }
+            },
+            scales: {
+              ...commonOptions.scales,
+              y: {
+                ...commonOptions.scales.y,
+                beginAtZero: true,
+                suggestedMax: Number(stats.max || 0) || undefined,
+                ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => formatCounterLabel(v, unit) }
+              }
+            }
+          }
+        });
+        renderLoadCharts.add(chartElement.id);
+      });
+    };
+    const initializeRenderLoadLayout = () => {
+      const groups = getRenderLoadGroups();
+      const tabs = $("renderLoadTabs");
+      const panels = $("renderLoadPanels");
+      if (!tabs || !panels) return groups;
+      tabs.innerHTML = groups.map((group, index) => `
+        <button class="topic-tab ${index === 0 ? "active" : ""}" type="button" data-render-index="${index}">
+          <span class="topic-tab-title">${escapeHtml(group.label || group.id || `Group ${index + 1}`)}</span>
+        </button>
+      `).join("");
+      panels.innerHTML = groups.map((group, index) => {
+        const panelId = String(group.id || `group-${index + 1}`).replace(/[^a-zA-Z0-9_-]/g, "-");
+        const counters = Array.isArray(group.counters) ? group.counters.filter(isCounterWithSamples) : [];
+        const activeEntries = counters.map((counter, counterIndex) => ({ counter, counterIndex })).filter(entry => !isZeroOnlyCounter(entry.counter));
+        const zeroEntries = counters.map((counter, counterIndex) => ({ counter, counterIndex })).filter(entry => isZeroOnlyCounter(entry.counter));
+        const activeContent = activeEntries.length
+          ? `<div class="render-counter-grid">${activeEntries.map(entry => renderCounterPanel(entry.counter, group, panelId, entry.counterIndex)).join("")}</div>`
+          : `<div class="panel"><div class="detail-summary">No non-zero render-load counter data is available for this group.</div></div>`;
+        const collapsedContent = zeroEntries.length
+          ? `<details class="render-counter-collapsed" data-render-collapsed-index="${index}"><summary>These metrics are 0 and have been collapsed.</summary><div class="render-counter-grid">${zeroEntries.map(entry => renderCounterPanel(entry.counter, group, panelId, entry.counterIndex)).join("")}</div></details>`
+          : "";
+        const content = activeContent + collapsedContent;
+        return `<div class="topic-panel ${index === 0 ? "active" : ""}" data-render-index="${index}">${content}</div>`;
+      }).join("");
+      tabs.addEventListener("click", event => {
+        const button = event.target?.closest?.(".topic-tab");
+        if (!button) return;
+        const index = Number(button.dataset.renderIndex) || 0;
+        tabs.querySelectorAll(".topic-tab").forEach(tab => tab.classList.toggle("active", tab === button));
+        panels.querySelectorAll(".topic-panel").forEach(panel => panel.classList.toggle("active", Number(panel.dataset.renderIndex) === index));
+        renderRenderLoadGroup(index);
+      });
+      panels.querySelectorAll(".render-counter-collapsed").forEach(detail => {
+        detail.addEventListener("toggle", () => {
+          if (detail.open) renderRenderLoadGroup(Number(detail.dataset.renderCollapsedIndex) || 0);
+        });
+      });
+      return groups;
+    };
+    renderLoadGroups = initializeRenderLoadLayout();
+
+    const detailTabs = $("detailTabs");
+    detailTabs?.addEventListener("click", (event) => {
+      const button = event.target?.closest?.(".detail-tab");
+      if (!button) return;
+      const tabName = button.dataset.tab;
+      detailTabs.querySelectorAll(".detail-tab").forEach(tab => tab.classList.toggle("active", tab === button));
+      document.querySelectorAll(".detail-tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === `detailTab-${tabName}`));
+      if (tabName === "render-load") renderRenderLoadGroup(0);
+    });
+
+    if (hasQuickDiagnosisData) {
+      new Chart($("fpsChart").getContext("2d"), { type: "line", data: { labels: reportData.quickDiagnosis.timeline, datasets: [{ label: "App FPS", data: reportData.quickDiagnosis.appFps || reportData.quickDiagnosis.fps, borderColor: "#3b82f6", backgroundColor: "rgba(59,130,246,.08)", fill: true, tension: .32, borderWidth: 2, pointRadius: ctx => (ctx.raw ?? 0) < 70 ? 4 : 2, pointBackgroundColor: ctx => (ctx.raw ?? 0) < 70 ? "#ef4444" : "#3b82f6", pointBorderColor: "#0d0d0f", pointBorderWidth: 1.5 }, { label: "SPR FPS", data: reportData.quickDiagnosis.sprFps || [], borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.06)", fill: false, tension: .32, borderWidth: 2, pointRadius: ctx => (ctx.raw ?? 0) < 70 ? 4 : 2, pointBackgroundColor: ctx => (ctx.raw ?? 0) < 70 ? "#ef4444" : "#10b981", pointBorderColor: "#0d0d0f", pointBorderWidth: 1.2 }, { label: "90Hz Target", data: reportData.quickDiagnosis.timeline.map(() => 90), borderColor: "rgba(255,255,255,.28)", borderDash: [4, 5], pointRadius: 0, borderWidth: 1 }] }, options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, beginAtZero: true, min: 0, max: 96 } } } });
+
+      new Chart($("cpuChart").getContext("2d"), { type: "line", data: { labels: reportData.quickDiagnosis.timeline, datasets: [{ label: "App CPU", data: reportData.quickDiagnosis.appCpuLoad || [], borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,.06)", fill: false, tension: .32, borderWidth: 2, pointRadius: 2, pointBackgroundColor: "#f59e0b", pointBorderColor: "#0d0d0f", pointBorderWidth: 1.2 }, { label: "SPR CPU", data: reportData.quickDiagnosis.systemCpuLoad || reportData.quickDiagnosis.cpuLoad, borderColor: "#fb923c", backgroundColor: "rgba(251,146,60,.07)", fill: true, tension: .32, borderWidth: 2, pointRadius: 2, pointBackgroundColor: "#fb923c", pointBorderColor: "#0d0d0f", pointBorderWidth: 1.2 }] }, options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, min: 0, suggestedMax: 150, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}%` } } } } });
+
+      new Chart($("gpuChart").getContext("2d"), { type: "line", data: { labels: reportData.quickDiagnosis.timeline, datasets: [{ label: "SPR GPU Load", data: reportData.quickDiagnosis.gpuLoad, yAxisID: "y", borderColor: "#8b5cf6", backgroundColor: "rgba(139,92,246,.08)", fill: true, tension: .32, borderWidth: 2, pointRadius: ctx => (ctx.raw ?? 0) > 88 ? 4 : 2, pointBackgroundColor: ctx => (ctx.raw ?? 0) > 88 ? "#ef4444" : "#8b5cf6", pointBorderColor: "#0d0d0f", pointBorderWidth: 1.2 }, { label: "GPU Freq", data: reportData.quickDiagnosis.gpuFreq || [], yAxisID: "yFreq", borderColor: "#60a5fa", backgroundColor: "rgba(96,165,250,.05)", fill: false, tension: .32, borderWidth: 1.8, borderDash: [5, 5], pointRadius: 1.5, pointBackgroundColor: "#60a5fa", pointBorderColor: "#0d0d0f", pointBorderWidth: 1 }] }, options: { ...commonOptions, scales: { x: commonOptions.scales.x, y: { ...commonOptions.scales.y, min: 0, max: 100, position: "left", title: { display: true, text: "GPU Load (%)", color: "#8b8b96", font: { size: 10 } }, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}%` } }, yFreq: { ...commonOptions.scales.y, position: "right", beginAtZero: true, suggestedMax: 1000, grid: { drawOnChartArea: false }, title: { display: true, text: "GPU Freq (MHz)", color: "#8b8b96", font: { size: 10 } }, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}MHz` } } } } });
+    }
+
+    const budget = reportData.details.frameBudgetMs;
+    const frameDur = Array.isArray(reportData.details.frameDurations) ? reportData.details.frameDurations : [];
+    if (frameDur.length) new Chart($("frameDurChart").getContext("2d"), { type: "bar", data: { labels: frameDur.map((_, i) => `F${i + 1}`), datasets: [{ label: "dur_ms", data: frameDur, borderRadius: 4, borderSkipped: false, backgroundColor: frameDur.map(v => v > budget ? "#ef4444" : "#3b82f6"), borderWidth: 0 }, { type: "line", label: `${budget}ms Budget`, data: frameDur.map(() => budget), borderColor: "#f59e0b", borderDash: [4, 5], pointRadius: 0, borderWidth: 1.5 }] }, options: { ...makeBarOptions({ tickSuffix: "ms" }), scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, beginAtZero: true, suggestedMax: 32, ticks: { color: "#8b8b96", font: { size: 10 }, callback: v => `${v}ms` } } } } });
+
+    const appFrameBuckets = reportData.details.app_frame_buckets || {};
+    new Chart($("appFrameBucketChart").getContext("2d"), { type: "bar", data: { labels: appBucketOrder, datasets: [{ label: "frames", data: appBucketOrder.map(key => appFrameBuckets[key] || 0), borderRadius: 5, borderSkipped: false, backgroundColor: appBucketOrder.map(key => ({ "200ms+": "#ef4444", "100~200ms": "#f97316", "33~100ms": "#f59e0b", "22~33ms": "#facc15", "11~22ms": "#fde68a", "<11ms": "#3b82f6" }[key] || "#3b82f6")) }] }, options: makeBarOptions({ horizontal: true }) });
+
+    const sprFrameTypes = reportData.details.spr_frame_types || {};
+    const sprFrameTypeChart = new Chart($("sprFrameTypeChart").getContext("2d"), { type: "doughnut", data: { labels: frameTypeOrder, datasets: [{ data: frameTypeOrder.map(key => sprFrameTypes[key] || 0), backgroundColor: ["#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#94a3b8"], borderColor: "#161618", borderWidth: 2, hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { color: "#8b8b96", boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: "circle", font: { size: 11 } } }, tooltip: commonOptions.plugins.tooltip } } });
+    if (sprFrameTypeChart.data.labels[0] === "Normal") {
+      sprFrameTypeChart.toggleDataVisibility(0);
+      sprFrameTypeChart.update();
+    }
+
+    const sprFrameBuckets = reportData.details.spr_frame_buckets || {};
+    new Chart($("sprFrameBucketChart").getContext("2d"), { type: "bar", data: { labels: sprFrameBucketOrder, datasets: [{ label: "frames", data: sprFrameBucketOrder.map(key => sprFrameBuckets[key] || 0), borderRadius: 5, borderSkipped: false, backgroundColor: ["#ef4444", "#f59e0b", "#facc15", "#3b82f6"] }] }, options: makeBarOptions({}) });
+
+    const sprCpuBuckets = reportData.details.spr_cpu_buckets || {};
+    new Chart($("sprCpuBucketChart").getContext("2d"), { type: "bar", data: { labels: stageBucketOrder, datasets: [{ label: "CPUTime", data: stageBucketOrder.map(key => sprCpuBuckets[key] || 0), borderRadius: 5, borderSkipped: false, backgroundColor: ["#ef4444", "#f97316", "#f59e0b", "#3b82f6", "#60a5fa"] }] }, options: makeBarOptions({}) });
+
+    const sprGpuBuckets = reportData.details.spr_gpu_buckets || {};
+    new Chart($("sprGpuBucketChart").getContext("2d"), { type: "bar", data: { labels: stageBucketOrder, datasets: [{ label: "GPUTime", data: stageBucketOrder.map(key => sprGpuBuckets[key] || 0), borderRadius: 5, borderSkipped: false, backgroundColor: ["#ef4444", "#f97316", "#8b5cf6", "#6366f1", "#60a5fa"] }] }, options: makeBarOptions({}) });
+  </script>
+</body>
+</html>

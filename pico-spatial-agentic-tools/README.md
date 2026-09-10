@@ -12,10 +12,14 @@ This repository is for developers building **PICO OS 6** spatial apps who want r
 
 - bootstrap a first working project from templates
 - speed up day-to-day Spatial SDK development and debugging
+- implement or repair code-defined Kotlin Entity scenes with bounds-aware placement
 - author and package 3D scenes through Spatial Editor
 - place content onto detected real-world surfaces such as walls, tables, and floors
 - upgrade or migrate older Spatial SDK projects safely
 - diagnose on-device Spatial App performance bottlenecks with `pico-cli perf` and Perfetto Trace
+- add SpatialML to existing Unity, Kotlin Spatial SDK, and Native OpenXR apps
+- discover, adapt, and install reusable SpatialML Pipeline Zoo packages through each SDK's package
+  loader
 
 ## End-to-End Setup Flow
 
@@ -57,18 +61,23 @@ The recommended path is the interactive setup flow:
 pico-cli setup
 ```
 
-`pico-cli setup` prints a plan, lets you choose supported agent hosts, and configures the hosts available on your machine. Missing optional host CLIs are skipped with guidance; install that host later and rerun setup when needed.
+`pico-cli setup` prints a plan, lets you choose supported agent hosts and a resource scope, and configures the hosts available on your machine. The scope defaults to `global` in the prompt. Choose `local` to link plugin context only from a specific project. Missing optional host CLIs are skipped with guidance; install that host later and rerun setup when needed.
 
 For non-interactive or host-specific setup, pass explicit options:
 
 ```bash
-pico-cli setup --tool claude-code --plugin pico-spatial-agentic-tools --yes
-pico-cli setup --tool cursor --plugin pico-spatial-agentic-tools --yes
-pico-cli setup --tool codex --plugin pico-spatial-agentic-tools --yes
-pico-cli setup --tool copilot --plugin pico-spatial-agentic-tools --yes
-pico-cli setup --tool traecli --plugin pico-spatial-agentic-tools --yes
-pico-cli setup --tool all --plugin pico-spatial-agentic-tools --yes
+pico-cli setup --agent-tool claude-code --platform spatial --scope global --yes
+pico-cli setup --agent-tool cursor --platform spatial --scope global --yes
+pico-cli setup --agent-tool codex --platform spatial --scope global --yes
+pico-cli setup --agent-tool copilot --platform spatial --scope global --yes
+pico-cli setup --agent-tool traecli --platform spatial --scope global --yes
+pico-cli setup --agent-tool all --platform spatial --scope global --yes
+
+# Project-local setup
+pico-cli setup --agent-tool claude-code --platform spatial --scope local --project /absolute/path/to/project --yes
 ```
+
+`global` installs user-level plugin resources that can be used across projects and is also the default when `--yes` is used without `--scope`. `local` links plugin context for the directory passed with `--project`, or for the current directory when `--project` is omitted.
 
 Codex setup uses this marketplace root's `.agents/plugins/marketplace.json` and installs the plugin with a qualified selector such as `pico-spatial-agentic-tools@pico-xr`. Cursor public setup is already supported and currently installs this plugin as a local plugin using `.cursor-plugin` manifests; it does not depend on a public Cursor marketplace flow. Trae CLI public setup adds this repository as a local marketplace and installs or upgrades the plugin from that marketplace.
 
@@ -93,21 +102,90 @@ Which PICO Spatial skills are available, and when should I use each one?
 
 ### 4. Keep the plugin updated
 
-Update one host:
+Update one host in global scope:
 
 ```bash
-pico-cli plugin update --tool claude-code --plugin pico-spatial-agentic-tools
-pico-cli plugin update --tool cursor --plugin pico-spatial-agentic-tools
-pico-cli plugin update --tool codex --plugin pico-spatial-agentic-tools
-pico-cli plugin update --tool copilot --plugin pico-spatial-agentic-tools
-pico-cli plugin update --tool traecli --plugin pico-spatial-agentic-tools
+pico-cli plugin update --agent-tool claude-code --platform spatial --scope global
+pico-cli plugin update --agent-tool cursor --platform spatial --scope global
+pico-cli plugin update --agent-tool codex --platform spatial --scope global
+pico-cli plugin update --agent-tool copilot --platform spatial --scope global
+pico-cli plugin update --agent-tool traecli --platform spatial --scope global
 ```
 
-Update all configured hosts:
+Update all Agent Hosts recorded in global scope:
 
 ```bash
-pico-cli plugin update --tool all --plugin pico-spatial-agentic-tools
+pico-cli plugin update --agent-tool all --platform spatial --scope global
 ```
+
+Update the Spatial plugin for Codex in the current project:
+
+```bash
+pico-cli plugin update --agent-tool codex --platform spatial --scope local --project .
+```
+
+`plugin update` requires `--scope global|local` and only reads records from the
+explicitly selected scope. `--scope local --project .` selects the current project's
+`.pico-env.json`; `--scope global` selects global plugin records. `all` updates only
+Hosts recorded in that scope; it does not install unconfigured Hosts or merge
+project-local and global records.
+
+## External Workflow Prerequisites
+
+Some advertised routes cross into capabilities owned by another plugin or MCP server. They are not
+bundled or provisioned by `pico-spatial-agentic-tools`:
+
+| Route                                                                                | External prerequisite                                                                                  | Behavior when absent                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Create a new Unity SpatialML app                                                     | **PICO Unity Agentic Tools** (`pico-unity-agentic-tools`) with the manual-only `pico-unity-init` skill | If Unity was explicitly requested, report `BLOCKED` and explain that the Unity plugin must be installed and the agent host restarted. If the SDK is still undecided and the workspace is empty, the agent may disclose that Unity is unavailable and offer Kotlin Spatial SDK instead; it must not switch SDKs silently. |
+| Repair an initialized Unity SDK or recover a missing SpatialML Pipeline Zoo importer | **PICO Unity Agentic Tools** with `pico-unity-package-manager`                                         | Continue CLI-only checks that do not need Unity-owned mutation, but report `BLOCKED` before a repair/importer handoff when the skill is unavailable. Do not route an initialized project back to `pico-unity-init`.                                                                                                      |
+
+The agent must inspect the live available skill/tool inventory before promising one of these routes.
+Installing the Unity plugin is a separate host-environment operation. In particular, do not assume
+that `pico-cli plugin install` can add it beside an existing Spatial platform record: one configured
+scope records one plugin platform, and cross-platform plugin install is rejected. Running
+`pico-cli setup --platform unity` can switch the complete configured environment for that scope.
+Review the setup plan, choose the intended scope and host, and start a new agent session after the
+Unity plugin is available.
+
+## Create a SpatialML App with Natural Language
+
+You do not need to know SpatialML commands before asking an AI assistant for a feature. Describe the
+experience in ordinary language and, when you can, include the parent SDK, input, inference goal, and
+visible result. The assistant should route the request through the parent SDK, SpatialML setup, the
+closest reusable Pipeline Zoo package, app integration, and emulator/device verification.
+
+For example:
+
+```text
+I am new to PICO development. Build a Kotlin Spatial SDK app that detects faces from the passthrough
+camera and draws a box around each face. Start with the closest Pipeline Zoo package, set up what is
+needed, run it, fix crashes from the logs, and show me a screenshot. Explain choices and confirmations
+in beginner-friendly language.
+```
+
+```text
+In this existing PICO Unity project, estimate body pose from the camera and use it to drive an avatar.
+Find and import the closest Pipeline Zoo package through the Unity SDK importer, then build and verify
+the app. Do not replace the SDK that is already installed.
+```
+
+If the SDK is not specified, the assistant should inspect the workspace first. In an empty directory,
+it should help choose between Kotlin Spatial SDK and Unity; Native OpenXR requires an existing PICO
+OpenXR project. SpatialML is an integration in one of those parent SDKs, not a standalone project type,
+and it is not a WebSpatial workflow.
+
+A new Kotlin SpatialML app is feature-bearing by definition. It follows `spatial-design-to-app` and
+the executable-design gate; when the request has no user-provided executable design,
+`pico-spatial-app-designer` produces and accepts one first. `spatial-app-onboarding` may create the
+project only as that workflow's scaffold substep. Direct onboarding is reserved for an explicitly
+featureless parent scaffold.
+
+The SpatialML skill also activates for implicit requests that combine spatial input with model
+inference and an output, even when the prompt never says "SpatialML." Passthrough display, platform
+hand tracking, spatial mesh, ordinary 3D model assets, or a generic chatbot do not activate it by
+themselves. See `skills/spatialml/references/natural-language-quickstart.md` for more prompt templates,
+the assistant's expected workflow, SDK boundaries, and beginner terminology.
 
 ## Contents
 
@@ -116,19 +194,20 @@ Distributable assets live under `skills/` (each host's `plugin.json` points to t
 - `skills/porting-android-app/`: Porting an Android app to PICO OS with Spatial SDK, including code refactoring, SDK integration, dependency resolution, and UI adaption.
 - `skills/spatial-app-onboarding/`: Reusable onboarding skill for creating or continuing a first working Spatial SDK app from templates, especially empty-directory quickstarts, new Spatial apps, and 3D model starter demos.
 - `skills/spatial-sdk-guideline/`: Day-to-day PICO Spatial SDK 3D development guide (Stage/WindowContainer, ECS, asset loading, materials/lighting, animation, physics, interaction, coordinates/units, performance budgets, etc.). For non-trivial SDK/API facts, use `pico-dev-knowledge` MCP as the primary retrieval source when available; use curated pages under `skills/spatial-sdk-guideline/reference/` for workflow guidance, stable examples, and fallback context. Includes the `skills/spatial-sdk-guideline/playbooks/scene-surface-placement.md` sub-flow for placing content onto detected real-world surfaces (walls, tables, floors).
-- `skills/spatial-design-to-app/`: Multi-source app generation and bounded panel patch skill for creating or materially updating a PICO Spatial Android/Kotlin app from Figma, screenshots/mockups, PRDs, intent-only prompts, hybrid inputs, or a constrained patch while preserving or choosing the right container, window model, panel hierarchy, and layout regions.
+- `skills/spatial-design-to-app/`: Multi-source app generation and bounded panel patch skill for creating or materially updating a PICO Spatial Android/Kotlin app from Figma, screenshots/mockups, PRDs, intent-only prompts, hybrid inputs, or a constrained patch while preserving or choosing the right container, window model, and panel hierarchy. The Figma route requires the external `codin-d2c-figma-to-code` MCP server; the other input routes work with the servers this plugin provisions.
 - `skills/pico-spatial-app-designer/`: PICO Spatial app design package skill for designing, reviewing, repairing, or producing a structured design deliverable from requirements, prior design facts, or delivery specs, covering the intent, research, spatial-structure, composition, design-system, preview, and delivery-readiness stages before app code generation.
 - `skills/spatial-app-dev-workflow/`: Post-onboarding Spatial SDK implementation workflow for continuing from a project `AGENTS.md`, implementing one requirement at a time, building, installing/launching in the PICO emulator or device, collecting screenshot/recording/log evidence, and repairing crashes from logcat before handoff.
 - `skills/spatial-sdk-update/`: PICO Spatial SDK version update/migration assistant (with risk notes and constraints).
-- `skills/spatial-editor/`: Managed Spatial Editor workflow for authoring scenes, entities, assets, materials, effects, visual inspection, custom component declarations, and packaged editor-to-app handoffs.
-- `skills/spatial-sdk-scene-builder/`: Scene layout assistant for deriving realistic spatial transforms from 3D asset bounding boxes and generating structured scene configuration.
+- `skills/spatial-editor/`: Managed Spatial Editor authoring package split into `SKILL.md` for workflow/task decomposition, `contracts.md` for Agent-to-Controller forms, and `recovery.md` for rejected submissions, error codes, interruptions, and blockers.
+- `skills/spatial-sdk-scene-builder/`: Kotlin/Spatial SDK Entity scene implementation and repair skill for code-owned hierarchy, asset loading, transforms, bounds-aware placement, SpatialView/WindowContainer clipping, and runtime validation. Explicit offline transform plans remain supported as intermediate artifacts; editor-authored scene or asset content stays with `spatial-editor`.
 - `skills/pico-env-doctor/`: Verify-first environment workflow for tasks that execute `pico-cli`, query MCP, install/update plugin hosts, or start emulator/device workflows. It checks whether `pico-cli` is installed/current, discovers supported setup/plugin/MCP commands before doctor-style checks, allows short-term session reuse of healthy results, and requires explicit authorization before running repair commands.
 - `skills/pico-cli/`: Generic `pico-cli` usage guide for command-family selection, help/version/setup discovery, output formats, device targeting, safe defaults, troubleshooting, and handoff to workflow-specific skills.
 - `skills/spatial-emulator-usage/`: Emulator-specific `pico-cli` supplement for real emulator/device workflows, including emulator lifecycle, APK install/launch, file transfer, screenshots, recordings, and log/logcat workflows.
-- `skills/spatial-app-perf-diagnose/`: On-device Spatial App performance diagnosis skill for analyzing stutter, frame drops, high CPU/GPU load, scene-complexity pressure, and slow startup/loading by combining `pico-cli perf` real-time diagnosis with Perfetto Trace evidence.
+- `skills/spatial-app-performance-analysis/`: On-device Spatial App performance analysis skill for diagnosing stutter, frame drops, high CPU/GPU load, scene-complexity pressure, and slow startup/loading by combining `pico-cli perf` real-time diagnosis with Perfetto Trace evidence.
 - `skills/spatial-ui-ability/`: SpatialUI capability lookup skill for production-ready Kotlin snippets covering gestures, Vibrant, hover effects, window constraints, depth layout, glass materials, Z offsets, 3D transforms, and Augment-style windows.
 - `skills/spatial-ui-design-style/`: SpatialUI application-side design-system guide for PicoTheme usage, token and typography role selection, built-in component preference, and custom Compose UI that matches native SpatialUI interaction conventions.
 - `skills/plugin-audit/`: Local metadata-only plugin setup audit for support workflows. It creates a user-reviewed support bundle without collecting prompts, source code, tool arguments, tool outputs, or transcripts by default.
+- `skills/spatialml/`: Unified cross-SDK workflow for creating, extending, or debugging SpatialML-enabled apps after completing the owning SDK workflow. Its focused references cover beginner natural-language app creation, Pipeline Zoo discovery/adaptation/SDK-owned loading, and implementation workflows such as camera-to-model inference, operator selection, 2D-to-3D placement, mode-specific output, synchronization, and readback. Exact SDK APIs come from `pico-dev-knowledge`, not project-local copies of SDK documentation.
 
 ## Manual Entry Points
 
@@ -148,11 +227,13 @@ When imported manually, the host loads `skills/` and `.mcp.json` using the relat
 The public `.mcp.json` starts the knowledge and managed Spatial Editor gateway servers through `npx`:
 
 ```bash
-npx -y @picoxr/pico-cli mcp:dev-knowledge
+npx -y @picoxr/pico-cli knowledge:server
 npx -y @picoxr/pico-cli editor:bootstrap
 ```
 
-The editor gateway installs and starts Spatial Editor lazily when an agent calls `ensure_editor_ready`. Editor download channels are selected by the pico-cli build policy and are not user-configurable. The current rollout routes both public and internal builds to the regional beta channel.
+The editor gateway installs and starts Spatial Editor lazily when an agent calls `start_editor_workflow`. The managed Controller owns execution order, retries, evidence gates, packaging, and cleanup. Editor download channels are selected by the pico-cli build policy and are not user-configurable.
+
+These two servers are the only ones this plugin provisions. The Figma route in `skills/spatial-design-to-app/` additionally needs the `codin-d2c-figma-to-code` MCP server (`d2c_get_figma_data`, `d2c_download_icons`, `d2c_verify_code`, `d2c_cleanup_temp`) configured in your own host. Without it, that skill re-routes a Figma request to a screenshot/mockup flow or reports BLOCKED rather than generating unverified code — see `AGENTS.md` → "External MCP prerequisites".
 
 For setup and visibility support, use the user-triggered plugin audit flow:
 
@@ -173,11 +254,14 @@ Installing `pico-cli` is still the recommended setup path because setup/update c
 
 ## Suggested Prompts (Examples)
 
+These prompts demonstrate routing only; their subjects, quantities, relationships,
+distances, and visual properties are not defaults for another task.
+
 - "Check whether my `pico-cli`, PICO Spatial plugin, skills, and MCP environment are installed, current, and ready; fix anything safe to repair."
 - "Create a new PICO Spatial app from scratch using the shortest stable template path."
 - "I have an empty directory and want the fastest working Spatial SDK demo."
 - "Use this Figma to redesign my existing app into a PICO Spatial app while preserving the right container and window model."
-- "Build a new PICO Spatial app from this PRD and choose the correct panel hierarchy and layout regions."
+- "Build a new PICO Spatial app from this PRD and choose the correct container, window model, and panel hierarchy."
 - "Patch this existing panel from a screenshot without changing the root container."
 - "After the onboarding demo works, add tap-to-select for the model, run it in the emulator, and fix any crash from logs before you hand it back."
 - "Continue from this Spatial SDK project's AGENTS.md and implement the next requirement; verify each step with build/install/launch evidence."
@@ -187,7 +271,9 @@ Installing `pico-cli` is still the recommended setup path because setup/update c
 - "Why doesn't raycast/click interaction work? How should I configure `CollisionComponent` vs `InteractableComponent`?"
 - "My physics collisions don't happen / don't block. How do I verify physics world scope and collider modes?"
 - "Upgrade this project to the newest PICO Spatial SDK and fix deprecated APIs."
-- "I have several 3D assets and need realistic scene positions, scales, and rotations based on their actual dimensions."
+- "Create this complete scene using Kotlin Entities, then build and verify it on the emulator."
+- "Apply the requested measured relationship between the named Entities without changing unrelated scene content."
+- "Inspect these assets and generate an explicit `.spatialsdk/scene_transforms.json` plan before implementing the Kotlin scene."
 - "Attach this panel to a real wall and keep it stable as the user moves."
 - "Which `pico-cli` command should I use to inspect devices, app state, or emulator state?"
 - "How do I get JSON output or choose a target device with `pico-cli`?"
@@ -196,11 +282,18 @@ Installing `pico-cli` is still the recommended setup path because setup/update c
 - "Capture screenshot / recording / logcat from the current device."
 - "My Spatial app stutters on a real device. Help me diagnose it with `pico-cli perf` and Perfetto Trace."
 - "Analyze this Perfetto Trace and tell me whether the bottleneck is in the app, SPR, Eng-Render, or XR runtime/compositor."
-- "Use `pico-cli perf doctor` / `monitor` / `trace` to investigate frame drops, high CPU/GPU load, or slow startup on device."
+- "Use `pico-cli perf doctor` / `live` / `trace` to investigate frame drops, high CPU/GPU load, or slow startup on device."
 - "Convert this Figma page into SpatialUI Compose code for my PICO OS project."
 - "Turn this screenshot into SpatialUI code and verify the project environment is ready to build."
 - "How do I add `spatialHoverEffect`, `backgroundMaterial`, `zOffset`, or `rotate3D` to this SpatialUI component?"
 - "Which `PicoTheme` colors, typography roles, and built-in components should I use so this custom SpatialUI UI looks native?"
+- "Add SpatialML to this existing Kotlin Spatial SDK, Unity, or Native OpenXR app and verify the setup."
+- "Create a new SpatialML app using Unity, Kotlin Spatial SDK, or Native OpenXR, with the owning SDK setup first."
+- "I am new to PICO. Build an app that detects household objects from the passthrough camera, label them, run it, and show me the result. Help me choose Kotlin or Unity if needed."
+- "Use microphone audio with my model.tflite to classify sounds and show the current label; explain anything I need to confirm."
+- "Search the Pipeline Zoo for a pose package, compare the model cards, and install the best match."
+- "No exact package matches; adapt the closest topology and load it through this SDK's package loader."
+- "Import this Pipeline Zoo package into my Unity project and finish it through the SDK importer."
 - "Check whether the PICO Spatial plugin is visible to my agent host and create a local support bundle with plugin-audit."
 
 ## Versioning & Change Tracking

@@ -9,7 +9,7 @@ description: >-
   existing-module layout/window-model updates, or bounded panel patches after
   the scaffold has completed its first runnable loop.
 license: 'Apache-2.0'
-allowed-tools: Bash(pico-cli project create *) Bash(adb *)
+allowed-tools: 'Bash(pico-cli project create *) Bash(adb *) Bash(./gradlew *) Read Edit Write'
 ---
 
 # Spatial App Onboarding Skill
@@ -18,6 +18,14 @@ You are a **Spatial advisor and rapid executor**.
 
 Your job is to get the user to a **working first Spatial project on the shortest stable path**.
 Do not turn onboarding into a long interview. Start with `pico-cli project create`, keep the workflow reliable, and leave behind a project that is easy to continue.
+
+## Required Environment and Emulator Handoffs
+
+Apply this gate only before environment-dependent execution; purely static code reading, planning, and edits do not require it.
+
+1. Reuse the latest successful `pico-env-doctor` result only within the same Host session when the workspace, target Host, and tooling are unchanged, no setup/update/install/start command has run since, no new failure signal exists, and the user has not requested re-verification.
+2. Otherwise activate `pico-env-doctor` before running any `pico-cli` command or querying `pico-dev-knowledge` MCP. Continue only after a healthy result; if it reports a blocker, stop the dependent execution and report that blocker.
+3. After the gate passes, keep project scaffolding and first-run stabilization in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `spatial-emulator-usage`, then resume here with its evidence or blocker.
 
 `pico-cli project create` command shape:
 
@@ -59,6 +67,8 @@ This skill is reusable across projects. Do not create, delete, or depend on mark
 
 Routing boundary: this skill owns the first runnable scaffold and first-run stability loop. A scaffold is considered complete only after a generated Spatial SDK project exists and build/install/launch has passed, or an external prerequisite has been explicitly recorded as blocking the first-run loop. Once that completion point is reached, product behavior, layout, window model, panel hierarchy, visual-reference implementation, PRD-to-app generation, or bounded panel patches route to `spatial-design-to-app` instead of continuing onboarding. Continue here only for scaffold repair, first launch/build/install completion, or small changes needed to make the initial generated project understandable and runnable.
 
+Hard stop for product generation: if the complete request contains product-specific UI generation, Figma/screenshot/mockup/visual reference assets, PRD-derived layout, multi-page app behavior, visual-fidelity goals, **or any named application feature, page, or business flow — even a single-line intent with no visual asset and no user-provided design package**, do not use onboarding as the primary workflow. Route to `spatial-design-to-app` (its designer gate escalates to `pico-spatial-app-designer` when no visual asset and no user design package are present). The decision is made solely on whether the user already provided an executable design, not on application complexity, keyword presence, or design depth. Onboarding is the primary workflow only when the request is genuinely scaffold-only — an empty scaffold or a first runnable demo with no product feature described. If `spatial-design-to-app` later calls this skill for its Build-stage scaffolding, perform only `pico-cli project create`, first-run checks, and the scaffold handoff described in `../spatial-design-to-app/references/scaffold-handoff.md`; do not implement product UI, navigation, page cards, custom icons, or visual-reference layout here.
+
 Use this skill when the user asks to create, bootstrap, scaffold, initialize, quickstart, or try a PICO Spatial SDK project, especially from an empty directory or from a 3D model/demo prompt.
 
 At the start of each run:
@@ -67,7 +77,17 @@ At the start of each run:
 2. If the project is empty or not yet a Spatial SDK project, run the onboarding workflow
 3. If the project already has a Spatial SDK scaffold, continue from the current project state instead of restarting or overwriting it
 4. If the target directory already contains project guidance, generate project files in that same directory; use the project name for `--name`, not as a child `--dir`, unless the user explicitly asks for a child directory
-5. Inspect the complete request for work that generates, creates, composes, or materially modifies 3D content; route that content-production step through `spatial-editor` after scaffolding
+5. After scaffolding, classify requested 3D work by ownership:
+   - route editor-authored scenes, assets, visual composition, materials, lighting, effects, or
+     visual tuning through `spatial-editor`
+   - hand Kotlin/code-owned Entity creation, loading, hierarchy, transforms, placement, or
+     validation to `spatial-sdk-scene-builder`
+   - when both are required, use each skill only for its owned portion
+
+The Editor routing check transfers only the 3D content scope established by the user
+request or an accepted upstream contract. It must not expand a generic app request
+into additional authored objects, scene relationships, materials, effects, or visual
+acceptance requirements.
 
 ## 1. Available Materials and Priority
 
@@ -83,6 +103,7 @@ Current explicit entry points:
 
 - Read `references/template-playbook.md` when API usage or implementation direction is unclear
 - Read `references/template-playbook.md` again when a later turn requires migration or another branch decision
+- Read `../spatial-design-to-app/references/scaffold-handoff.md` when this skill is invoked by `spatial-design-to-app` for a product-specific new project scaffold.
 
 Tooling rule for onboarding:
 
@@ -105,19 +126,36 @@ Tooling rule for onboarding:
 
 Default rhythm:
 
-`quick judgment → scaffold MVP → route 3D content production → integrate → build/install/launch → show result → continue`
+`quick judgment → scaffold MVP → route 3D work by ownership → integrate → build/install/launch → show result → continue`
 
 Target: let the user see something working within about 3 turns whenever possible.
 
-The shortest-path goal applies to project scaffolding, not to bypassing the preferred 3D content-production workflow. The user does not need to mention Spatial Editor. When the full request includes 3D content production, finish the runnable scaffold, activate `spatial-editor`, and resume app integration after its handoff.
+The shortest-path goal applies to project scaffolding, not to bypassing the owner of the requested
+3D deliverable. After the runnable scaffold exists, activate `spatial-editor` only for
+editor-authored content such as scenes, assets, visual composition, materials, lighting, effects,
+or visual tuning. Hand Kotlin/code-owned Entity hierarchy and placement work to
+`spatial-sdk-scene-builder`, then resume the enclosing app workflow after that skill completes.
+When both kinds of work are present, use each skill for its owned portion.
 
-Skip that editor step only when:
+For an editor-authored requirement, skip the editor step only when:
 
 1. The user explicitly asks not to use Spatial Editor.
 2. Runtime capability inspection shows that Spatial Editor cannot satisfy any part of the 3D content requirement.
 3. Spatial Editor is actually unavailable after reasonable recovery from installation, download, startup, connection, authorization, or backend-readiness failure.
 
 If Spatial Editor can satisfy part of the requirement, use it for that part. Exceptions 2 and 3 require runtime evidence from the editor workflow.
+
+For an editor-authored step, activate `spatial-editor` and call
+`start_editor_workflow`. The managed Controller owns installation, startup,
+readiness, and recovery; do not call `ensure_editor_ready` as a preflight. An
+initial lifecycle status is not failure evidence. Only a structured workflow
+blocker after one reasonable recovery attempt may authorize an App/ECS fallback,
+and the handoff must record the blocker, repair attempted, degraded scope, and
+user-visible impact.
+
+The managed Editor Workflow Controller owns capability checks, blockers, retries,
+evidence gates, and cleanup. Onboarding consumes only its completed handoff or
+structured blocker.
 
 ### 2.2 Keep the core file generic
 
@@ -155,10 +193,13 @@ Execution order:
 2. Choose and pass one supported `--template` value; use the user's explicit
    template/container mode, a calling workflow's resolved container contract, or
    the closest playbook default
-3. When the complete request includes 3D content production, activate `spatial-editor` and obtain its authored-content handoff or documented exception
+3. Route post-scaffold 3D work by ownership: obtain a `spatial-editor` handoff for editor-authored
+   content, or hand Kotlin/code-owned Entity implementation to `spatial-sdk-scene-builder`; when
+   both are required, preserve that split
 4. Modify only what the MVP needs: package name, entry logic, handoff integration, required config, and required tests
 5. Place user assets where the generated project and docs expect them
 6. Remove sample code or assets that distract from the first MVP
+7. When invoked as a `spatial-design-to-app` scaffold substep, write `<target>/.scratch/onboarding_handoff.json` before returning and set `product_ui_implemented=false`. Product UI implementation must resume in `spatial-design-to-app`.
 
 Package-name rules:
 
@@ -176,32 +217,30 @@ Important constraints:
 - Fix `androidResources.noCompress`, asset paths, ABI/build config, and similar details according to the docs and generated project
 - If a later turn requires a larger architectural move, migrate using the destination template as the reference instead of improvising
 
-## 4. Run Checks, Build, Install, and Launch Yourself
+## 4. Run Local Checks, Then Hand Off Runtime Operations
 
-Run commands yourself. Do not ask the user to run commands unless an external prerequisite cannot be handled by you.
+Run scaffolding and local build commands in this skill. Do not ask the user to run commands unless an external prerequisite cannot be handled by you. Use `spatial-emulator-usage` for the device/emulator portion instead of duplicating its command flow here.
 
 At minimum, complete these steps:
 
-1. Run `pico-cli project create` or confirm the current project was already generated
-2. Check `./gradlew`, `adb`, and device connection state
-3. Run the SpatialUI self-check from the hard-constraint section: confirm `PicoTheme` wrapping and remove any Material/Material3 usage before building
-4. Run `./gradlew assembleDebug`
-5. Fix build failures automatically
-6. Run `./gradlew installDebug`
-7. Launch the main activity
-8. Ask the user to confirm the expected result appears on-device
+1. Pass the required environment gate, then run `pico-cli project create` or confirm the current project was already generated.
+2. Check the Gradle wrapper and local build prerequisites.
+3. Run the SpatialUI self-check from the hard-constraint section: confirm `PicoTheme` wrapping and remove any Material/Material3 usage before building.
+4. Run `./gradlew assembleDebug` and fix build failures automatically.
+5. Activate `spatial-emulator-usage` with the APK path, package/activity, target preference, and first-run acceptance check. It owns target/connectivity checks, install, launch, and runtime logs or captures.
+6. Resume onboarding with the returned evidence or exact blocker, then ask the user to confirm the expected result appears on-device when a launch succeeded.
 
 If the template does not already include a suitable launch/liveness test, add a minimal `androidTest` that:
 
 - launches the main activity
 - asserts basic app liveness
 
-Also run `./gradlew connectedAndroidTest` when possible.
+When the scaffold needs connected instrumentation or liveness validation, add the minimal `androidTest` here, then hand the project root, selected target, and `connectedAndroidTest` task to `spatial-emulator-usage`. Resume onboarding with its test evidence or blocker; do not execute the device-scoped task directly in this skill.
 
 If an environment problem blocks progress, tell the user clearly.
 Examples include:
 
-- `adb` not installed or not on `PATH`
+- device tooling not installed or not on `PATH`
 - no connected device, unauthorized device, or offline device
 - Android SDK or required SDK components missing
 - any other external machine/device prerequisite that prevents install, launch, or test

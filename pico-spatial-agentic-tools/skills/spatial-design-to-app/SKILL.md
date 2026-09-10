@@ -1,91 +1,169 @@
 ---
 name: spatial-design-to-app
-description: Use when creating or materially updating a product-specific PICO Spatial Android/Kotlin app from Figma, screenshot/mockup, PRD, intent, hybrid sources, or a bounded panel patch, and the task requires container, window model, panel hierarchy, layout contract, implementation, and verification. For generic empty-dir quickstarts use spatial-app-onboarding. NOT for SDK upgrades, legacy Android porting, pure code review/refactor, old-baseline D2C A/B evaluation, or performance diagnosis.
+description: Use when creating or materially updating a product-specific PICO Spatial Android/Kotlin app from Figma, screenshot/mockup, PRD, intent, hybrid sources, or a bounded panel patch, and the task requires container, window model, panel hierarchy, implementation, and verification. For generic empty-dir quickstarts use spatial-app-onboarding. NOT for SDK upgrades, legacy Android porting, pure code review/refactor, old-baseline D2C A/B evaluation, or performance diagnosis.
 license: 'Apache-2.0'
 ---
 
 # Product-Specific Source → PICO Spatial Android App
 
-> 🔴 **Contract touchpoints** (progressive loading; read at the phase that needs them):
+> 🔴 **Mandatory reading** (progressive; read at the stage that needs it):
 >
-> 1. `references/workflow-contract.md` — Phase 1 / 4 / 5 / 7 artifact schemas, reflection fields, Backtrack table.
-> 2. `references/architecture-conventions.md` — Phase 6 before Kotlin/Compose code: layered packages + ViewModel/UseCase/Repository + unit-test floor.
-> 3. `../spatial-ui-design-style/SKILL.md` — Phase 6 before Compose UI, especially screenshot/visual codegen: PicoTheme / Material / hover / click+haptics / R1–R8 rules. This is a generation-time contract, not a final lint suggestion.
+> 1. `references/spatial-ui-components.md` — before writing any Compose: the component whitelist. Names outside it do not exist.
+> 2. `references/spatialui-web-to-compose.md` — after the designer gate for
+>    `intent_only`: the complete `sui-*` → production Compose mapping.
+> 3. `references/spatial-windows-guide.md` — window-level components, Subwindow, and the floating-layer family.
+> 4. `references/architecture-conventions.md` — before writing Kotlin: layered packages + ViewModel/UseCase/Repository + unit-test floor.
+> 5. `../spatial-ui-design-style/SKILL.md` — before writing Compose UI: PicoTheme / tokens / hover / haptics. A generation-time contract, not a final lint.
+
+Generate code directly from the design. This skill does **not** produce
+intermediate layout JSON — the container is recorded in `AndroidManifest.xml`,
+the structure is the Kotlin you write, and verification reads both back.
 
 ## Boundary
 
-| Situation                                                        | Use instead                 |
-| ---------------------------------------------------------------- | --------------------------- |
-| Upgrade SDK / migrate deprecated APIs                            | `spatial-sdk-update`        |
-| Generic empty-dir quickstart / scaffold-only first runnable demo | `spatial-app-onboarding`    |
-| Migrate 2D Android app to spatial                                | `porting-android-app`       |
-| Performance diagnosis                                            | `spatial-app-perf-diagnose` |
-| 3D bbox / placement planning                                     | `spatial-sdk-scene-builder` |
+| Situation                                                        | Use instead                        |
+| ---------------------------------------------------------------- | ---------------------------------- |
+| Upgrade SDK / migrate deprecated APIs                            | `spatial-sdk-update`               |
+| Generic empty-dir quickstart / scaffold-only first runnable demo | `spatial-app-onboarding`           |
+| Migrate 2D Android app to spatial                                | `porting-android-app`              |
+| Performance diagnosis                                            | `spatial-app-performance-analysis` |
+| 3D bbox / placement planning                                     | `spatial-sdk-scene-builder`        |
 
 ## Routing Position
 
-Use this skill as the primary route when the user wants a product-specific PICO Spatial Android app from Figma, screenshot/mockup, PRD, intent, hybrid sources, or a bounded existing-panel patch. For a new project, this skill owns the evidence, container, window model, and layout contract first; only the raw scaffold step is delegated to `spatial-app-onboarding` after Phase 4.
+Primary route when the user wants a product-specific PICO Spatial Android app
+from Figma, screenshot/mockup, PRD, intent, hybrid sources, or a bounded
+existing-panel patch. This skill owns the evidence, container, and window model;
+only the raw scaffold step is delegated to `spatial-app-onboarding`.
 
-Do not use this skill for a generic empty-directory quickstart whose only goal is "create a first runnable Spatial project"; route that directly to `spatial-app-onboarding`.
+Do not use this skill for a generic empty-directory quickstart whose only goal is
+"create a first runnable Spatial project" — route that to
+`spatial-app-onboarding`.
+
+### Editor-authored content gate
+
+When the accepted design requires editor-authored scenes, assets, visual
+composition, materials, lighting, particles, or effects, activate
+`spatial-editor` for that portion before implementing app-owned behavior. Call
+`start_editor_workflow` and let the managed Controller establish readiness; do
+not call `ensure_editor_ready` as a preflight. An initial lifecycle status does
+not prove unavailability. Follow one structured workflow recovery action before
+degrading to an App/ECS fallback.
+
+Resume this workflow only after the Editor handoff returns co-located `.bundle`
+and `.scenes.json` outputs, a supported authored-content result that does not
+need packaging, or a structured failure record containing the readiness error,
+recovery attempted, degraded scope, and user-visible impact. Never silently
+replace editor-authored content with Kotlin primitives.
+
+## Input type → what to extract
+
+Classify once, then extract the facts in this row. Different inputs justify
+different extraction tactics; they all converge on the same decisions.
+
+| input_mode          | Trigger                                                                                        | Extract                                                                                                                                                                                                               | Special handling                                                                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `visual_design`     | a Figma URL                                                                                    | frame hierarchy, regions, repeated structures, visible states, window-level candidates (TabBar / Toolbar / Subwindow / modal), design tokens, typography roles, assets/icons, spatial cues                            | Read "Figma inputs" below **first** — the route needs an external MCP this plugin does not ship. Fetch fails but a preview/screenshot exists → re-classify as `visual_reference` and say so. No visual fallback → BLOCKED. |
+| `visual_reference`  | screenshot / mockup / UI photo                                                                 | the above, plus: **app-owned bbox** (window size derives from this, _not_ the whole screenshot), panel padding, measured region rects, repeated item sizes and gaps, sidebar / search / chips / tabs / card semantics | Read `references/layout-inference.md` first. Never treat passthrough, skybox, floor, scenery, or system safety lines as app content.                                                                                       |
+| `product_doc`       | PRD / feature spec                                                                             | user tasks, page inventory, data entities, states and transitions, explicit non-goals                                                                                                                                 | No visual asset and no user-provided design package → **designer gate** first (below).                                                                                                                                     |
+| `intent_only`       | one-line ask                                                                                   | app-type candidates, the single core task, implied page count                                                                                                                                                         | No visual asset and no user-provided design package → **designer gate** first (below). "Implement directly" does not skip it.                                                                                              |
+| `hybrid`            | more than one of the above                                                                     | per-source facts plus the conflicts between them                                                                                                                                                                      | Resolve to one interpretation via the conflict priority below; never keep parallel truths. Contains Figma → Figma steps. No visual asset at all → designer gate.                                                           |
+| `incremental_patch` | user names a file/panel/module, scope ≤ 1–2 regions, root container and window model unchanged | target files, inherited container and window model, regions touched, components and states to add, non-goals                                                                                                          | **Skip the Decide stage** (inherit). Verify with `--profile patch`.                                                                                                                                                        |
+
+Routing tie-breakers:
+
+| User says                                               | Routing             |
+| ------------------------------------------------------- | ------------------- |
+| "add a search field to `MainPanel.kt` in `myapp`"       | `incremental_patch` |
+| "use this Figma to redesign `myapp`'s home page"        | `visual_design`     |
+| "use this Figma to add a close button to `DetailPanel`" | `incremental_patch` |
+
+If a patch turns out to require a container or window-model change, stop the
+patch path and escalate to the full flow — do not silently rewrite a non-goal.
+
+## Component rules (HARD)
+
+Read `references/spatial-ui-components.md` before writing UI; read
+`references/spatial-windows-guide.md` when the design has window-level or
+floating structure.
+
+- **C0 — Resolve text foregrounds.** CSS `color` inheritance does not survive
+  conversion to Compose. `PicoTheme` installs the color scheme but does not
+  provide `LocalContentColor`. Every app-authored `Text` on an ordinary
+  `Box` / `Row` / `Column` surface must pass
+  `color = PicoTheme.colorScheme.<label-or-state-role>`. A direct SpatialUI
+  component slot may inherit its state-aware content color only when the call
+  is marked `// design-style: inherited-content-color <provider>`. Before
+  build, audit all dark-surface text and run the design-style R9 verifier.
+- **C1 — Prefer built-ins.** If a whitelisted component matches the semantics, use it. Do not hand-roll an equivalent from `Box` + `Text` + `clickable`. `scan_implementation.py` warns when a UI uses too few SpatialUI built-ins.
+- **C2 — Never invent SDK names.** Names outside the whitelist do not exist. When nothing fits, emit `Box` with `// TODO(missing-component): <description>` rather than inventing `SpatialButton` / `XRPanel`. Invented names are a hard failure.
+- **C3 — Edge-pinned chrome is window-level.** Long-lived edge navigation / action strips are `TabBar` / `Toolbar` / `Subwindow` **siblings** of the main panel, not page children. Do not hand-roll `Box(Modifier.align(...))` capsule rows. `TabBar` / `Toolbar` take no `modifier` — the system owns their placement. For a deliberate in-page overlay, mark it `// spatial-ui: intentional-in-page-overlay <reason>`.
+- **C4 — Semantics over appearance.** Search box → `SearchField`, not `TextField` + a magnifier icon. Filters/tags → `ButtonChip` / `RemovableChip` / `ToggleableChip`. In-page side nav → `SideNavigation` / `SideNavigationItem`. Segmented switch → `SegmentControl` / `SegmentItem`.
+- **C5 — Smallest floating explanation first.** `in-page overlay` → `SpatialPopup` → `Subwindow` → `multi_window`. Short confirmation → `AlertDialog`; heavy modal → `Sheet`; teaching bubble → `CoachmarkBox`; transient feedback → `SnackbarHost` (a host + state pair, not a standalone composable).
+- **C6 — No direct Material imports.** `androidx.compose.material3.*` / `material.*` are rejected by the design-style verifier.
+- **C7 — Custom interactive components** must follow the design-style hover + haptics rules (`Modifier.spatialHoverEffect`; modifier order `clip → background/backgroundMaterial → spatialHoverEffect → clickable`), or use a built-in that already provides them.
+- **C8 — Designer Web components map to SpatialUI Compose.** For
+  `intent_only`, every `sui-*` component used by the passed design package must
+  be converted through `references/spatialui-web-to-compose.md`. Do not
+  reproduce a mapped component with Compose primitives. Web attributes/events
+  become typed state and callbacks; Web slots become composable lambdas.
 
 ## Reference index (read on demand, never preemptively)
 
-| Read when …                                                                             | File                                                                       |
-| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Phase 1 / 3 — input mode + evidence                                                     | `references/input-normalization.md`, `references/evidence-extraction.md`   |
-| Phase 3 / 5 — visual layout inference, region decomposition, repeated/state mapping     | `references/layout-inference.md`                                           |
-| Phase 1.5 — adapter dispatch                                                            | `adapters/_registry.json` + the selected `adapters/*-adapter.md`           |
-| Phase 1.5 — validating/editing adapter contract or registry                             | `ADAPTER_ROADMAP.md`                                                       |
-| Phase 1.5 / 3 — no-visual design escalation + design-package facts → three-artifact set | `references/design-package-bridge.md`                                      |
-| Phase 4 — container + window model                                                      | `references/container-decision.md`, `references/window-model-decision.md`  |
-| Phase 4 — `spatial_features` includes anchor / env_mesh                                 | `references/spatial-anchor.md` _(BLOCK if anchor in WindowContainer)_      |
-| Phase 5 — layout schema                                                                 | `references/layout-schema.md`                                              |
-| Phase 6 — entry chain + manifest                                                        | `references/manifest-and-entry.md` + (`window-container.md` OR `stage.md`) |
-| Phase 6 — gradle setup errors                                                           | `references/gradle-setup.md`                                               |
-| Phase 6 — SpatialUI component whitelist                                                 | `references/spatial-ui-components.md`                                      |
-| Phase 6 / figma-adapter — Figma tokens + visual feature mapping                         | `references/figma-mapping.md`                                              |
-| Phase 6 / figma-adapter — SpatialUI import lookup                                       | `references/spatial-api-imports.md`                                        |
-| Phase 4 / 6 — window-level components, Subwindow, floating layers                       | `references/spatial-windows-guide.md`                                      |
-| Phase 6 — architecture + tests                                                          | `references/architecture-conventions.md`                                   |
+| Read when …                                                                                    | File                                     |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Extract — decomposing a screenshot/mockup into regions, repeated structures, spacing ownership | `references/layout-inference.md`         |
+| Route / Extract — no-visual input: designer gate + design-package facts                        | `references/design-package-bridge.md`    |
+| Decide — container, window model, legality tables, escalation rules                            | `references/structure-decisions.md`      |
+| Decide — `anchor` / `env_mesh` requested (BLOCK inside a WindowContainer)                      | `references/spatial-anchor.md`           |
+| Decide / Build — window-level components, Subwindow, floating layers                           | `references/spatial-windows-guide.md`    |
+| Build — the component whitelist                                                                | `references/spatial-ui-components.md`    |
+| Build — entry chain + authoritative manifest meta-data values                                  | `references/manifest-and-entry.md`       |
+| Build — root container is any `STAGE_*`                                                        | `references/stage.md`                    |
+| Build — layered packages, ViewModel/UseCase, test floor                                        | `references/architecture-conventions.md` |
+| Build — SpatialUI import lookup                                                                | `references/spatial-api-imports.md`      |
+| Extract / Build — `intent_only` design package uses `sui-*` components                         | `references/spatialui-web-to-compose.md` |
+| Build — Figma tokens, visual feature mapping, fidelity contract                                | `references/figma-mapping.md`            |
+| Build — new-project scaffold handoff (`pico-cli project create`)                               | `references/scaffold-handoff.md`         |
+| Verify — smoke-build / Gradle sync failures                                                    | `references/build-failures.md`           |
 
-## 7-phase flow
+## Flow
 
-| #   | Name              | Artifact                                                                     | Gate                                                                  |
-| --- | ----------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 1   | Frame             | `Input Envelope`                                                             | inputs explicit                                                       |
-| 1.5 | Adapter Selection | selected adapter + hook plan; execution may wait for Phase 2 workspace facts | one adapter max per current input_mode                                |
-| 2   | Read              | inspection notes                                                             | (none)                                                                |
-| 3   | Spec              | `Evidence Packet` + `Normalized Spec` + `Assumption Ledger`                  | normalization complete                                                |
-| 4   | Decide            | `Container Decision` + `Window Model Decision`                               | legality + singularity                                                |
-| 5   | Plan              | `Spatial Layout Contract` (or `Patch Contract`)                              | contract complete                                                     |
-| 6   | Build             | code edits / scaffold                                                        | (verified in 7)                                                       |
-| 7   | Verify            | 11-step gate / adapter hooks (see Phase 7)                                   | machine-driven + Gradle sync + runtime launch + agent-owned MCP hooks |
+| #   | Stage   | Output                                                                                                         | Gate                                  |
+| --- | ------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | Route   | input mode, generation mode, target; Figma MCP availability for Figma URLs; designer gate for no-visual inputs | inputs and target explicit            |
+| 2   | Extract | design facts, unknowns, conflicts, assumptions (stated, not filed)                                             | enough evidence to choose a container |
+| 3   | Decide  | container + window model, with rejected alternatives                                                           | legality + singularity                |
+| 4   | Build   | Kotlin / Compose / manifest                                                                                    | (verified in 5)                       |
+| 5   | Verify  | machine gates + Figma hooks + structural self-review                                                           | all gates green                       |
 
-`incremental_patch` mode skips Phase 4 (inherit from existing module) and Phase 5 emits a `Patch Contract`.
+`incremental_patch` skips stage 3 and inherits the existing container and window
+model.
 
 ## Operating protocol
 
-- **Sequential & gated.** No skipping artifacts; no proceeding past a failed gate. On failure: fix the artifact, apply a conservative default and log it in `Assumption Ledger`, or ask the user only if the unresolved issue materially changes the architecture.
-- **Output language.** Match the user's natural language for prose; artifact JSON keys, command names, and `Step Output` labels stay in canonical English.
-- **Persistence.** Artifacts live under `<target>/.scratch/` with canonical filenames (`input_envelope.json`, `evidence_packet.json`, `normalized_spatial_spec.json`, `assumption_ledger.json`, `spatial_layout_contract.json` or `patch_contract.json`). `assumption_ledger.json` is always present; use `[]` only when no assumptions exist.
-- **Resume.** If `<target>/.scratch/` already contains valid artifacts when the skill starts, do NOT re-emit them — re-run the scripts (cheap) and resume at the first missing/failing artifact. Delete `.scratch/` only on explicit "redo from scratch".
-- **Step Output (Phases 1, 4, 5, 7 only).**
+- **Sequential and gated.** Do not proceed past a failed gate. On failure: fix the problem, apply a conservative default and state it, or ask the user only when the unresolved issue materially changes the architecture.
+- **Conflict priority** (for `hybrid` and any contradictory evidence): explicit user requirement > existing module architecture > professional design deliverable > visual reference > product-doc hints > conservative default. Pick one interpretation and say why; never carry two parallel truths.
+- **Conservative fallback:** `ON_PLAIN`, `single_panel`, panel-local overlay, no spatial features. Defaults are allowed; silent invention is not.
+- **Output language.** Match the user's language for prose; keep enum values, command names, and `Step Output` labels in English.
+- **State assumptions in the conversation.** Every architecture-impacting default must be visible in your Step Output and in the final handoff — that is what replaces the old assumption-ledger file.
+- **Step Output** (stages 1, 3, 5):
 
   ```text
   Step Output
-  - Artifact: <name>
+  - Decision: <what was decided>
   - Summary: <1-3 lines>
-  - Key fields: <bullets>
-  - Reflection: <citation per workflow-contract.md>
+  - Key facts: <bullets>
+  - Reflection: <citation — a concrete observed fact, or a legality-table row / rule number>
   - Gate result: PASS | BLOCKED
   - Next action: proceed | revise | conservative default | ask user
   ```
 
 ---
 
-## Phase 1 — Frame
+## Stage 1 — Route
 
-Apply input-mode routing in order, first match wins:
+### 1a. Classify the input
 
 ```
 Step A — incremental_patch?
@@ -102,188 +180,327 @@ Step B — otherwise classify by strongest source:
   more than one of the above    → hybrid
 ```
 
-| User says                                               | Routing             |
-| ------------------------------------------------------- | ------------------- |
-| "add a search field to `MainPanel.kt` in `myapp`"       | `incremental_patch` |
-| "use this Figma to redesign `myapp`'s home page"        | `visual_design`     |
-| "use this Figma to add a close button to `DetailPanel`" | `incremental_patch` |
+**No-visual classification rule (HARD).** A request that describes any feature,
+page, or business flow but carries **no** Figma/screenshot/mockup **and** no
+user-provided design package or structured design spec is classified as
+`product_doc` (when the description is substantial) or `intent_only` (when it is
+short). Both classes fire the designer gate (1c). This is decided only by
+whether the user already provided an executable design — never by application
+complexity, whether the prompt says "implement directly", or whether it contains
+a "design" keyword. "Complete the implementation directly" on a feature-bearing,
+no-visual request is still `intent_only`/`product_doc`, not a reason to skip the
+gate.
 
-Decide `generation_mode` (`existing_module` / `new_project`) and emit `Input Envelope` per workflow-contract.md §1. Gate: `input_mode`, `generation_mode`, target / output, `input_sources[]` all explicit.
+Also decide `generation_mode` (`existing_module` / `new_project`).
 
-## Phase 1.5 — Adapter Selection
+**Gate:** input mode, generation mode, and target/output path are all explicit.
 
-Read `adapters/_registry.json`, select exactly one active adapter for the current `input_mode`, then read only that adapter. Zero / multiple active matches = BLOCKED. This phase selects the adapter and installs any `hooks.verify` / `hooks.cleanup` plan for Phase 7; it does not force evidence extraction before workspace facts exist. If the selected adapter requires target platform, root container, or existing window model, execute that adapter after Phase 2 inspection and feed its output into Phase 3. Adapters are limited to existing `evidence_packet.json` / `normalized_spatial_spec.json` / `assumption_ledger.json` schema fields; their seven-field contract lives in `ADAPTER_ROADMAP.md`.
+### 1b. Figma inputs (external MCP prerequisite)
 
-Adapter `failure_mode` may explicitly reroute to another `input_mode` (for example Figma → screenshot fallback). In that case, revise `input_envelope.json`, return to Phase 1.5, and select exactly one adapter for the new mode. Do not chain a second adapter under the old `input_mode`, and do not silently fall back.
+**This plugin does not provision the Figma capability.** `.mcp.json` declares
+only `pico-dev-knowledge` and `pico-spatial-editor`. The `d2c_*` tools below come
+from the separate `codin-d2c-figma-to-code` MCP server, which the user installs
+in their own host configuration. Treat it as an **external prerequisite**, not as
+something the plugin guarantees.
 
-### Phase 1.5a — Design escalation gate (no-visual inputs)
+Before extracting anything from a Figma URL, check the live tool list for:
 
-Before extracting evidence for a no-visual request, check whether the design must be escalated to `pico-spatial-app-designer`.
+| Tool                 | Used for                                                  | When              |
+| -------------------- | --------------------------------------------------------- | ----------------- |
+| `d2c_get_figma_data` | fetch the node XML + preview into a temp directory        | Stage 2 (Extract) |
+| `d2c_download_icons` | export assets when the XML contains `<Icon download-url>` | Stage 4 (Build)   |
+| `d2c_verify_code`    | independent fidelity review of the generated code         | Stage 5b (Verify) |
+| `d2c_cleanup_temp`   | remove the temp fetch directory                           | Stage 5b (Verify) |
 
-- **Trigger:** `input_mode ∈ { intent_only, product_doc }`, or `hybrid` with no Figma URL and no screenshot/mockup — i.e. no visual asset of any kind is present in `input_sources[]`. When a Figma URL, screenshot, or mockup exists, this gate does NOT fire; continue directly through the existing flow.
-- **Action:** stop app generation and run the `pico-spatial-app-designer` workflow to produce a design package. `pico-spatial-app-designer/workflow.json` is orchestrated by the host LLM; review isolation is a designer workflow quality gate, not a reason to skip the designer. Wait until it reports `designStatus = ready_for_design_delivery` AND `downstreamAppGenerationAllowed = yes` AND a recorded main-thread acceptance exists (three gates; sources per `references/design-package-bridge.md` §A.1).
-- **Receipt:** write `<target>/.scratch/design_escalation_receipt.json` before Phase 3 whenever this gate fires. Only `status=designer_passed` is valid for no-visual app generation, and it requires all three pre-gates, `bridge_allowed=true`, and `adapter_extraction=design_package_bridge`. `status=fallback_accepted` / `adapter_extraction=shallow_text_extraction` is not a valid app-generation path.
-- **After all three gates pass:** the selected adapter (`intent-adapter` / `prd-adapter`) reads the receipt, then performs a high-confidence extraction from the design package per `references/design-package-bridge.md` (6 `review/*.md` role docs + `preview.html` → the three-artifact set), then proceeds into Phase 3–7.
-- **Blocked state:** if `pico-spatial-app-designer` is unavailable, the user declines the design pass, or any of the three gates fails, stop before Phase 3 and report BLOCKED with the missing designer deliverables/gates. Do not continue with shallow text extraction.
-- **Invariants:** the design escalation gate does NOT change adapter singularity (each `input_mode` still resolves to exactly one active adapter), does NOT add an `input_mode`, and does NOT add any top-level schema field. The final container / window model decision still belongs to Phase 4.
+If the tools are absent, do **not** silently continue as if the Figma route ran:
 
-Required JSON artifact before entering Phase 3:
+| Situation                                                                                            | Route                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `d2c_*` tools available                                                                              | Proceed on `visual_design`; the Stage 5b hooks are mandatory.                                                               |
+| Tools unavailable, but the user supplied a screenshot / mockup / exported preview of the same design | Re-classify as `visual_reference`, say so explicitly, and continue. Stage 5b hooks do not apply.                            |
+| Tools unavailable and no visual fallback exists                                                      | **BLOCKED.** State that the Figma route needs the `codin-d2c-figma-to-code` MCP server, and ask for it or for a screenshot. |
+
+Record the resolution in the Stage 1 Step Output. A `visual_design` run whose
+`figma_hooks_result.json` is missing because the tools were never available is a
+`visual_reference` run that was mislabeled — fix the label, not the checklist.
+
+### 1c. Designer gate (no-visual inputs only)
+
+**Triggers when** `input_mode ∈ {intent_only, product_doc}`, or `hybrid` with no
+Figma URL and no screenshot/mockup. When any visual asset exists, this gate does
+not fire — continue straight to stage 2.
+
+**Sole trigger criterion.** The gate fires whenever there is **no visual asset
+AND no user-provided executable design package**. "Already provided an executable
+design" means the **user** supplied, with the request, either a visual asset
+(Figma/screenshot/mockup) or an explicit design package / structured design spec
+(at least information architecture + page structure + state model). An agent's
+own short plan, a self-authored outline, or "I'll plan the IA myself" does **not**
+count as a user-provided design and does **not** let you bypass the gate. Do not
+gate on application complexity, design depth, or the presence of a "design"
+keyword — only on whether the user already provided an executable design.
+
+Stop app generation and run `pico-spatial-app-designer` to produce a design
+package. Wait until its `design-doc.md` is complete **and** its §6 Critique
+verdict is `pass`, then write `<target>/.scratch/design_escalation_receipt.json`:
 
 ```json
 {
   "schema_version": 1,
-  "phase": "1.5a_design_escalation_gate",
-  "input_mode": "<input_envelope.input_mode>",
+  "phase": "designer_gate",
+  "input_mode": "intent_only",
   "visual_asset_present": false,
   "gate_required": true,
   "status": "designer_passed",
-  "pre_gates": {
-    "designStatus": "ready_for_design_delivery",
-    "downstreamAppGenerationAllowed": "yes",
-    "mainThreadAcceptanceRecorded": true
-  },
-  "bridge_allowed": true,
-  "adapter_extraction": "design_package_bridge"
+  "pre_gates": { "designDocComplete": true, "postBuildVerdict": "pass" }
 }
 ```
 
-`pre_gates` is required when `status=designer_passed`. `Gate result` is
-not a receipt JSON field; it belongs only to the prose `Step Output` below.
+Then extract from the design package per `references/design-package-bridge.md`.
 
-Required LLM `Step Output` before entering Phase 3:
+For `intent_only`, this gate has a second mandatory output before Stage 2 can
+pass: read the design package's `SpatialUI Web component map` and
+`preview.html`, then build an in-memory conversion inventory using
+`references/spatialui-web-to-compose.md`. Every used `sui-*` tag must resolve to
+its production Compose API, state/callback binding, and page-level or
+window-level hierarchy. A mapped tag cannot become custom `Box`/`Row` UI.
 
-```text
-Step Output
-- Artifact: Design Escalation Receipt (`.scratch/design_escalation_receipt.json`)
-- Summary: no-visual input requires / does not require designer gate
-- JSON artifact fields: schema_version, phase, input_mode, visual_asset_present, gate_required, status, pre_gates, bridge_allowed, adapter_extraction
-- Reflection: cite input_envelope.input_mode and input_sources[]
-- Gate result: PASS | BLOCKED (Step Output only; do not write this as a receipt JSON field)
-- Next action: run designer | bridge package | proceed
+**BLOCKED** if `pico-spatial-app-designer` is unavailable, the user declines the
+design pass, either pre-gate fails, or a used `sui-*` tag cannot be resolved.
+Do not continue with shallow text extraction or custom fallback —
+`status=fallback_accepted` is rejected by the verifier.
+
+### Stage 2 — Extract
+
+Work from the "Input type → what to extract" table. Extract **facts first**;
+never jump from raw input to Kotlin.
+
+For `visual_design`, fetch the design first with `d2c_get_figma_data` (the stage
+1b prerequisite): it writes the node XML and preview into a temp directory that
+every later step reads — the token/geometry facts below, the asset downloads in
+stage 4, and the `d2c_verify_code` comparison in stage 5b. Keep that directory
+until stage 5b's cleanup.
+
+Separate visual evidence by responsibility before deciding anything:
+
+- app-owned window, window ornaments, page content, temporary floating layers, and spatial environment context are different things
+- passthrough / skybox / floor / scenery / system safety lines are **not** app content unless the facts prove the app owns them
+- edge-pinned long-lived rails / tabs / toolbars are window ornaments (`TabBar` / `Toolbar` / `Subwindow`), not page children. Not being `multi_window` does not make something page content.
+- derive window size from the app-owned bbox, not the full screenshot
+- for `intent_only`, treat the designer's `SpatialUI Web component map` as
+  implementation evidence: preserve each component's semantic role, state,
+  slots, and hierarchy through the Web → Compose conversion inventory
+- inventory every app-owned visual token before coding: surface/fill, primary
+  and secondary text, divider/border, semantic state, and custom
+  brand/decorative colors, plus every corner radius. Do not reduce this list to
+  the primary palette. Convert CSS `rgba(...)` colors to `#AARRGGBB`; exclude
+  environment simulation colors only when the design package explicitly says
+  they are not app-owned.
+
+Record unknowns and conflicts explicitly rather than resolving them silently.
+
+**Gate:** enough evidence to propose one container and compare at least one
+alternative window model.
+
+### Stage 3 — Decide (skipped for `incremental_patch`)
+
+Read `references/structure-decisions.md`. If the design needs `anchor` or
+`env_mesh`, also read `references/spatial-anchor.md` and settle legality now.
+
+Choose **one** container (`ON_PLAIN`, `IN_VOLUME`, `STAGE_MIXED`,
+`STAGE_PROGRESSIVE`, `STAGE_FULL`) and **one** window model (`single_panel`,
+`single_panel_with_popup`, `sidebar_content`, `master_detail`,
+`window_plus_subwindow`, `multi_window`).
+
+For each, record the chosen value, the reason, and the rejected nearest and most
+distant alternatives. Record exactly one nearest and one most-distant rejected
+alternative — do not enumerate further options. Decide is a bounded pass: once
+each dimension has a chosen value with a fact-cited reason, move to Build. Re-open
+Decide only to resolve a concrete downstream failure (new evidence), never to add
+confidence to an already-settled decision.
+
+**Reflection (HARD):** every rejection reason must cite a concrete observed fact,
+a row of the legality table, or a numbered escalation rule. "not needed" / "not
+applicable" / "no evidence" is a BLOCK. Apply legality inline — never defer it to
+stage 5.
+
+> `multi_window` cannot be proven from code by any machine check. Escalate to it
+> only with concrete independent-launcher / lifecycle / placement-memory
+> evidence; otherwise the answer is `Subwindow`.
+
+Strategy names and schema examples are choices, not preferences. Select an
+Editor-backed content strategy only when the current evidence or an accepted upstream
+handoff requires Editor-authored content. Its presence among the available strategies
+does not justify adding unrequested 3D content.
+
+### Stage 4 — Build
+
+#### Module mode
+
+- **Existing module:** keep namespace/package, manifest wiring, and entry chain. Allowed: new Compose files, drawables, strings, state holders. NOT allowed without explicit escalation: switching root container, changing `pico.spatial.windowcontainer.*` meta-data, introducing Stage-only APIs (anchor / ECS / env_mesh) inside a WindowContainer.
+- **New project:** the project is created by `pico-cli project create` — never by hand. Delegate the scaffold step to `spatial-app-onboarding`, passing the Decide-stage container as the template (`ON_PLAIN → planar`, `IN_VOLUME → volumetric`, `STAGE_* → stage`). Resume only after it returns `<target>/.scratch/onboarding_handoff.json`. The handoff must be scaffold-only (`product_ui_implemented=false`); if onboarding implemented product UI, treat that as a failure and rebuild the UI here. Then build the requested experience on top of the generated entry point — do not re-scaffold, rewrite `mainApp`, or re-insert manifest meta-data.
+
+> 🔴 **The CLI owns the project skeleton. This skill never hand-assembles one.**
+>
+> `pico-cli project create` owns the Gradle setup, dependency versions,
+> repositories, package layout, `Main.kt` entry chain, and a fully-populated
+> `AndroidManifest.xml` with container meta-data already in place. Do **not**
+> author `build.gradle.kts`, `settings.gradle.kts`, `libs.versions.toml`, or
+> `gradle-wrapper.properties` from scratch or from a remembered template — a
+> hand-built skeleton drifts from the CLI baseline and fails in ways nobody can
+> reproduce.
+>
+> What you legitimately do after the CLI runs:
+>
+> - write product Kotlin/Compose on top of the generated entry point
+> - add dependency lines the design genuinely requires (for example the sense dependency when the design needs anchors)
+> - for `STAGE_*`, edit the four `pico.spatial.stage.*` values the CLI already emitted so they match the chosen variant — all three variants share `--template stage`, so the CLI cannot know which one you decided on. The value matrix is in `references/manifest-and-entry.md` → "Choosing the Stage variant".
+>
+> If the project foundation is genuinely broken (unresolvable SDK, toolchain
+> mismatch), re-create it with the CLI or hand off to `spatial-sdk-update`. Do
+> not repair build foundations here — see `references/build-failures.md`.
+
+Entry chain (created by the CLI; verify rather than rewrite):
+`Application.onCreate { launch(::mainApp) }` → `mainApp(scope: SpatialAppScope)` → `DefaultWindowContainer {}` or `DefaultStage {}` → `SpatialLaunchActivity`.
+
+**Android Studio sync is mandatory for new modules.** After a new module is
+included, trigger **Sync Project with Gradle Files** before claiming the app runs
+from the IDE. If no IDE-sync API is available, run the Gradle discovery proxy in
+stage 5 and tell the user sync is still required.
+
+#### UI rules
+
+- Build from the decisions: root container → window ornaments → windows → regions → reusable components.
+- For `intent_only`, implement every resolved row from the Web → Compose
+  conversion inventory. `sui-tab-bar`/`sui-toolbar`/`sui-subwindow`/
+  `sui-augment` remain root/window ornaments; modal, menu, coachmark, popup, and
+  snackbar mappings keep their SpatialUI state/host patterns. Never copy HTML
+  attributes or DOM event names into Kotlin.
+- **Set the container meta-data in `AndroidManifest.xml` to match the Decide stage.** It is the runtime source of truth and what verification reads back. See `references/manifest-and-entry.md`.
+- **Spacing ownership and root fill are explicit.** A root-fill shell is edge-to-edge with insets on inner content; an outer-padding card carries its own margin. Give every gap exactly one owner — do not double-pad or drop the outer margin. See `references/layout-inference.md`.
+- Apply the **component rules C0–C7** above. This is where they bind.
+- Read `../spatial-ui-design-style/SKILL.md` before Compose UI. When a design product exists, build a complete custom `ColorScheme`: call `systemColorScheme(...)` once, then explicitly assign all 16 public roles in `.copy(...)`, using exact design tokens for overridden roles and `role = system.role` for deliberate Vibrant inheritance. Inject it via `PicoTheme(colorScheme = …)`; a partial copy or plain `PicoTheme {}` is a fidelity failure. `windowConstraints(...)` is resize bounds, not first-open size.
+- Do not carry design-review apparatus into the product UI. Viewport presets, data-mode controls, token legends, coverage badges, and implementation notes are omitted unless the source requirement identifies them as real user features.
+- Preserve every extracted radius on the surface that owns it. For a
+  view-level glass surface, declare one shape and apply
+  `clip(shape) → backgroundMaterial(...) → border(..., shape)`.
+  `border(..., RoundedCornerShape(...))` alone does not clip the material.
+  Deliberately rectangular material requires
+  `// design-style: rectangular-material <reason>`.
+- Keep business UI 2D unless the design justifies 3D; Stage-only APIs stay out of WindowContainer flows.
+- For a `STAGE_*` root: host 3D via `SpatialView` + ECS entities (`Entity()` / `Entity.load(...)` + `content.addEntity(...)`) and attach 2D controls with `AttachmentPanel(id){}` positioned in meters on an ECS anchor. Never a flat `Box`/`Column`/`Canvas` page, never a bare Compose overlay. See `references/stage.md`.
+
+#### Architecture rules (HARD)
+
+Read `references/architecture-conventions.md` before writing code. The checker
+enforces layered packages, a thin `Main.kt`, MVI-lite state, repository
+boundaries, mandatory ViewModel tests, and UseCase + tests when the screen has
+non-trivial business rules, filtering, sorting, selection, or transformation.
+
+### Stage 5 — Verify
+
+#### 5a. Machine gates
+
+```bash
+bash scripts/validate_workflow_and_build.sh <target> \
+    --input-mode <mode> --generation-mode <mode> [--visual-asset true] \
+    --design-color <role>=<#hex> ...   # or --no-design-colors
+    [--profile patch] [--skip-*] [--allow-degraded]
 ```
 
-## Phase 2 — Read (workspace inspection, only in `existing_module` / `incremental_patch`)
+Eight steps: handoff receipts → implementation scan → Gradle sync → smoke build →
+runtime launch → architecture → unit tests → design-style admission.
 
-Inspect: module `build.gradle.kts`, `AndroidManifest.xml`, `Main.kt`, `platform/SpatialApplication.kt`, `platform/LaunchActivity.kt`, existing `res/`. Prefer editing existing files; reuse package, manifest wiring, resources. Preserve current root container unless user explicitly asks otherwise or the requested feature is impossible. No JSON artifact — carry notes into Phase 3.
+Pass **every** design-specified color with `--design-color`; pass
+`--no-design-colors` only when the design genuinely specifies none. Omitting both
+is an error, because a silent "no colors" would disable the fidelity gate exactly
+when it matters.
 
-## Phase 3 — Spec
+Before invoking the verifier, compare the `--design-color` arguments against the
+Stage 2 inventory. Counts and names must cover all app-owned surface/fill,
+foreground, divider/border, semantic, and custom colors. Passing only the brand
+accent set is a failed verification setup, even if the verifier itself exits 0.
 
-Emit, in order:
+Design-style admission is non-optional: a missing verifier, missing source root,
+verifier failure, or `--skip-design-style` all fail the run.
 
-1. **Evidence Packet** — `facts` / `unknowns` / `conflicts` / `confidence`. Facts only.
-2. **Normalized Spatial Spec** — `request_context` / `product_intent` / `spatial_intent` / `window_intent` / `layout_intent` / `ambiguities` / `evidence_trace`. On disagreement, pick one and explain the tie-break in `evidence_trace` (no parallel truths).
-3. **Assumption Ledger** — every architecture-impacting default with `assumption` / `impact` / `confidence`.
+Do NOT paraphrase JSON results — read `passed` / `failures_or_explicit_none` /
+`warnings_or_explicit_none` literally. `verification_summary.json.clean: false`
+means a degraded run and exits non-zero unless `--allow-degraded` was explicit.
+Disclose every warning and skip; never imply a skipped gate passed.
 
-### Visual input guardrails (HARD)
+#### 5b. Figma MCP hooks (when the input carried a Figma URL)
 
-For screenshots/mockups, keep the main skill path concise and classify evidence by responsibility before planning. Detailed schemas and examples live in `references/workflow-contract.md` §5.
-For `visual_reference` work, read `references/layout-inference.md` before finalizing `layout_intent`, `content_layout_metrics`, or `visual_content_contract`; use it to decompose regions, catch repeated/stateful structures, and sanity-check overlay relationships.
+These tools belong to the external `codin-d2c-figma-to-code` server checked in
+stage 1b — they are not provisioned by this plugin. They apply only to a run that
+actually stayed on the `visual_design` route with the tools present.
 
-- Split visual evidence into app-owned window, window ornaments, page content, temporary floating layer, and spatial environment context.
-- Do not treat passthrough / skybox / floor / scenery / system safety lines as app content unless facts prove the app owns them.
-- Edge-pinned long-lived rails / tabs / toolbars are `window_chrome_ornaments[]` (`TabBar` / `Toolbar` / `Subwindow`), not page children. Not `multi_window` does not mean page content.
-- `visual_reference` must carry `reference_frame`, `content_layout_metrics`, and `visual_content_contract`; derive window size from `app_owned_bbox_px`, not the full screenshot.
-- Bind measured sizes and visual semantics to Phase-6 constants/components (`SideNavigation`, `SearchField`, fixed grids, asset-backed image cards) instead of magic dp or placeholder UI.
+Order is strict, and each tool runs **exactly once**:
 
-Gate: enough evidence to choose `generation_mode`, propose one `container_candidate`, compare ≥1 `window_model_candidate`. No hidden assumptions.
+1. `d2c_verify_code` — pass the files generated or materially changed in this run (exclude config, lockfiles, untouched, tooling, test, and mock files). Use `ruleContext` to ask for geometry, color, and state fidelity against the XML/preview.
+2. Apply targeted fixes for **Critical / Moderate** findings only. Do not call `d2c_verify_code` a second time.
+3. `d2c_cleanup_temp` — same URL and directory as the original `d2c_get_figma_data` fetch.
 
-## Phase 4 — Decide (skip in `incremental_patch`)
+⚠ Cleanup must never run before verify: verify reads the temporary XML and
+preview files that the fetch wrote, so cleaning up first strips the evidence the
+visual fixes depend on.
 
-Read `references/container-decision.md` and `references/window-model-decision.md`. If `spatial_features` includes anchor / env_mesh, also read `references/spatial-anchor.md` and resolve legality now.
+Record the outcome in `.scratch/figma_hooks_result.json`.
 
-### 4a. Container Decision
+#### 5c. Structural self-review (LLM-owned)
 
-Required: `container` / `container_reason` / `container_evidence[]` / `rejected_near.{alternative, rejection_reason}` / `rejected_far.{alternative, rejection_reason}`.
+The machine cannot check these — do them yourself:
 
-### 4b. Window Model Decision
+- repeated structures preserved as templates, not copy-pasted blocks
+- selected / disabled / highlighted states represented in state holders
+- **window model actually matches the built structure** (one primary surface for `single_panel` / `sidebar_content` / `master_detail`; a popup is not a second window)
+- **`multi_window` is justified by disconnected-surface evidence** — no machine check covers this
+- no UI invented beyond the input
+- in `existing_module` mode, module resources reused before adding new ones
 
-Choose one of: `single_panel`, `single_panel_with_popup`, `sidebar_content`, `master_detail`, `window_plus_subwindow`, `multi_window`. Same field requirements as 4a. Apply the Subwindow-vs-`multi_window` escalation rule from `window-model-decision.md`.
+Run the machine gates once to green. Structural self-review is a single pass, not
+a loop; if all gates in the Exit checklist hold, stop and report. Re-enter a stage
+only through the Backtrack rule (5d) on an actual repeated failure (new evidence),
+never to gather extra confidence on already-green gates.
 
-**Reflection (HARD):** `rejected_near` neighbouring, `rejected_far` distant; both `rejection_reason` MUST cite a concrete `Evidence Packet.facts.<key>`, a row of the legality table, or an escalation rule number. "not needed" / "not applicable" / "no evidence" = BLOCK. Apply legality inline — do NOT defer to Phase 7.
+#### 5d. Backtrack
 
-## Phase 5 — Plan
+After 2 consecutive failures at the same check, return to the originating stage
+instead of patching code again:
 
-The contract IS the layout tree (no separate "internal" step). Required fields per workflow-contract.md §5:
+| Failure signal                                                   | Go back to                     |
+| ---------------------------------------------------------------- | ------------------------------ |
+| `stage_api_legality` failures                                    | Decide (container)             |
+| `root_change_guard` failures                                     | Decide + Build entry wiring    |
+| `root_match` / `entry_wired` / `manifest_consistency` failures   | Build (manifest + entry chain) |
+| `invented_component_names` failures                              | Build (component selection)    |
+| `spatialui_component_floor` / `window_chrome_ornaments` warnings | Build (component selection)    |
+| `design_style_result.json` failures                              | Build (design-style admission) |
+| Smoke build `Unresolved reference: <Component>`                  | Build (component whitelist)    |
+| Smoke build `IllegalStateException: not in Full Space`           | Decide (container)             |
 
-If the input is screenshot/mockup-driven, consult `references/layout-inference.md` to sanity-check (do not re-derive) `regions[]`, `repeated_structures[]`, `states[]`, and `window_chrome_ornaments[]`; `layout_intent` stays frozen from Phase 3.
-
-- `container` / `container_reason` / `window_model` / `window_reason`
-- `root_fill` + `spacing_ownership[]` (whenever the design has any inset/padding/gap) — set `root_fill` (`fill_window` vs `padded_card`) explicitly and map every gap to its owning node; see `references/layout-schema.md` → "Spacing ownership & root fill". Never let codegen guess edge insets or outer margins.
-- `stage_content_strategy` (whenever `container` is any `STAGE_*` mode) — one of `ecs_runtime` / `editor_bundle` / `explicit_fallback`, plus each 2D control's `AttachmentPanel` anchor + metric position. A Stage must not resolve to a flat Compose page; see `references/stage.md` → "Stage content model".
-- `reference_frame` (`visual_reference` only) — screenshot px, app-owned bbox, target window dp, scale policy
-- `content_layout_metrics` (`visual_reference` only) — panel padding, measured region rects, repeated item sizes/gaps. This is mandatory when generating screenshot-based page content.
-- `visual_content_contract` (`visual_reference` only) — sidebar surface plus search/chip semantics when present, tab visible count/style, card content/overlay/asset policy.
-- `window_chrome_ornaments[]` (when present) — `id`, `type` (`TabBar` / `Toolbar` / `Subwindow`), `placement`, `role`; ornaments are siblings of the main page, not main-page children.
-- `windows[]` — `id`, `role`, `anchor`, `default_visibility`, `children`
-- `regions[]` — hierarchy / states / alignment / size
-- `repeated_structures[]`, `states[]`
-- `evidence_trace[]` — ≥1 entry per primary window, each `fact_ref` citing a concrete `Evidence Packet.facts.<key>` or a Phase 4 decision field. "because the design says so" = BLOCK.
-
-Persist to `<target>/.scratch/spatial_layout_contract.json`. For `incremental_patch`, emit `Patch Contract` instead.
-
-## Phase 6 — Build
-
-### Module mode rules
-
-- **Existing module:** keep namespace/package, manifest wiring, entry chain. Allowed: new Compose files, new drawables/strings, new state holders. NOT allowed without explicit escalation: switching root container, changing `pico.spatial.windowcontainer.*` meta, introducing Stage-only APIs (anchor / ECS / env_mesh) inside a WindowContainer.
-- **Product-specific new project request:** hand the resolved container contract
-  to `spatial-app-onboarding` for the scaffold step. Pass the Phase-4 container
-  decision as the upstream container contract so onboarding can select the
-  matching CLI template. Resume this skill only after onboarding returns a
-  runnable project handoff.
-
-  Map the Phase-4 container contract for the onboarding handoff:
-  `ON_PLAIN → planar`, `IN_VOLUME → volumetric`,
-  `STAGE_MIXED|STAGE_PROGRESSIVE|STAGE_FULL → stage`. After onboarding returns,
-  do NOT re-scaffold, rewrite `mainApp`, or re-insert manifest meta; build the
-  requested experience on top of the generated entry point.
-
-Entry chain: `Application.onCreate { launch(::mainApp) }` → `mainApp(scope: SpatialAppScope)` → `DefaultWindowContainer {}` or `DefaultStage {}` → `SpatialLaunchActivity`.
-
-**Android Studio sync is mandatory for new modules.** After creating or including
-a new module (`settings.gradle.kts` changed), trigger Android Studio
-**Sync Project with Gradle Files** before claiming the app can be run from the
-IDE. If no IDE-sync API is available to the agent, run the Gradle project
-discovery proxy in Phase 7 and explicitly tell the user that Android Studio sync
-is still required before the first IDE run/configuration selection.
-
-### UI rules (layered + minimal)
-
-- Generate UI from the Phase-5 contract only: root container → window ornaments → windows → regions → reusable components.
-- Apply `spacing_ownership` / `root_fill` literally: a `fill_window` root gets an edge-to-edge background/surface with no root-level edge inset (insets go on the inner content), while a `padded_card` root carries its own outer padding/margin. Put each gap only on its declared owner — do not double-pad or drop the outer margin.
-- Read `../spatial-ui-design-style/SKILL.md` before Compose UI; generated code must pass design-style admission without skip/degraded mode.
-- Prefer SpatialUI built-ins and documented imports; never invent SDK names. `PicoTheme {}` wraps windowed UI; `windowConstraints(...)` is resize bounds, not first-open size.
-- Keep business UI 2D unless Phase 5 justifies 3D / Stage behavior; Stage-only APIs stay out of WindowContainer flows.
-- For a `STAGE_*` root, apply the declared `stage_content_strategy`: host 3D via `SpatialView` + ECS entities (`Entity()` / `Entity.load(...)` + `content.addEntity(...)`), attach 2D controls with `AttachmentPanel(id){}` positioned in meters on an ECS anchor — never a bare Compose overlay, and never a flat `Box`/`Column`/`Canvas` page. See `references/stage.md` → "Stage content model".
-- Implement `window_chrome_ornaments[]` with window-level fittings, and implement `reference_frame` / `content_layout_metrics` / `visual_content_contract` through named constants, state, and components.
-- Custom interactive components must follow spatial-ui-design-style indication + haptics rules, or use a built-in component that provides them.
-
-### Architecture rules (HARD)
-
-Read `references/architecture-conventions.md` before code. The checker enforces layered packages, thin `Main.kt`, MVI-lite state, repository boundaries, mandatory ViewModel tests, and UseCase + UseCase tests when the screen has non-trivial business rules, filtering, sorting, selection, or data transformation.
-
-## Phase 7 — Verify (machine-driven)
-
-Run `bash scripts/validate_workflow_and_build.sh <target>`. The canonical 11-step order, skip semantics, JSON outputs, and Figma hook ordering are in `references/workflow-contract.md`; smoke-build diagnosis is in `references/gradle-setup.md`. `spatial-ui-design-style` admission is non-optional for generated Compose UI: missing verifier, missing source root, verifier failure, or `--skip-design-style` must fail the run.
-
-Do NOT paraphrase JSON results — read `passed` / `summary.errors` / `failures_or_explicit_none` literally. `verification_summary.json.clean: false` means a degraded run; it exits non-zero unless `--allow-degraded` was explicit. Disclose every `warnings[]` / `skips[]` entry and never imply skipped gates passed.
-
-**Backtrack:** after 2 consecutive failures at the same check, return to the originating phase per the Backtrack table in `references/workflow-contract.md`. Edit the offending artifact first; do not silently rewrite code that contradicts an unchanged contract.
-
-**Structural review** (LLM-owned, semantic): repeated structures preserved as templates; selected/disabled/highlighted states represented in state holders; no UI added beyond input; in `existing_module` mode, reuse module resources before adding new ones.
+Fix the cause at that stage; do not silently rewrite code that contradicts an
+unchanged decision.
 
 ---
 
 ## Exit checklist
 
-Run is complete only when ALL hold:
+Complete only when ALL hold:
 
-1. `validate_workflow_and_build.sh <target>` exits 0 **and** `<target>/.scratch/verification_summary.json.clean == true`. Only Gradle sync / runtime launch may be environment-degraded, and degraded runs are not complete unless explicitly accepted in handoff.
-2. For new modules, Android Studio **Sync Project with Gradle Files** has been triggered, or the final handoff explicitly states that the user must trigger it before first IDE run because no IDE sync API was available.
-3. `legality_check_result.json`, `implementation_scan_result.json`, `gradle_sync_result.json`, `architecture_check_result.json`, `unit_tests_result.json` all → `"passed": true`.
-4. `design_style_result.json.passed == true` and design-style verifier → 0 errors; no `--skip-design-style` / degraded bypass.
-5. If the selected adapter declares hooks, `adapter_hooks_result.json.passed == true` and verify / cleanup hooks ran in the registry order.
-6. None of the hard-fail conditions in `workflow-contract.md` triggered.
+1. `validate_workflow_and_build.sh <target>` exits 0 **and** `verification_summary.json.clean == true`. Only Gradle sync / runtime launch may be environment-degraded, and a degraded run is not complete unless explicitly accepted in the handoff.
+2. For new modules, Android Studio **Sync Project with Gradle Files** has been triggered, or the handoff states the user must run it before the first IDE run.
+3. `implementation_scan_result.json`, `gradle_sync_result.json`, `architecture_check_result.json`, `unit_tests_result.json` all → `"passed": true`.
+4. `design_style_result.json.passed == true` with 0 errors and no skip/degraded bypass. When the design declares colors, they were passed via `--design-color` and the verifier proved a complete 16-role `systemColorScheme(...).copy(...)`, explicit `PicoTheme(colorScheme = …)` injection, and exact value coverage.
+5. For `generation_mode=new_project`, `.scratch/onboarding_handoff.json` records `scaffold_only=true`, `product_ui_implemented=false`, `build_passed=true`, `resume_skill=spatial-design-to-app`.
+6. For no-visual inputs, `.scratch/design_escalation_receipt.json` records `status=designer_passed`.
+7. For `intent_only`, every `sui-*` tag used by the passed design package maps
+   to and is implemented with its corresponding SpatialUI Compose API.
+8. For `visual_design` runs that used the `codin-d2c-figma-to-code` tools, `figma_hooks_result.json` shows verify then cleanup, each exactly once. When those tools were unavailable, the run was re-routed per stage 1b (`visual_reference`, or BLOCKED) and the handoff says so — an unavailable prerequisite is never a silently skipped gate.
+9. Every app-authored `Text` resolves an explicit semantic foreground or has a
+   verified `design-style: inherited-content-color <provider>` marker; no dark
+   surface relies on CSS-like inheritance.
+10. No pitfall below was triggered.
 
 Final handoff:
 
@@ -293,32 +510,46 @@ Final handoff:
 - Mode: <existing module update | new scaffold | incremental_patch>
 - Path: <module path | output path>
 - Designer gate: <passed | blocked | not_required>
-- Bridge mode: <design_package_bridge | not_applicable>
+- Figma MCP: <hooks_run | unavailable_rerouted_to_visual_reference | not_applicable>
 - Android Studio sync: <done | user must run Sync Project with Gradle Files>
 - Assumptions: <explicit list or 'none'>
 - Remaining inferred/mock parts: <list>
-- Workflow artifacts: Input Envelope / Design Escalation Receipt when required / Evidence Packet / Normalized Spec / Assumption Ledger / Spatial Layout Contract (or Patch Contract)
+- Verification: <verification_summary.json result, including every warning and skip>
 ```
 
 ## Pitfalls (do not)
 
 - skip workspace inspection when the user names a module (default to `existing_module`)
-- restate Phase 3 in Phase 5 (the contract IS the layout tree)
-- defer container × feature legality to Phase 7 (decide inline in Phase 4)
-- confuse overlay with window — popup menus stay in one panel
-- record spacing without an owner, or leave `root_fill` implicit — every inset/padding/gap needs one owner in `spacing_ownership`, and `fill_window` vs `padded_card` must be explicit (avoids edge-inset-on-fill and missing-outer-margin bugs)
-- emit a `STAGE_*` root as a flat Compose page (`Box`/`Column`/`Canvas`) or drop immersive content into a 2D WindowContainer tree — declare a `stage_content_strategy`, host 3D via `SpatialView`+ECS, and attach 2D controls with `AttachmentPanel` on an anchor, never a bare overlay
+- **hand-assemble a project skeleton** — `build.gradle.kts` / `settings.gradle.kts` / `libs.versions.toml` / the wrapper / the base manifest all belong to `pico-cli project create`; authoring them from a template is how a project silently drifts off the CLI baseline
+- **repair a broken build foundation by editing Gradle files from memory** — re-create with the CLI or hand off to `spatial-sdk-update`
+- jump straight from input to code without extracting facts first
+- **silently switch the root container in an existing module** — a container change re-runs the Decide stage, then updates manifest, `Main.kt`, coordinates, ornaments, and runtime launch together
+- **invent `multi_window` without disconnected-surface evidence** — no machine gate can catch this
+- **use a Stage-only API from a WindowContainer flow**
+- **hide architecture-impacting assumptions instead of stating them**
+- defer container × feature legality to stage 5 (decide inline in stage 3)
+- confuse an overlay with a window — popup menus stay in one panel
+- leave root fill implicit or record spacing without an owner
+- emit a `STAGE_*` root as a flat Compose page (`Box`/`Column`/`Canvas`), or drop immersive content into a 2D WindowContainer tree
 - treat a `DefaultWindowContainer` + secondary `Stage(id=…)` app as a "mixed root" — that is a valid single-root app; only two coexisting _default_ roots are illegal
-- carry `TabBar`/`Toolbar`/`Subwindow` into a Stage, or `AttachmentPanel` into a window — keep each surface to its own toolkit (see `container-decision.md` → responsibility boundaries)
-- migrate a container to fix a compile/visual symptom — a container change re-runs Phase 4 and updates the contract first, then Main.kt/manifest/coordinates/ornaments/runtime launch
-- escalate to `multi_window` without independent launcher / lifecycle / placement memory evidence
+- carry `TabBar`/`Toolbar`/`Subwindow` into a Stage, or `AttachmentPanel` into a window
+- migrate a container to fix a compile or visual symptom
 - invent SDK names; only the whitelist
+- **present the Figma route as executable without checking the `d2c_*` tools first** — the plugin does not provision them; an absent prerequisite means re-route or BLOCKED, never a quietly dropped verify hook
+- flatten a mapped `sui-*` component into hand-built Compose primitives during
+  `intent_only` conversion
 - over-spatialize a 2D settings UI (most belong in `ON_PLAIN`)
-- implement screenshot spatial background, passthrough, floor/trees/skybox, or system safety lines as app content
-- fill Step Output with mechanical PASS — Reflection must cite a fact-key or legality-table row
-- run the full 7-phase flow on a small patch; use `incremental_patch` mode
+- implement screenshot passthrough, floor/trees/skybox, or system safety lines as app content
+- fill Step Output with mechanical PASS — Reflection must cite a real fact or rule
+- run the full flow on a small patch; use `incremental_patch`
 - emit code before reading `architecture-conventions.md` and `spatial-ui-design-style/SKILL.md`
 
-**Honesty:** A 2D reference under-specifies a spatial app. State explicitly when passthrough / skybox / depth / hover / haptics / gestures were inferred; flag that anchors and Full Space behaviors require a device.
+**Honesty:** A 2D reference under-specifies a spatial app. State explicitly when
+passthrough / depth / hover / haptics / gestures were inferred, and flag that
+anchors and Full Space behaviors need a device to validate.
 
-**Clarification:** ask the user only when one of these is truly unresolved — no visual reference is available, target module / output cannot be inferred, multiple window interpretations are equally plausible and materially change the app structure, or package / namespace conflict cannot be resolved safely. Otherwise proceed with the safest default and state the assumption.
+**Clarification:** ask the user only when one of these is truly unresolved — no
+visual reference is available, target module / output cannot be inferred,
+multiple window interpretations are equally plausible and materially change the
+app structure, or a package / namespace conflict cannot be resolved safely.
+Otherwise proceed with the safest default and state the assumption.

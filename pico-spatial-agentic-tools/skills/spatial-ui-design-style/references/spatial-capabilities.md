@@ -30,12 +30,12 @@ Containers: `Box3D { ... }` (children typically pair with `.depth(...)`),
 `Augment` is **NOT** a window root and **NOT** a `design.windows.*`
 component. It is a separate ornament window attached to a parent window.
 
-- Package: `com.pico.spatial.ui.augment.Augment`
+- Package: `com.pico.spatial.ui.foundation.window.Augment`
 - Signature (verify with IDE auto-complete on the current SDK; window-level
   semantics are summarized in `spatial-design-to-app/references/spatial-windows-guide.md`):
 
 ```kotlin
-import com.pico.spatial.ui.augment.Augment
+import com.pico.spatial.ui.foundation.window.Augment
 
 Augment(
     anchor = NormalizedPoint3D.TopFront,                 // attachment point on the parent window

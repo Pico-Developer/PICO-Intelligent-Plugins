@@ -54,14 +54,14 @@ not actually isolate components.
 
 ## 2. Layer responsibilities
 
-| Layer | May depend on | MUST NOT |
-|---|---|---|
-| `data/` | nothing app-specific (only kotlinx, libs) | reference Compose, ViewModel, Android lifecycle |
-| `domain/model/` | nothing | reference Compose, Repository, ViewModel |
-| `domain/usecase/` | `data/repository/`, `domain/model/` | reference Compose, ViewModel |
-| `ui/<feature>/` | `domain/`, `data/repository/` (for default Factory only) | hold mock data inline; expose mutable state to Composables |
-| `ui/components/`, `ui/theme/`, `ui/navigation/` | `domain/model/` | depend on `data/` or any ViewModel |
-| `platform/` | top-level `mainApp` only | hold business logic |
+| Layer                                           | May depend on                                            | MUST NOT                                                   |
+| ----------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------- |
+| `data/`                                         | nothing app-specific (only kotlinx, libs)                | reference Compose, ViewModel, Android lifecycle            |
+| `domain/model/`                                 | nothing                                                  | reference Compose, Repository, ViewModel                   |
+| `domain/usecase/`                               | `data/repository/`, `domain/model/`                      | reference Compose, ViewModel                               |
+| `ui/<feature>/`                                 | `domain/`, `data/repository/` (for default Factory only) | hold mock data inline; expose mutable state to Composables |
+| `ui/components/`, `ui/theme/`, `ui/navigation/` | `domain/model/`                                          | depend on `data/` or any ViewModel                         |
+| `platform/`                                     | top-level `mainApp` only                                 | hold business logic                                        |
 
 Cycle detection is performed by the checker.
 
@@ -118,17 +118,17 @@ Forbidden:
 Tests live in `<target>/src/test/java/com/picoxr/<module>/` mirroring the
 production package layout. Every generated module MUST satisfy:
 
-| Layer | Minimum test coverage | Notes |
-|---|---|---|
-| Each required `*UseCase` | ≥ 1 test class with ≥ 2 cases | Required when the screen has non-trivial business rules, filtering, sorting, selection, or transforms; test the rule, not the I/O |
-| Each `*ViewModel` | ≥ 1 test class with ≥ 4 cases | Cover init load + 1 happy event path + 1 boundary path + 1 search/filter or empty path |
-| Each non-trivial `*Repository` Fake | optional | Smoke test only if used as test util |
+| Layer                               | Minimum test coverage         | Notes                                                                                                                             |
+| ----------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Each required `*UseCase`            | ≥ 1 test class with ≥ 2 cases | Required when the screen has non-trivial business rules, filtering, sorting, selection, or transforms; test the rule, not the I/O |
+| Each `*ViewModel`                   | ≥ 1 test class with ≥ 4 cases | Cover init load + 1 happy event path + 1 boundary path + 1 search/filter or empty path                                            |
+| Each non-trivial `*Repository` Fake | optional                      | Smoke test only if used as test util                                                                                              |
 
 Test infrastructure:
 
 - `kotlinx-coroutines-test` must be present in `testImplementation` when this
   skill emits the module; add it if the project created by `pico-cli project
-  create` does not already include it. Do not pin a version here — use whatever
+create` does not already include it. Do not pin a version here — use whatever
   version the CLI-generated project resolves (catalog / BOM / existing pin).
 - `Dispatchers.setMain(StandardTestDispatcher())` is the default Main
   dispatcher harness; use `runTest { … advanceUntilIdle() }` to drive
@@ -144,7 +144,7 @@ Forbidden:
 
 ## 6. Acceptance gate
 
-The canonical Phase-7 order lives in `workflow-contract.md`.
+The canonical verification order lives in `../scripts/validate_workflow_and_build.sh`.
 Architecture and unit-test checks are mandatory gates inside
 `../scripts/validate_workflow_and_build.sh <target>`:
 
@@ -160,4 +160,5 @@ for emergencies but the SKILL still demands a clean run before sign-off.
 - "Where do I filter / search?" → `domain/usecase/*UseCase.kt` (pure function preferred)
 - "Where do I keep `enum class CardLayout` / colour roles?" → `domain/model/`
 - "Where do I keep the `Brush.verticalGradient(...)` derived from a domain value?" → `ui/theme/`
+- "Where do I keep the design's exact colors?" → one `object <App>Colors` under `ui/theme/` — semantic `ColorScheme` roles as Kotlin `Color(0x…)` (required by design-style R1b), non-semantic surface/text/brand colors optionally in `res/color/*.xml` referenced via `colorResource(...)`. See `figma-mapping.md §7.2`.
 - "Where do I hold `selectedTab` / `searchQuery`?" → `<Feature>UiState` inside the ViewModel, never `remember`

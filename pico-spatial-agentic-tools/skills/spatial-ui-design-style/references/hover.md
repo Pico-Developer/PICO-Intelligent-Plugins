@@ -19,7 +19,7 @@ Verified against `spatial-ui-ability/SKILL.md §3`:
 
 ```kotlin
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
-import com.pico.spatial.ui.foundation.hover.SpatialHoverStyle
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 
 Box(
     Modifier
@@ -95,12 +95,12 @@ Row {
 
 ## 4. Anti-Patterns
 
-| ❌ | ✅ |
-| --- | --- |
-| `Modifier.hoverable(...) + animateFloatAsState(scale)` | `Modifier.spatialHoverEffect()` |
-| Driving hover from your own `MutableInteractionSource.collect { Hover... }` | `spatialHoverEffect` reads system hover signal |
-| Conditional `if (isPicoOs) hoverable else ...` | `spatialHoverEffect` already degrades safely |
-| DSL builders `clipShape(...)` / `offset { ... }` (lambda form) | Use the verified builders `scale / offset(y = ...) / alpha / animation(spec) { ... }` |
+| ❌                                                                          | ✅                                                                                    |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `Modifier.hoverable(...) + animateFloatAsState(scale)`                      | `Modifier.spatialHoverEffect()`                                                       |
+| Driving hover from your own `MutableInteractionSource.collect { Hover... }` | `spatialHoverEffect` reads system hover signal                                        |
+| Conditional `if (isPicoOs) hoverable else ...`                              | `spatialHoverEffect` already degrades safely                                          |
+| DSL builders `clipShape(...)` / `offset { ... }` (lambda form)              | Use the verified builders `scale / offset(y = ...) / alpha / animation(spec) { ... }` |
 
 ## 5. Package
 

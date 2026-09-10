@@ -18,9 +18,7 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         self.script_dir.mkdir(parents=True)
         shutil.copy(SOURCE_SCRIPT, self.script_dir / "validate_workflow_and_build.sh")
         for name in (
-            "check_adapter_contract.py",
-            "check_workflow_artifacts.py",
-            "check_layout_structure.py",
+            "check_handoff_receipts.py",
             "scan_implementation.py",
             "gradle_sync_check.sh",
             "smoke_build.sh",
@@ -42,8 +40,19 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def run_validate(self, *args: str) -> subprocess.CompletedProcess[str]:
+        # --input-mode / --generation-mode are required; --no-design-colors keeps
+        # R1b from failing these design-style-focused tests on a bare fixture.
+        base = ["--input-mode", "visual_reference", "--generation-mode", "existing_module"]
+        if not any(a.startswith("--design-color") for a in args) and "--no-design-colors" not in args:
+            base.append("--no-design-colors")
         return subprocess.run(
-            ["bash", str(self.script_dir / "validate_workflow_and_build.sh"), str(self.target), *args],
+            [
+                "bash",
+                str(self.script_dir / "validate_workflow_and_build.sh"),
+                str(self.target),
+                *base,
+                *args,
+            ],
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -79,6 +88,57 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         design_result = self.target / ".scratch/design_style_result.json"
         self.assertTrue(design_result.exists())
         self.assertIn('"passed": true', design_result.read_text(encoding="utf-8"))
+
+    def test_missing_input_mode_is_an_invocation_error(self) -> None:
+        self.install_design_verifier()
+
+        result = subprocess.run(
+            [
+                "bash",
+                str(self.script_dir / "validate_workflow_and_build.sh"),
+                str(self.target),
+                "--no-design-colors",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("--input-mode", result.stdout)
+
+    def test_undeclared_design_colors_fail_instead_of_passing_silently(self) -> None:
+        self.install_design_verifier()
+
+        result = subprocess.run(
+            [
+                "bash",
+                str(self.script_dir / "validate_workflow_and_build.sh"),
+                str(self.target),
+                "--input-mode",
+                "visual_reference",
+                "--generation-mode",
+                "existing_module",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("design colors were not declared", result.stdout)
+
+    def test_design_colors_are_forwarded_to_the_verifier(self) -> None:
+        self.install_design_verifier(
+            '#!/usr/bin/env bash\necho "args: $*"\nexit 0\n'
+        )
+
+        result = self.run_validate("--design-color", "labelPrimary=#FF6B4A")
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn("--design-color labelPrimary=#FF6B4A", result.stdout)
 
 
 if __name__ == "__main__":

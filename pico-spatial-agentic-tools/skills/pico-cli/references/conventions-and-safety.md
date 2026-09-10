@@ -98,7 +98,8 @@ Use long-running commands only when the user asked for streaming/monitoring or t
 - `pico-cli app logcat --follow`
 - `pico-cli app watch-crash ...`
 - `pico-cli emulator start --watch`
-- `pico-cli perf monitor ...`
+- `pico-cli perf live run ...`
+- `pico-cli perf live start ...`
 - `pico-cli perf trace record ...`
 
 For bounded captures, prefer explicit durations and output paths.

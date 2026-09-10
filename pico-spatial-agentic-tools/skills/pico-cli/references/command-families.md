@@ -22,13 +22,13 @@ Use the repository command definitions as the source of truth for names and flag
 
 ## Setup and Plugin Commands
 
-| Goal                                      | Command family                   | Notes                                                                                                                             |
-| ----------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Broad CLI environment diagnostics         | `pico-cli doctor`                | Read-only top-level summary; route repair details to `pico-env-doctor` when setup, plugin, or MCP is weak.                        |
-| Install/configure host integration        | `pico-cli setup`                 | Use for Claude Code, Cursor, Codex, GitHub Copilot, or Trae CLI plugin-host setup. Route environment repair to `pico-env-doctor`. |
-| Update plugin metadata/content            | `pico-cli plugin update`         | Host/plugin maintenance flow. Route stale plugin or missing skills to `pico-env-doctor`.                                          |
-| Create local setup support bundle         | `pico-cli plugin audit`          | Metadata-only support evidence for plugin/MCP visibility issues; transcript mode requires explicit review.                        |
-| Serve PICO dev knowledge graph as MCP     | `pico-cli mcp:dev-knowledge`    | MCP launch entry used by the public plugin `.mcp.json`; hosts load it after setup/restart.                                        |
+| Goal                                    | Command family              | Notes                                                                                                                             |
+| --------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Broad CLI environment diagnostics       | `pico-cli doctor`           | Read-only top-level summary; route repair details to `pico-env-doctor` when setup, plugin, or MCP is weak.                        |
+| Install/configure host integration      | `pico-cli setup`            | Use for Claude Code, Cursor, Codex, GitHub Copilot, or Trae CLI plugin-host setup. Route environment repair to `pico-env-doctor`. |
+| Update plugin metadata/content          | `pico-cli plugin update`    | Host/plugin maintenance flow. Route stale plugin or missing skills to `pico-env-doctor`.                                          |
+| Create local setup support bundle       | `pico-cli plugin audit`     | Metadata-only support evidence for plugin/MCP visibility issues; transcript mode requires explicit review.                        |
+| Serve PICO development knowledge as MCP | `pico-cli knowledge:server` | MCP launch entry used by the public plugin `.mcp.json`; hosts load it after setup/restart.                                        |
 
 ## Project Creation
 
@@ -57,11 +57,11 @@ Use the repository command definitions as the source of truth for names and flag
 
 ## App Operations
 
-| Goal                                        | Command family             | Notes                                                                        |
-| ------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------- |
-| Install/list/info/launch/stop/uninstall app | `pico-cli app ...`         | Route end-to-end install/launch/debug workflows to `spatial-emulator-usage`. |
-| Read app logs                               | `pico-cli app logcat`      | Prefer before raw `adb logcat` when app-focused logging is enough.           |
-| Watch for app crashes                       | `pico-cli app watch-crash` | Long-running diagnostic flow; report exact package and target.               |
+| Goal                                        | Command family             | Notes                                                                            |
+| ------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- |
+| Install/list/info/launch/stop/uninstall app | `pico-cli app ...`         | Route end-to-end install/launch/debug workflows to `spatial-emulator-usage`.     |
+| Read device or running app logs             | `pico-cli app logcat`      | Use `--package <package>` for app-scoped logs; otherwise this reads device logs. |
+| Watch for app crashes                       | `pico-cli app watch-crash` | Long-running diagnostic flow; report exact package and target.                   |
 
 ## Files and Capture
 
@@ -73,19 +73,36 @@ Use the repository command definitions as the source of truth for names and flag
 
 ## Logs
 
-| Goal                    | Command family        | Notes                                                   |
-| ----------------------- | --------------------- | ------------------------------------------------------- |
-| General device logs     | `pico-cli log`        | Use tag/level/line filters for concise output.          |
-| App logs                | `pico-cli app logcat` | Prefer for package-focused debugging.                   |
-| Raw logcat escape hatch | `pico-cli adb logcat` | Use only when high-level log commands are insufficient. |
+| Goal                    | Command family                            | Notes                                                         |
+| ----------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| General device logs     | `pico-cli log`                            | Use tag/level/line filters for concise output.                |
+| App logs                | `pico-cli app logcat --package <package>` | Prefer for package-focused debugging when the app is running. |
+| Raw logcat escape hatch | `pico-cli adb logcat`                     | Use only when high-level log commands are insufficient.       |
 
 ## Performance Profiling
 
-| Goal                             | Command family              | Notes                                                                             |
-| -------------------------------- | --------------------------- | --------------------------------------------------------------------------------- |
-| Perf toolchain readiness         | `pico-cli perf doctor ...`  | Route to `spatial-app-perf-diagnose`.                                             |
-| Real-time diagnosis              | `pico-cli perf monitor ...` | Route to `spatial-app-perf-diagnose`.                                             |
-| Perfetto trace record/load/query | `pico-cli perf trace ...`   | Route to `spatial-app-perf-diagnose`; use trace evidence rather than speculation. |
+| Goal                             | Command family             | Notes                                                                                    |
+| -------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| Perf toolchain readiness         | `pico-cli perf doctor ...` | Route to `spatial-app-performance-analysis`.                                             |
+| Real-time diagnosis              | `pico-cli perf live ...`   | Route to `spatial-app-performance-analysis`.                                             |
+| Perfetto trace record/load/query | `pico-cli perf trace ...`  | Route to `spatial-app-performance-analysis`; use trace evidence rather than speculation. |
+
+## SpatialML
+
+Route setup, diagnosis, validation, app integration, and Pipeline Zoo package work to the unified
+`spatialml` skill. It loads its package reference for discovery, adaptation, installation, import,
+loading, and verification. Load `spatialml-commands.md` when the user needs exact syntax, flags, output
+handling, or pySpatialML installation and delegation details.
+
+| Goal                              | Command family                               | Notes                                                                                       |
+| --------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Assess project onboarding         | `pico-cli spatialml onboard`                 | Read-only; detects Native OpenXR, Unity, or Kotlin and routes missing parent SDK setup.     |
+| Configure SpatialML               | `pico-cli spatialml setup`                   | Run after parent SDK setup; may modify Kotlin project files or return an SDK-owned handoff. |
+| Diagnose SpatialML readiness      | `pico-cli spatialml doctor`                  | Read-only checks with SDK-specific next actions.                                            |
+| Search Pipeline Zoo               | `pico-cli spatialml pipeline search`         | Network read; compare model-card descriptions and supported modes.                          |
+| Install a Pipeline Zoo package    | `pico-cli spatialml pipeline install`        | Network and host write; Unity completion requires the SDK-owned importer.                   |
+| Verify a Pipeline Zoo package     | `pico-cli spatialml pipeline verify`         | Delegates package validation to installed pySpatialML 0.5.0 or newer.                        |
+| Inspect or visualize LiteRT model | `pico-cli spatialml model inspect/visualize` | Delegates model metadata and visualization to installed pySpatialML 0.5.0 or newer.          |
 
 ## Raw ADB Escape Hatch
 

@@ -36,22 +36,123 @@ B. For ENABLE / CONFIGURE actions, resolve dependencies (skip for DISABLE/STATUS
          If r.data.vst.installed == false → first enable VST:
            call pico_xr_vst(action=enable)
            (no settle needed — VST does not trigger compile)
+       If block is `plane`:
+         (Plane Detection is the SensePack sibling of Spatial Mesh and shares
+          the same VST dependency AND the same bundled-asset / two-phase
+          enable model — BUT it is PICO-NATIVE ONLY.)
+         PICO-NATIVE ONLY: there is no plane-detection OpenXR feature, so plane
+         detection does NOT run on the PICO OpenXR runtime. BEFORE resolving
+         deps, check r.data.runtime from the step-A snapshot: if it is "openxr",
+         STOP — do NOT enable VST, do NOT call pico_xr_plane(enable). Tell the
+         user plane detection is unsupported on PICO OpenXR and guide them to
+         switch to the PICO-native loader (SKILL.md §3.1). (If the agent still
+         calls enable on OpenXR, the C# layer returns `error` with the same
+         guidance — relay it and stop.)
+         On the PICO-native runtime:
+         If r.data.vst.installed == false → first enable VST:
+           call pico_xr_vst(action=enable)
+           (no settle needed — VST does not trigger compile)
+         Like Spatial Mesh, Plane Detection is TWO-PHASE: its driver is a
+         custom bundled `PlaneDetectionManager.cs` (mirrors SpatialMeshManager's
+         pool + fade-shader pipeline, sourced from
+         `PXR_Manager.PlaneDetectionDataUpdated`). It is NOT the SDK's
+         PXR_PlaneDetectionManager — the SDK driver overwrites the material
+         colour and does not feed the fade shader, so its visuals would not
+         match Spatial Mesh.
+           Phase 1: pico_xr_plane(action=enable) copies the driver .cs (+
+             shared wireframe visual assets) into the project. The .cs import
+             triggers a domain reload, so the first call returns
+             `status=skipped` with `detail` mentioning recompiling.
+           → run the post-write settle loop (poll pico_xr_status until the
+             bridge returns) — SAME loop as a package install.
+           Phase 2: call pico_xr_plane(action=enable) AGAIN; now
+             PlaneDetectionManager is compiled/loaded, so it mounts + configures
+             and returns `status=ok`.
        If block is `controller`:
          (No extra package install — PICO controller prefabs ship with the
           PICO SDK already in the project. The C# layer will report
           `error` with a clear message if the prefabs are missing; relay it
           verbatim and ask the user to install/update the PICO SDK.)
        If block is `hand`:
-         (No extra package install — PICO hand prefabs (HandLeft/HandRight)
-          ship with the PICO SDK already in the project, and the PICO-native
-          hand path needs no Unity XR Hands package. The C# layer will report
-          `error` with a clear message if the prefabs are missing; relay it
-          verbatim and ask the user to install/update the PICO SDK.
+         (No extra package install for the MODELS — PICO hand prefabs
+          (HandLeft/HandRight) ship with the PICO SDK already in the project, and
+          the PICO-native hand path needs no Unity XR Hands package. The C# layer
+          will report `error` with a clear message if the prefabs are missing;
+          relay it verbatim and ask the user to install/update the PICO SDK.
           Enable also wires the mounted hands into the same
           XRInputModalityManager the controller block uses, so a connected
           controller natively auto-hides the hand models — no extra step and
           no dependency to resolve here.
-          Hand does NOT trigger a domain reload — no settle loop needed.)
+          Enable also flips the OpenXR `HandTracking` + `HandInteractionProfile`
+          features on (Android target, reflection, mirrors PICO SDK
+          `PXR_Utils.EnableHandTrackingFeature()`) so a hand pinch surfaces as
+          an XRI select input, AND adds the PICO hand pinch/grasp bindings to the
+          XRI `Select` action (by invoking the PICO SDK's `XRI Hand Interaction`
+          building block via reflection). This Select-action binding is the ACTION
+          half of pinch->grab and was the missing piece that let controller grab
+          work while hand grab did not — the controller preset binds Select, the
+          hand action did not. Idempotent + no scene side effects.
+          HAND-ONLY MUST NOT SHOW A CONTROLLER (defect ① fix): when the Controller
+          module is not active, enable NULLS the modality manager's
+          leftController/rightController refs so the generic (non-PICO)
+          Starter-Assets controller does NOT resurface. A controller appears only
+          when the user runs `pico_xr_controller` (which mounts the PICO prefab
+          and re-binds those refs). So "add hand pick-up" alone yields hands only.
+          HAND INTERACTOR IS TWO-PHASE (defect ② + ③ fix): a hand pinch surfacing
+          as a select is only HALF of grab — something must RECEIVE that select.
+          The PICO hand models are visual/tracking only and carry no interactor,
+          so enable instantiates the XRI `Hands Interaction Demo` sample's
+          `XR Origin Hands (XR Rig)` prefab (identified reflection-first by an
+          XROrigin component + a `Camera Offset/Left Hand|Right Hand` structure,
+          so we do not hardcode its filename), UNPACKS it, then EXTRACTS its
+          `Left Hand` / `Right Hand` interactor groups into our Camera Offset as
+          agent-owned markers (`[PICO_MCP] Hand Interactor L` /
+          `[PICO_MCP] Hand Interactor R`), and destroys the temporary rig. This
+          is required because `Left Hand` / `Right Hand` only exist as
+          GameObjects INSIDE the rig prefab — they are NOT independent prefab
+          assets, so any "scan the sample for a prefab named *left/right*"
+          approach picks unrelated affordance leaves and never mounts anything
+          usable. Importing that sample copies assets and triggers an Editor
+          recompile, so the FIRST enable (when the sample is not yet present)
+          returns `status=skipped` with `detail` mentioning recompiling.
+            → run the post-write settle loop (poll pico_xr_status until the bridge
+              returns) — SAME loop as a package install.
+            Then call pico_xr_hand(action=enable) AGAIN; now the sample is
+            present, so it mounts the interactors and returns `status=ok`. Once
+            the sample is imported, enable is single-phase.
+          FAR-RAY MUST FOLLOW THE HAND (defect ③ fix): the interactor group's
+          NearFar caster + line-visual line origin come from the sample rig as
+          prefab OVERRIDES pointing at each hand's sibling `Aim Pose`. Extracting
+          the group out of the rig silently drops those overrides, so the ray
+          would fall back to the interactor GameObject (Camera Offset origin) and
+          shoot from the head instead of the hand. Enable therefore re-wires the
+          four references — `InteractionAttachController.transformToFollow`,
+          both casters' `castOrigin`, and `CurveVisualController.lineOriginTransform`
+          — to the local `Aim Pose` after reparent (reflection, R3).)
+       If block is `grab`:
+         (Grab reuses the SAME XRI dependency as XR Origin — the
+          com.unity.xr.interaction.toolkit package + `Starter Assets` sample —
+          so B.1 already covers it; there is no EXTRA package to install here.
+          Grab is DECOUPLED from hand vs controller: it does NOT re-show the
+          controller module and does NOT add interactors to controller nodes.
+          Whether a hand or controller is visible — and that a visible
+          controller uses the PICO prefab — is owned by the input blocks
+          (`pico_xr_controller` / `pico_xr_hand`), NOT by grab. So a full
+          "controller grab" flow is `pico_xr_controller(enable)` + `pico_xr_grab(enable)`;
+          a "hand grab" flow is `pico_xr_hand(enable)` + `pico_xr_grab(enable)`.
+          `enable` only guarantees a scene XRInteractionManager exists (creating
+          an agent-owned host only if none exists) and drops the grab marker.
+          Because the broker alone makes nothing grabbable, an
+          "enable grab for object X" request should be TWO calls: first
+          pico_xr_grab(action=enable), then
+          pico_xr_grab(action=make_grabbable, target="X"). If the user just
+          wants a quick demo, call make_grabbable with no target to spawn a
+          sample cube.
+          make_grabbable resolves `target` against the ACTIVE scene by name or
+          hierarchy path; if the object is not found, relay the error and ask
+          the user for the exact name/path — do NOT guess.
+          Grab does NOT copy any .cs driver and does NOT trigger a domain
+          reload — no settle loop needed.)
 
 C. Perform the action
    call pico_xr_<block>(action=<verb>, ...params)
@@ -60,6 +161,38 @@ C. Perform the action
      - already_present  → relay summary + "no change made"
      - skipped          → relay summary + warning, ask user how to proceed
      - error            → relay summary + error, ask user how to proceed
+
+   Side effects worth knowing (no extra step needed — handled by the C# layer):
+     - The FIRST block that triggers EnsureXROrigin() mounts PXR_Manager on
+       the XR Origin root (shared runtime event dispatcher for MR sense data).
+     - Each MR block (vst / spatial_mesh / plane) turns ON its own
+       PXR_ProjectSetting capability flag (videoSeeThrough / spatialMesh /
+       planeDetection) on enable, so PXR_BuildProcessor emits the matching
+       Android manifest meta-data + permission at build time. disable clears
+       ONLY that block's flag; the shared PXR_Manager is never removed.
+     - Enabling spatial_mesh or plane forces PICO Stereo Rendering Mode =
+       MultiPass (PXR_Settings.stereoRenderingModeAndroid); MR sense-data
+       composites incorrectly under Multiview. Project-level, not reverted on
+       disable.
+     - RUNTIME PROVIDER (PICO-native vs PICO OpenXR) is a USER prerequisite,
+       NOT resolved here (SKILL.md §3.1). The block code branches on the
+       compile define (`ENABLE_PICO_XR_SDK` vs `ENABLE_PICO_OPENXR_SDK`) and, on
+       the OpenXR path, auto-enables the required OpenXR FEATURE asset on the
+       Android target (VST → PassthroughFeature; spatial_mesh → PICOSpatialMesh)
+       via reflection — mirrors the PICO SDK building
+       blocks. But the agent NEVER installs/toggles the XR Plug-in Management
+       LOADER. If neither define is set, the block returns error/skipped saying
+       the driver type never appeared → STOP and use the provider-missing
+       guidance template in SKILL.md §3.1; do NOT auto-fix or retry.
+     - PLANE DETECTION IS PICO-NATIVE ONLY: it has no OpenXR feature and does
+       NOT run on the PICO OpenXR runtime. When r.data.runtime == "openxr",
+       plane enable returns `error` — STOP, relay it, and guide the user to the
+       PICO-native loader (do NOT auto-fix or retry).
+     - Plane Detection uses the SAME bundled fade-shader pipeline as Spatial
+       Mesh: its custom `PlaneDetectionManager` reuses the shared wireframe
+       mesh prefab + `TriangleFadeOutFromCenter` material, so the two MR
+       meshes share one visual style / asset source. Because the driver .cs
+       is imported on enable, Plane Detection is two-phase (see B.2).
 
 D. Internal verification (NOT user-facing)
    call pico_xr_status() and verify the target block flipped as expected.
@@ -109,6 +242,7 @@ poll_pico_xr_status_until_ready(max_retries=10, interval_seconds=3):
 ```
 
 Tuning:
+
 - Default `max_retries=10, interval_seconds=3` → up to 30s wait. Acceptable
   for fresh package installs.
 - For an `import_sample` that copies large assets (e.g. XRI Starter Assets),

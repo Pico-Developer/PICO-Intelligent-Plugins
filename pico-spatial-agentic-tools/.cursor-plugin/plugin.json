@@ -2,7 +2,7 @@
   "$schema": "https://cursor.com/schemas/cursor-plugin/plugin.json",
   "name": "pico-spatial-agentic-tools",
   "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },

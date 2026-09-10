@@ -1,6 +1,6 @@
 ---
 title: SpatialUI Window-Level Components, Subwindows, and Floating-Layer Guide
-audience: spatial-design-to-app / Phase 4 (window model) + Phase 6 (build)
+audience: spatial-design-to-app / Decide stage (window model) + Build stage
 trigger: any decision involving Subwindow / TabBar / Toolbar / AlertDialog / Sheet / SpatialPopup / Menu / SnackbarHost / CoachmarkBox / Augment
 migrated_from: legacy-d2c-reference/spatialui-sub-windows-guide.md (Phase B1.3)
 ---
@@ -53,17 +53,17 @@ From `SpatialSDK/spatialui/foundation/src/main/kotlin/com/pico/spatial/ui/founda
 
 ## 1.3 Overview of window-level component families
 
-| Component | Family | Typical Material / Layering | Better For | Not For |
-|----------|--------|------------------------------|-----------|---------|
-| `Subwindow` | attached side window | `Material.Regular`, independent side attachment | long-lived detail side panels, auxiliary workspaces | light hints and menus |
-| `Sheet` / `HeadImageSheet` / `BasicSheet` | modal popup panel | `Material.Thick` | prompts, warnings, explanations that need more content or bottom actions | long-lived sidebars |
-| `AlertDialog` | blocking modal dialog | `Material.Thick`, `isModal = true` | warning, confirmation, short explanation | long structured content |
-| `DatePickerDialog` | specialized picker window | `Material.Thickest` | date / range selection | general-purpose modal content |
-| `SpatialPopup` | lightweight anchored floating layer | `Material.Thick` | small contextual action panels | complex forms |
-| `CoachmarkBox` / coachmarks | instructional overlay | anchored guidance layer | feature education and tutorials | long-term business content |
-| `SnackbarHost` | transient feedback host | `Material.Thickest` or `None` | short feedback, toasts, snackbars | persistent warnings |
-| `TabBar` | top/side/bottom window ornament | `Material.None`, `SpatialWindowType.Tabbar` | global page navigation | business panels |
-| `Toolbar` | bottom tool ornament | ornament-style material semantics | short grouped actions | primary content containers |
+| Component                                 | Family                              | Typical Material / Layering                     | Better For                                                               | Not For                       |
+| ----------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| `Subwindow`                               | attached side window                | `Material.Regular`, independent side attachment | long-lived detail side panels, auxiliary workspaces                      | light hints and menus         |
+| `Sheet` / `HeadImageSheet` / `BasicSheet` | modal popup panel                   | `Material.Thick`                                | prompts, warnings, explanations that need more content or bottom actions | long-lived sidebars           |
+| `AlertDialog`                             | blocking modal dialog               | `Material.Thick`, `isModal = true`              | warning, confirmation, short explanation                                 | long structured content       |
+| `DatePickerDialog`                        | specialized picker window           | `Material.Thickest`                             | date / range selection                                                   | general-purpose modal content |
+| `SpatialPopup`                            | lightweight anchored floating layer | `Material.Thick`                                | small contextual action panels                                           | complex forms                 |
+| `CoachmarkBox` / coachmarks               | instructional overlay               | anchored guidance layer                         | feature education and tutorials                                          | long-term business content    |
+| `SnackbarHost`                            | transient feedback host             | `Material.Thickest` or `None`                   | short feedback, toasts, snackbars                                        | persistent warnings           |
+| `TabBar`                                  | top/side/bottom window ornament     | `Material.None`, `SpatialWindowType.Tabbar`     | global page navigation                                                   | business panels               |
+| `Toolbar`                                 | bottom tool ornament                | ornament-style material semantics               | short grouped actions                                                    | primary content containers    |
 
 ### 1.3.1 Four responsibility groups
 
