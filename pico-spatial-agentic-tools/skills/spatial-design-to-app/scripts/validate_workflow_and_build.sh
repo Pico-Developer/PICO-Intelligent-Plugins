@@ -1,35 +1,34 @@
 #!/usr/bin/env bash
-# Validate workflow artifacts, run smoke build, enforce architecture
-# conventions, unit tests, and design-style admission, then print the adapter
-# verification / cleanup hook handoff for generated projects.
+# Validate the generated project, run the smoke build, enforce architecture
+# conventions, unit tests, and design-style admission.
+#
+# There is no intermediate layout-contract JSON: the container is inferred from
+# AndroidManifest meta-data and every structural rule is checked against the
+# generated Kotlin. Only two handoff receipts are validated, because both record
+# a decision made outside this skill (see check_handoff_receipts.py).
 #
 # Usage:
-#   bash scripts/validate_workflow_and_build.sh <target>
-#   bash scripts/validate_workflow_and_build.sh <target> --require-assumptions
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-design-style   # forbidden: exits non-zero
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-architecture
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-unit-tests
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-gradle-sync
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-runtime-launch
-#   bash scripts/validate_workflow_and_build.sh <target> --skip-runtime-launch --allow-degraded
+#   bash scripts/validate_workflow_and_build.sh <target> \
+#       --input-mode <mode> --generation-mode <mode> [--visual-asset true|false] \
+#       [--design-color <slot>=<#hex>]... | [--no-design-colors] \
+#       [--profile patch] [--skip-*] [--allow-degraded]
 #
-# Phase-7 step order:
-#   1. adapter contract checker
-#   2. workflow artifact checker
-#   3. layout/structure checker
-#   4. implementation scanner
-#   5. Gradle sync/project discovery check (CLI proxy for Android Studio sync)
-#   6. smoke build (assembleDebug)
-#   7. runtime launch check (installDebug + launch Activity + crash scan)
-#   8. architecture conventions checker (check_architecture.py)
-#   9. JVM unit tests (testDebugUnitTest, failures=0 errors=0 tests>0)
-#   10. spatial-ui-design-style verifier
-#   11. adapter hook handoff (agent-owned MCP verify / cleanup when selected)
+# Step order:
+#   1. handoff receipts (designer gate + scaffold-only onboarding handoff)
+#   2. implementation scanner (root, entry, manifest, Stage legality, components)
+#   3. Gradle sync/project discovery (CLI proxy for Android Studio sync)
+#   4. smoke build (assembleDebug)
+#   5. runtime launch check (installDebug + launch Activity + crash scan)
+#   6. architecture conventions (check_architecture.py)
+#   7. JVM unit tests (testDebugUnitTest)
+#   8. spatial-ui-design-style verifier
+#
+# Figma MCP hooks (d2c_verify_code -> targeted fixes -> d2c_cleanup_temp) are
+# agent-owned, because a shell wrapper cannot call MCP tools. See SKILL.md.
 #
 # The --skip-* flags are emergency hatches, except --skip-design-style which is
-# intentionally a hard failure for generated Compose UI. The SKILL "Self-eval &
-# exit criteria" still requires a clean run before any sign-off.
-
+# intentionally a hard failure for generated Compose UI.
+# ----------------------------------------------------------------------------
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
@@ -41,6 +40,12 @@ TARGET="$1"
 shift || true
 
 REQUIRE_ASSUMPTIONS="false"
+INPUT_MODE=""
+GENERATION_MODE=""
+VISUAL_ASSET="false"
+PROFILE="default"
+DESIGN_COLOR_ARGS=()
+NO_DESIGN_COLORS="false"
 SKIP_DESIGN_STYLE="false"
 SKIP_ARCHITECTURE="false"
 SKIP_UNIT_TESTS="false"
@@ -51,6 +56,26 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --require-assumptions)
             REQUIRE_ASSUMPTIONS="true"
+            ;;
+        --input-mode)
+            shift; INPUT_MODE="${1:-}"
+            ;;
+        --generation-mode)
+            shift; GENERATION_MODE="${1:-}"
+            ;;
+        --visual-asset)
+            shift; VISUAL_ASSET="${1:-false}"
+            ;;
+        --profile)
+            shift; PROFILE="${1:-default}"
+            ;;
+        --design-color)
+            shift
+            [ -n "${1:-}" ] || { echo "[validate] --design-color needs <slot>=<#hex>" >&2; exit 2; }
+            DESIGN_COLOR_ARGS+=(--design-color "$1")
+            ;;
+        --no-design-colors)
+            NO_DESIGN_COLORS="true"
             ;;
         --skip-design-style)
             SKIP_DESIGN_STYLE="true"
@@ -92,9 +117,7 @@ WARNINGS=()
 SKIPS=()
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CHECKER="$SCRIPT_DIR/check_workflow_artifacts.py"
-ADAPTER_CHECKER="$SCRIPT_DIR/check_adapter_contract.py"
-STRUCTURE_CHECKER="$SCRIPT_DIR/check_layout_structure.py"
+RECEIPT_CHECKER="$SCRIPT_DIR/check_handoff_receipts.py"
 IMPL_SCANNER="$SCRIPT_DIR/scan_implementation.py"
 SMOKE_BUILD="$SCRIPT_DIR/smoke_build.sh"
 GRADLE_SYNC="$SCRIPT_DIR/gradle_sync_check.sh"
@@ -106,32 +129,31 @@ RUNTIME_LAUNCH="$SCRIPT_DIR/runtime_launch_check.sh"
 SKILLS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DESIGN_STYLE_VERIFIER="$SKILLS_ROOT/spatial-ui-design-style/scripts/verify-design-style.sh"
 
-for required in "$ADAPTER_CHECKER" "$CHECKER" "$STRUCTURE_CHECKER" "$IMPL_SCANNER" "$GRADLE_SYNC" "$SMOKE_BUILD" "$RUNTIME_LAUNCH" "$ARCH_CHECKER" "$UNIT_TESTS"; do
+for required in "$RECEIPT_CHECKER" "$IMPL_SCANNER" "$GRADLE_SYNC" "$SMOKE_BUILD" "$RUNTIME_LAUNCH" "$ARCH_CHECKER" "$UNIT_TESTS"; do
     if [ ! -f "$required" ]; then
         echo "[validate] required script not found: $required" >&2
         exit 2
     fi
 done
 
-CHECK_CMD=(python3 "$CHECKER" --target "$TARGET")
-if [ "$REQUIRE_ASSUMPTIONS" = "true" ]; then
-    CHECK_CMD+=(--require-assumptions)
+if [ -z "$INPUT_MODE" ] || [ -z "$GENERATION_MODE" ]; then
+    echo "[validate] --input-mode and --generation-mode are required" >&2
+    exit 2
 fi
 
-echo "[validate] [1/11] adapter contract checker"
-python3 "$ADAPTER_CHECKER"
+echo "[validate] [1/8] handoff receipts"
+python3 "$RECEIPT_CHECKER" --target "$TARGET" \
+    --input-mode "$INPUT_MODE" \
+    --generation-mode "$GENERATION_MODE" \
+    --visual-asset "$VISUAL_ASSET"
 
-echo "[validate] [2/11] workflow artifact checker"
-"${CHECK_CMD[@]}"
-
-echo "[validate] [3/11] layout/structure checker"
-python3 "$STRUCTURE_CHECKER" --target "$TARGET"
-
-echo "[validate] [4/11] implementation scanner"
-python3 "$IMPL_SCANNER" --target "$TARGET"
+echo "[validate] [2/8] implementation scanner"
+python3 "$IMPL_SCANNER" --target "$TARGET" \
+    --generation-mode "$GENERATION_MODE" \
+    --profile "$PROFILE"
 
 # ---------- Gradle sync / project discovery gate ----------
-echo "[validate] [5/11] Gradle sync/project discovery"
+echo "[validate] [3/8] Gradle sync/project discovery"
 if [ "$SKIP_GRADLE_SYNC" = "true" ]; then
     SKIPS+=("gradle_sync")
     WARNINGS+=("--skip-gradle-sync supplied; Gradle project discovery / IDE sync proxy not enforced")
@@ -140,11 +162,11 @@ else
     bash "$GRADLE_SYNC" "$TARGET"
 fi
 
-echo "[validate] [6/11] smoke build"
+echo "[validate] [4/8] smoke build"
 bash "$SMOKE_BUILD" "$TARGET"
 
 # ---------- runtime install + launch gate ----------
-echo "[validate] [7/11] runtime install/launch"
+echo "[validate] [5/8] runtime install/launch"
 if [ "$SKIP_RUNTIME_LAUNCH" = "true" ]; then
     SKIPS+=("runtime_launch")
     WARNINGS+=("--skip-runtime-launch supplied; install/launch not enforced")
@@ -154,7 +176,7 @@ else
 fi
 
 # ---------- architecture conventions gate ----------
-echo "[validate] [8/11] architecture conventions"
+echo "[validate] [6/8] architecture conventions"
 if [ "$SKIP_ARCHITECTURE" = "true" ]; then
     SKIPS+=("architecture")
     WARNINGS+=("--skip-architecture supplied; architecture conventions not enforced")
@@ -164,7 +186,7 @@ else
 fi
 
 # ---------- unit-test gate ----------
-echo "[validate] [9/11] unit tests"
+echo "[validate] [7/8] unit tests"
 if [ "$SKIP_UNIT_TESTS" = "true" ]; then
     SKIPS+=("unit_tests")
     WARNINGS+=("--skip-unit-tests supplied; ViewModel/UseCase tests not enforced")
@@ -174,7 +196,7 @@ else
 fi
 
 # ---------- design-style admission gate ----------
-echo "[validate] [10/11] design-style admission"
+echo "[validate] [8/8] design-style admission"
 if [ "$SKIP_DESIGN_STYLE" = "true" ]; then
     echo "[validate] FAIL design-style admission is mandatory; --skip-design-style is not allowed for screenshot/generated Compose code" >&2
     python3 - "$DESIGN_STYLE_RESULT" <<'PY'
@@ -215,9 +237,28 @@ Path(sys.argv[1]).write_text(json.dumps({"passed": False, "skipped": False, "sum
 PY
         exit 1
     else
+        # R1b needs the authoritative design colors. With no layout contract to
+        # read them from, the caller must forward them explicitly, or state that
+        # there are none — otherwise the fidelity gate would silently pass.
+        DESIGN_COLOR_FLAGS=()
+        if [ "${#DESIGN_COLOR_ARGS[@]}" -gt 0 ]; then
+            DESIGN_COLOR_FLAGS=("${DESIGN_COLOR_ARGS[@]}")
+        elif [ "$NO_DESIGN_COLORS" = "true" ]; then
+            DESIGN_COLOR_FLAGS=(--no-design-colors)
+        else
+            echo "[validate] FAIL design colors were not declared. Pass --design-color <slot>=<#hex> for every color the design deliverable specifies, or --no-design-colors if it specifies none." >&2
+            python3 - "$DESIGN_STYLE_RESULT" <<'PY2'
+import json
+import sys
+from pathlib import Path
+Path(sys.argv[1]).write_text(json.dumps({"passed": False, "skipped": False, "summary": {"errors": 1, "warnings": 0}, "failures": ["design colors not declared: pass --design-color or --no-design-colors"]}, indent=2), encoding="utf-8")
+PY2
+            exit 1
+        fi
+
         echo "[validate] running spatial-ui-design-style verifier on: $DESIGN_STYLE_PATH"
         DESIGN_STYLE_LOG="$SCRATCH_DIR/design_style.log"
-        if bash "$DESIGN_STYLE_VERIFIER" "$DESIGN_STYLE_PATH" >"$DESIGN_STYLE_LOG" 2>&1; then
+        if bash "$DESIGN_STYLE_VERIFIER" "$DESIGN_STYLE_PATH" "${DESIGN_COLOR_FLAGS[@]}" >"$DESIGN_STYLE_LOG" 2>&1; then
             cat "$DESIGN_STYLE_LOG"
             python3 - "$DESIGN_STYLE_RESULT" "$DESIGN_STYLE_LOG" "$DESIGN_STYLE_PATH" <<'PY'
 import json
@@ -255,8 +296,10 @@ PY
     fi
 fi
 
-echo "[validate] [11/11] adapter hook handoff"
-echo "[validate] machine wrapper cannot execute MCP adapter hooks. If the selected adapter declares hooks.verify / hooks.cleanup (for example figma-adapter), run d2c_verify_code exactly once, apply targeted Critical/Moderate fixes, then run d2c_cleanup_temp exactly once and write .scratch/adapter_hooks_result.json."
+if [ "$INPUT_MODE" = "visual_design" ] || [ "$INPUT_MODE" = "hybrid" ]; then
+    echo "[validate] Figma MCP hook handoff"
+    echo "[validate] A shell wrapper cannot call MCP tools. If this run consumed a Figma URL, now run d2c_verify_code exactly once, apply targeted Critical/Moderate fixes, then run d2c_cleanup_temp exactly once, and write .scratch/figma_hooks_result.json. Cleanup must never run before verify."
+fi
 
 CLEAN="true"
 if [ "${#WARNINGS[@]}" -gt 0 ] || [ "${#SKIPS[@]}" -gt 0 ]; then
@@ -283,14 +326,14 @@ data = {
     "warnings": warnings,
     "skips": skips,
     "adapter_hooks_agent_owned": True,
-    "note": "clean=false means a gate was skipped or degraded; --allow-degraded is operational-only, not skill-complete. Adapter hooks, when declared by the selected adapter, must be completed by the agent and recorded in adapter_hooks_result.json before final handoff.",
+    "note": "clean=false means a gate was skipped or degraded; --allow-degraded is operational-only, not skill-complete. Figma runs are still pending until the agent completes the d2c verify/cleanup hooks and records figma_hooks_result.json.",
 }
 path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 PY
 
 echo "[validate] WROTE $VERIFICATION_SUMMARY"
 if [ "$CLEAN" = "true" ]; then
-    echo "[validate] MACHINE GATES PASSED clean: adapter contract + artifacts + structure + implementation + Gradle sync/project discovery + smoke build + runtime launch + architecture + unit tests + design-style passed. If adapter hooks are declared, the run is still pending until agent-owned hooks write adapter_hooks_result.json"
+    echo "[validate] MACHINE GATES PASSED clean: handoff receipts + implementation scan + Gradle sync/project discovery + smoke build + runtime launch + architecture + unit tests + design-style passed. Figma runs remain pending until agent-owned d2c hooks write figma_hooks_result.json"
 else
     echo "[validate] DEGRADED: machine gates completed with warnings/skips; exit 0 with --allow-degraded is operational-only, not skill-complete. See $VERIFICATION_SUMMARY and disclose warnings/skips in handoff"
     if [ "$ALLOW_DEGRADED" != "true" ]; then

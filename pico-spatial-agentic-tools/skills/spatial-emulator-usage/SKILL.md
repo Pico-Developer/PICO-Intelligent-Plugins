@@ -51,7 +51,52 @@ In those cases, use the more specific skill first and bring this one in only if 
 
 ## Core Rules
 
-### 1. Use the real CLI surface
+### 1. Prefer host execution for emulator startup
+
+On Windows and macOS, `pico-cli emulator start` must prefer an authorized host
+execution channel that runs the locally installed emulator/QEMU bundle directly.
+The sandbox must not be the default startup channel when a compliant host
+channel is available.
+
+- Prefer execute-in-place or an explicit process allowlist for the local
+  emulator/QEMU executable.
+- Run the executable from its installed local bundle path. Do not start it from
+  a sandbox path that migrates, statically injects, copies, or re-signs child
+  executables.
+- On macOS, preserve the original QEMU code signature and
+  `com.apple.security.hypervisor` entitlement.
+- On Windows, preserve the local emulator/QEMU process context and native
+  acceleration path; do not route startup through a sandbox that changes the
+  executable or its process identity.
+- This host-execution rule applies to emulator start on both platforms.
+  Inspection, status, ADB, log, and artifact commands may continue in the
+  current sandbox.
+- Do not disable sandbox protection globally and do not use an unauthorized
+  sandbox escape.
+
+If startup reports `HVF error: HV_DENIED`:
+
+1. Treat `HYPERVISOR_RUNTIME_DENIED` as recoverable orchestration state,
+   not as a reason to end the agent session.
+2. Do not retry in the same execution context.
+3. Do not reinstall the emulator, clear quarantine, delete an AVD, or stop an
+   unrelated emulator when the installed QEMU signature and Hypervisor
+   entitlement are valid.
+4. Wait for the failed QEMU process to exit and release the AVD lock.
+5. Relaunch the same AVD through an authorized host channel that preserves the
+   original QEMU code identity.
+6. Poll `pico-cli emulator status --format json` and use its
+   `data.adbOnline=true` field only to confirm that ADB is online. The status
+   JSON does not contain `sys.boot_completed`.
+7. After ADB is online, run `pico-cli shell getprop sys.boot_completed` for the
+   same target. Resume the user's original workflow only when that command
+   returns `1`. If the same `emulator start --format json` response already has
+   `data.bootCompleted=true`, it may be used as the ready signal directly.
+8. If the host has no compliant execution channel, report a recoverable blocker
+   with the exact AVD and status/shell commands. Keep the session and collected
+   evidence available for continuation.
+
+### 2. Use the real CLI surface
 
 Always use the real `pico-cli` command names that exist in the repository. Do not invent wrapper commands or undocumented flags.
 
@@ -69,7 +114,7 @@ Fallback:
 - do not use `pico-cli adb logcat` for first-pass AI routing; use `pico-cli log` or `pico-cli app logcat` instead
 - do not jump straight to plain `adb` unless the user explicitly asks for raw adb behavior
 
-### 2. Respect device targeting
+### 3. Respect device targeting
 
 Many commands operate on the "preferred current device".
 
@@ -82,14 +127,14 @@ Selection priority:
 
 When multiple devices may exist, prefer passing `--device <id>` explicitly instead of relying on implicit selection.
 
-### 2.5 Spatial interaction limitation
+### 3.5 Spatial interaction limitation
 
 - do not use `pico-cli shell input tap x y` to drive volumetric or spatial windows
 - treat `shell input tap` as a 2D Android surface fallback only, such as launcher lists, standard settings pages, or flat app UI that is known to live on a normal screen buffer
 - if the target flow depends on volumetric window interaction, spatial hit testing, controller rays, or hand-gesture style input, report that the current CLI cannot automate it reliably without simulator-side input support
 - when this limitation blocks a verification flow, say so clearly instead of spending turns retrying different tap coordinates
 
-### 3. Verify before and after
+### 4. Verify before and after
 
 Before risky or multi-step operations:
 
@@ -105,7 +150,7 @@ pico-cli device list --format json
 pico-cli emulator list --managed-only --format json
 ```
 
-### 4. Prefer the least destructive path
+### 5. Prefer the least destructive path
 
 Safe order:
 
@@ -120,6 +165,26 @@ Safe order:
 Do not delete emulator bundles, caches, or AVDs just to "reset everything" unless the user clearly requested cleanup.
 
 ## Command Map
+
+### SDK Version Handoff
+
+When `spatial-sdk-update` supplies a selected SDK `major.minor` line, treat
+that line as an explicit emulator bundle requirement. Do not allow
+`emulator create` or `emulator start` to silently select an unrelated
+installed or latest bundle.
+
+```bash
+pico-cli emulator install <major.minor> --source <source> -y
+pico-cli emulator create --bundle-version <major.minor> -y
+pico-cli emulator start --bundle-version <major.minor> --format json -y
+```
+
+- Omit `--source <source>` unless the handoff explicitly requires a source.
+- Verify the returned `bundleVersion` matches the selected `major.minor` line
+  after normalizing both values to `major.minor`. For example, returned
+  `0.11.0` matches selected `0.11`; returned `0.12.0` does not.
+- Record the returned managed AVD before handing runtime evidence back to
+  `spatial-sdk-update`.
 
 ### Emulator Lifecycle
 
@@ -160,7 +225,7 @@ Common examples:
 pico-cli emulator doctor --format json
 pico-cli emulator list --managed-only --format json
 pico-cli emulator create --avd Pico_Emulator_0_11 --source auto -y
-pico-cli emulator start --avd Pico_Emulator_0_11 --wait-timeout 180 -y
+pico-cli emulator start --avd Pico_Emulator_0_11 --format json -y
 pico-cli emulator status --format json
 pico-cli emulator dump-logs --out /tmp/pico-cli-sim-logs
 ```
@@ -217,6 +282,7 @@ Important:
 
 - if plain package launch fails, retry with `--activity`
 - do not claim install or launch succeeded unless the command actually succeeded
+- when an upstream app workflow requests connected instrumentation or liveness validation, this skill owns the device-scoped execution after the target is online. Run the project's existing Gradle wrapper task (for example `connectedAndroidTest`) against the selected target, return its exit result and device diagnostics or blocker, and leave test authoring and app/build repair to the upstream workflow.
 
 ### Files and Capture
 
@@ -296,10 +362,14 @@ Use:
 
 ```bash
 pico-cli emulator create --avd <name> -y
-pico-cli emulator start --avd <name> --wait-timeout 180 -y
+pico-cli emulator start --avd <name> --format json -y
 pico-cli emulator status --format json
 pico-cli device list --format json
 ```
+
+On macOS, run the `emulator start` step through the compliant host execution
+channel defined in Core Rule 1. Keep the remaining status and device checks in
+the current session.
 
 ### Scenario 3: "Install and run an app for validation"
 
@@ -429,9 +499,13 @@ When using this skill, answer in this order:
 1. state which emulator/device step you are performing
 2. run the relevant `pico-cli` command(s)
 3. report the actual outcome, not the intended outcome
-4. if blocked, name the exact missing prerequisite or command failure
-5. suggest the next smallest useful step
+4. if `HYPERVISOR_RUNTIME_DENIED` is returned, switch execution context,
+   verify readiness, and continue the original workflow
+5. if blocked, name the exact missing prerequisite or command failure
+6. suggest the next smallest useful step
 
 Never say the emulator is running, the APK is installed, or the screenshot/log was captured unless the command output confirms it.
 
 If the emulator bundle is still downloading and no failure result has been returned yet, explicitly tell the user that the command is still in progress and that waiting is expected.
+
+Never expose or invent internal emulator startup wait controls.

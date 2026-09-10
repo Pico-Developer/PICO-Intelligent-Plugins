@@ -12,6 +12,7 @@
 ## Cheatsheet
 
 ### Enable Controller
+
 - Pre: XR Origin (via orchestration step B.1).
 - Call: `pico_xr_controller(action=enable)`.
 - If the C# layer returns `error` mentioning a missing prefab path under
@@ -20,10 +21,12 @@
   PICO SDK is present.
 
 ### Disable Controller
+
 - No deps to check.
 - Call: `pico_xr_controller(action=disable)`.
 
 ### Status
+
 - Call: `pico_xr_controller(action=status)`.
 
 ## Typical pipeline — enable (XR Origin already present)

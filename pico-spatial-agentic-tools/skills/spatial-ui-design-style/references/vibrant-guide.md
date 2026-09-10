@@ -1,7 +1,7 @@
 ---
 title: Vibrant Rendering and Color System
 audience: spatial-ui-design-style / any SpatialUI Compose code-generation flow
-trigger: choosing Vibrant levels, preserving fixed colors, or inferring adaptive colors from Figma / screenshots
+trigger: restoring the design deliverable's coordinated theme, using custom colors, choosing Vibrant levels, preserving fixed colors, or inferring adaptive colors from Figma / screenshots
 migrated_from: legacy-d2c-reference/vibrant-guide.md (Phase B1.4)
 ---
 
@@ -24,29 +24,27 @@ enum class Vibrant {
     Light,
     SemiLight,
     UltraLight,
-    LightenHover,
     LightenPressed,
     None,
-    Termination,
     Unspecified,
 }
 ```
 
-| Level | Typical Use |
-|-------|-------------|
-| `Darkest` | main body text, main titles |
-| `UltraDark` | emphasized foreground |
-| `Darker` | primary filled actions, accent-like backgrounds |
-| `Semidark` | section headings, supporting labels |
-| `Dark` | secondary foreground, icons |
-| `Neutral` | cards, list rows, secondary button backgrounds |
-| `Light` | large in-window content sections |
-| `SemiLight` | selected state fill, slider progress |
-| `UltraLight` | very weak foreground |
-| `LightenHover` / `LightenPressed` | automatic interaction overlays |
-| `None` | preserve the original color |
-| `Termination` | stop Vibrant propagation |
-| `Unspecified` | inherit from the parent context |
+| Level                                             | Typical Use                                     |
+| ------------------------------------------------- | ----------------------------------------------- |
+| `Darkest`                                         | main body text, main titles                     |
+| `UltraDark`                                       | emphasized foreground                           |
+| `Darker`                                          | primary filled actions, accent-like backgrounds |
+| `Semidark`                                        | section headings, supporting labels             |
+| `Dark`                                            | secondary foreground, icons                     |
+| `Neutral`                                         | cards, list rows, secondary button backgrounds  |
+| `Light`                                           | large in-window content sections                |
+| `SemiLight`                                       | selected state fill, slider progress            |
+| `UltraLight`                                      | very weak foreground                            |
+| `LightenPressed`                                  | automatic pressed overlay                       |
+| `None`                                            | preserve the original color                     |
+| `None` via `Modifier.vibrantEffect(Vibrant.None)` | stop Vibrant propagation                        |
+| `Unspecified`                                     | inherit from the parent context                 |
 
 ---
 
@@ -86,7 +84,6 @@ Color(0xff28ad00).withVibrant(Vibrant.UltraDark)
 
 ```kotlin
 import com.pico.spatial.ui.foundation.vibrant.vibrantEffect
-import com.pico.spatial.ui.foundation.vibrant.terminateVibrantEffect
 
 Box(modifier = Modifier.vibrantEffect(Vibrant.Dark).background(Color.Vibrant))
 Modifier.background(vibrant = Vibrant.Neutral, color = Color.Vibrant, shape = RectangleShape)
@@ -118,9 +115,9 @@ Text("Dark overrides Light", color = Color.Vibrant.withVibrant(Vibrant.Dark))
 ### 3.3 Terminating propagation
 
 ```kotlin
-Text("Pure color", color = Color.Red, vibrant = Vibrant.Termination)
+Text("Pure color", color = Color.Red.withVibrant(Vibrant.None))
 
-Box(modifier = Modifier.terminateVibrantEffect()) {
+Box(modifier = Modifier.vibrantEffect(Vibrant.None)) {
     Text("Unaffected by Vibrant", color = Color.Red)
 }
 ```
@@ -129,48 +126,69 @@ Box(modifier = Modifier.terminateVibrantEffect()) {
 
 ## 4. Mixing Rules
 
-| Context Vibrant | Color Value | Rendered Result |
-|-----------------|------------|-----------------|
-| none | `Color.Red` | standard red |
-| none | `Color.Vibrant` | black |
-| `Light` | `Color.Red` | `Light` mixed with red |
-| `Light` | `Color.Vibrant` | pure `Light` |
-| any | `Color.Red.withVibrant(Vibrant.None)` | pure red, unaffected by the context |
+| Context Vibrant | Color Value                           | Rendered Result                     |
+| --------------- | ------------------------------------- | ----------------------------------- |
+| none            | `Color.Red`                           | standard red                        |
+| none            | `Color.Vibrant`                       | black                               |
+| `Light`         | `Color.Red`                           | `Light` mixed with red              |
+| `Light`         | `Color.Vibrant`                       | pure `Light`                        |
+| any             | `Color.Red.withVibrant(Vibrant.None)` | pure red, unaffected by the context |
 
 ---
 
 ## 5. Vibrant Style Reference
 
-| Vibrant Style | Typical Use | Visual Cue |
-|---------------|-------------|------------|
-| `Darkest` | primary text, titles | deepest text on the page |
-| `UltraDark` | emphasized foreground, dialog titles | slightly stronger than body text |
-| `Semidark` | section labels, auxiliary headings | medium-dark text |
-| `Dark` | icons, weaker information | tinted icons and subdued text |
-| `Darker` | primary button background | filled action surface |
-| `Neutral` | card, list, secondary button background | translucent secondary surfaces |
-| `Light` | large content background | broad light section |
-| `SemiLight` | selected fill, slider progress | stronger selected-state fill |
-| `None` | preserve literal color | fixed-color icon or badge |
+| Vibrant Style | Typical Use                             | Visual Cue                       |
+| ------------- | --------------------------------------- | -------------------------------- |
+| `Darkest`     | primary text, titles                    | deepest text on the page         |
+| `UltraDark`   | emphasized foreground, dialog titles    | slightly stronger than body text |
+| `Semidark`    | section labels, auxiliary headings      | medium-dark text                 |
+| `Dark`        | icons, weaker information               | tinted icons and subdued text    |
+| `Darker`      | primary button background               | filled action surface            |
+| `Neutral`     | card, list, secondary button background | translucent secondary surfaces   |
+| `Light`       | large content background                | broad light section              |
+| `SemiLight`   | selected fill, slider progress          | stronger selected-state fill     |
+| `None`        | preserve literal color                  | fixed-color icon or badge        |
 
 ---
 
 ## 6. Figma Color Decision Tree (when annotations exist)
 
+The goal is to restore the final design product. First lift the design's
+**coordinated theme** — primary/accent color plus the semantic palette matched
+to it — into a custom `ColorScheme` injected via `PicoTheme(colorScheme = …)`
+(see `tokens.md §7`). Then resolve each individual color:
+
 ```text
 Figma token name
+├── Part of the coordinated theme (primary/accent or a matched semantic role)?
+│   └── Yes -> override the matching role in the custom ColorScheme with the exact value
 ├── Has a `(Vibrant)` suffix?
 │   └── Yes -> `Color.Vibrant.withVibrant(Vibrant.Xxx)`
 ├── Is it a semantic role?
-│   └── Yes -> `PicoTheme.colorScheme.xxx`
+│   └── Yes -> `PicoTheme.colorScheme.xxx` (override its value with the design's)
 ├── Is it a semantic fixed color?
 │   └── Yes -> `PicoTheme.colorScheme.xxx`
-└── Otherwise -> `Color(0xFFxxxxxx)`
+└── A custom color with no matching role (brand / decorative)?
+    └── Keep it verbatim: named brand token, or
+        `Color(0xFFxxxxxx) // design-style: fixed-figma-color <source>`
 ```
+
+> Custom colors are explicitly allowed and are the correct choice whenever a
+> design value has no matching PICO role. Never approximate a custom color with
+> the nearest default role — that discards the design identity.
 
 ---
 
 ## 7. Screenshot Color Inference Chain (when Figma annotations do not exist)
+
+Even without annotations, first identify the design's coordinated theme from the
+screenshot — its dominant primary/accent hue and any color-matched status colors
+— and build a custom `ColorScheme` from those sampled values so the app restores
+the design's palette rather than the default PICO look. Custom colors sampled
+from the screenshot are allowed; keep them verbatim (named brand token or
+annotated fixed literal) when they have no matching PICO role. Use the chain
+below to classify the remaining adaptive hierarchy.
 
 ### Step 1: identify the element role
 
@@ -239,14 +257,17 @@ What is the icon behavior?
 
 ## 8. API Quick Reference
 
-| API | Purpose |
-|-----|---------|
-| `Color.Vibrant.withVibrant(Vibrant.Xxx)` | recommended shorthand |
-| `Color.Red.withVibrant(Vibrant.None)` | preserve a fixed literal color |
-| `Color.Unspecified` | preserve the original icon colors |
-| `Modifier.vibrantEffect(vibrant)` | low-level Vibrant entry |
-| `Modifier.terminateVibrantEffect()` | stop propagation |
-| `Modifier.background(vibrant, color, shape)` | advanced background-only Vibrant control |
+| API                                                            | Purpose                                                                                                           |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `PicoTheme(colorScheme = designColors)`                        | inject the design's coordinated theme                                                                             |
+| `systemColorScheme(ctx)` + complete `.copy(...)`               | assign all 16 roles explicitly; override design roles exactly and forward inherited roles as `role = system.role` |
+| `val BrandX = Color(0x…) // design-style: fixed-figma-color …` | custom color with no matching role                                                                                |
+| `Color.Vibrant.withVibrant(Vibrant.Xxx)`                       | recommended shorthand                                                                                             |
+| `Color.Red.withVibrant(Vibrant.None)`                          | preserve a fixed literal color                                                                                    |
+| `Color.Unspecified`                                            | preserve the original icon colors                                                                                 |
+| `Modifier.vibrantEffect(vibrant)`                              | low-level Vibrant entry                                                                                           |
+| `Modifier.vibrantEffect(Vibrant.None)`                         | stop propagation                                                                                                  |
+| `Modifier.background(vibrant, color, shape)`                   | advanced background-only Vibrant control                                                                          |
 
 ---
 

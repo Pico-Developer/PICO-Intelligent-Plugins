@@ -27,6 +27,10 @@ DO NOT use this skill when:
 - the task is only about adding a single isolated SDK API without broader app migration concerns
 - the target platform and SDK version are unknown and cannot yet be confirmed
 
+Whenever this workflow creates or edits Compose UI for Spatial presentation, you MUST also use
+`spatial-ui-design-style`. Its SpatialUI admission contract applies to every edited Spatial UI
+surface, even when an untouched mobile-only branch remains on Material.
+
 ## Inputs to collect
 
 Before making changes, collect the following information from the project or the user:
@@ -42,7 +46,8 @@ Before making changes, collect the following information from the project or the
   - Groovy or Kotlin DSL
   - whether `libs.versions.toml` is used
 - target Spatial SDK baseline
-  - default `6.0.0` unless the project has another approved version
+  - the exact Spatial BOM version proven by existing project metadata, an official template,
+    Maven metadata, or PICO development knowledge evidence
 - current UI technology
   - Views, Fragments, Compose, or mixed UI
 - Spatial feature scope
@@ -116,15 +121,32 @@ dependencyResolutionManagement {
 
 ### 4. Register SDK versions
 
-If the project uses a version catalog, update `gradle/libs.versions.toml` with the Spatial SDK version entry.
+Resolve the exact Spatial BOM artifact version before adding or changing dependencies:
 
-Keep the version variable-based, with `6.0.0` as the default value.
+1. Inspect the current project first. If its version catalog or direct Gradle BOM declaration already
+   contains a Spatial BOM version, preserve it unless the migration requires a change, and verify that
+   the configured repository or cached artifact actually provides it.
+2. For a new Spatial integration, select the version only from a verified official
+   `pico-cli project create` template for the target environment, published Maven metadata/version
+   directories, or matching PICO development knowledge evidence.
+3. Treat **PICO OS 6** as the platform generation, not as a Spatial SDK/BOM artifact version. Never
+   derive a Maven version from the OS generation.
+4. If none of those sources establishes an available version, stop version selection and report the
+   missing evidence as a blocker. Do not guess, default, or silently fall back to a version.
+
+If the requested work is an actual SDK upgrade of an existing Spatial project, hand that upgrade to
+`spatial-sdk-update`; keep this skill responsible only for collecting the migration's version facts and
+integrating the verified BOM into the port.
+
+If the project uses a version catalog, update `gradle/libs.versions.toml` with the verified Spatial SDK version entry.
+
+Keep the version variable-based and use the single verified value selected above.
 
 Example:
 
 ```toml
 [versions]
-spatialBom = "6.0.0"
+spatialBom = "<verified-spatial-bom-version>"
 ```
 
 If the project does not use a version catalog, define an equivalent version variable in the module build file and reference it from the BOM dependency.
@@ -381,15 +403,24 @@ Review:
 - focus behavior
 - click target size and spacing
 - visual comfort and layout fit in Spatial presentation
-- whether standard Material components need Spatial-specific treatment
+- whether edited Compose UI in the Spatial branch uses SpatialUI built-ins wrapped in `PicoTheme`
 
-For Material components that need explicit Spatial hover behavior, use the SDK support available in the target release, for example:
+For every Compose surface created or edited for Spatial presentation:
+
+- run the `spatial-ui-design-style` workflow and verifier
+- wrap the UI in `PicoTheme`
+- replace Material/Material3 components in the edited Spatial surface with SpatialUI built-ins
+- use the target SDK's `Modifier.spatialHoverEffect` for custom hover visuals
+
+For example:
 
 ```kotlin
-Modifier.SpatialHover()
+Modifier.spatialHoverEffect()
 ```
 
-If hover visuals DO NOT match the component shape, refine clipping or move to a Spatial-native implementation.
+If hover visuals do not match the component shape, refine clipping or move to a SpatialUI built-in.
+Do not retain or introduce legacy hover modifiers in the Spatial branch; they are outside the
+current SpatialUI admission contract.
 
 ### 12. Add advanced Spatial capabilities only after the core flow is stable
 
@@ -458,7 +489,9 @@ When using this skill, produce output in this structure:
 - DO NOT port a single-Activity navigation model directly into multiple Spatial containers
 - DO NOT assume mobile-style system Back behavior exists on the Spatial runtime
 - DO NOT keep major UI ownership tightly coupled to Activity lifecycle code if the UI is being split across containers
-- DO NOT hardcode the SDK version in multiple dependency locations; keep it variable-based with `6.0.0` as the default
+- DO NOT hardcode the SDK version in multiple dependency locations; keep the verified artifact version in one variable
+- DO NOT infer a Spatial SDK/BOM artifact version from the PICO OS generation
+- DO NOT choose or change a Spatial BOM version without project, template, Maven, or PICO development knowledge evidence
 - DO NOT add Compose exclusions unless dependency conflicts actually require them
 - DO NOT call Spatial-only APIs on standard Android devices
 - DO NOT treat the migration as only a rendering task; interaction and navigation changes are part of the port

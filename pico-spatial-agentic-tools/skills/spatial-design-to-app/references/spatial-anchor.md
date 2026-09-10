@@ -15,20 +15,20 @@ Spatial Anchors** by UUID.
 
 ## Authoritative imports
 
-| Symbol | Fully-qualified name |
-|---|---|
-| `WorldTrackingManager` (object) | `com.pico.spatial.sense.world.WorldTrackingManager` |
-| `WorldAnchor` | `com.pico.spatial.sense.world.WorldAnchor` |
-| `WorldTrackingResult<T>` (sealed: Success / Error) | `com.pico.spatial.sense.world.WorldTrackingResult` |
-| `PlaneTrackingManager` (object) | `com.pico.spatial.sense.plane.PlaneTrackingManager` |
-| `PlaneAnchor` | `com.pico.spatial.sense.plane.PlaneAnchor` |
-| `MeshTrackingManager` (object) | `com.pico.spatial.sense.mesh.MeshTrackingManager` |
-| `MeshAnchor` | `com.pico.spatial.sense.mesh.MeshAnchor` |
-| `AnchorEntity(target: AnchorTarget)` | `com.pico.spatial.core.ecs.AnchorEntity` |
-| `AnchorComponent` | `com.pico.spatial.core.ecs.AnchorComponent` |
-| `AnchorTarget` | `com.pico.spatial.core.ecs.anchor.AnchorTarget` |
-| `@RequiredFullSpace` annotation | `com.pico.spatial.core.annotation.RequiredFullSpace` |
-| `Vector3` / `EulerAngles` | `com.pico.spatial.core.math.*` |
+| Symbol                                             | Fully-qualified name                                 |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| `WorldTrackingManager` (object)                    | `com.pico.spatial.sense.world.WorldTrackingManager`  |
+| `WorldAnchor`                                      | `com.pico.spatial.sense.world.WorldAnchor`           |
+| `WorldTrackingResult<T>` (sealed: Success / Error) | `com.pico.spatial.sense.world.WorldTrackingResult`   |
+| `PlaneTrackingManager` (object)                    | `com.pico.spatial.sense.plane.PlaneTrackingManager`  |
+| `PlaneAnchor`                                      | `com.pico.spatial.sense.plane.PlaneAnchor`           |
+| `MeshTrackingManager` (object)                     | `com.pico.spatial.sense.mesh.MeshTrackingManager`    |
+| `MeshAnchor`                                       | `com.pico.spatial.sense.mesh.MeshAnchor`             |
+| `AnchorEntity(target: AnchorTarget)`               | `com.pico.spatial.core.ecs.AnchorEntity`             |
+| `AnchorComponent`                                  | `com.pico.spatial.core.ecs.AnchorComponent`          |
+| `AnchorTarget`                                     | `com.pico.spatial.core.ecs.anchor.AnchorTarget`      |
+| `@RequiredFullSpace` annotation                    | `com.pico.spatial.core.annotation.RequiredFullSpace` |
+| `Vector3` / `EulerAngles`                          | `com.pico.spatial.core.math.*`                       |
 
 ## Hard prerequisites
 
@@ -139,10 +139,10 @@ This pattern is used in the official `SpatialAppSample/.../raycast/RayCastSample
 
 Same API shape, different anchor type:
 
-| Manager | Returns | Typical use |
-|---|---|---|
-| `PlaneTrackingManager` | `Array<PlaneAnchor>` | Detect floors / tables / walls |
-| `MeshTrackingManager` | `Array<MeshAnchor>` | Environment mesh for collision / occlusion |
+| Manager                | Returns              | Typical use                                |
+| ---------------------- | -------------------- | ------------------------------------------ |
+| `PlaneTrackingManager` | `Array<PlaneAnchor>` | Detect floors / tables / walls             |
+| `MeshTrackingManager`  | `Array<MeshAnchor>`  | Environment mesh for collision / occlusion |
 
 Both expose `loadAllAnchors()`, `subscribeAnchorUpdate(...)`, `start()` /
 `stop()` — symmetric to `WorldTrackingManager`.
@@ -160,7 +160,7 @@ Both expose `loadAllAnchors()`, `subscribeAnchorUpdate(...)`, `start()` /
 ## When `spatial_features` includes `anchor` but `container` is a WindowContainer
 
 This is a hard violation of `@RequiredFullSpace`. The skill rejects this
-combination during Phase 4 (legality table) — the only valid fixes are:
+combination during the Decide stage (legality table) — the only valid fixes are:
 
 - Switch container to `STAGE_MIXED` (passthrough + anchor) and inform the
   user, OR

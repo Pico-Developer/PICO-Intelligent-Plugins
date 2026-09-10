@@ -9,11 +9,11 @@ and lives under `com.pico.spatial.ui.{platform, foundation, design}`.
 
 ## Container-level (root nodes)
 
-| layout.json `type` | Kotlin DSL | Where it goes |
-|---|---|---|
-| `WindowContainer` | `DefaultWindowContainer { ... }` | `mainApp(scope: SpatialAppScope)` |
-| `Stage` | `DefaultStage { ... }` | `mainApp(scope: SpatialAppScope)` |
-| `Toolbar` | `Toolbar { ... }` | inside container; auto-positioned by container style |
+| layout.json `type` | Kotlin DSL                       | Where it goes                                        |
+| ------------------ | -------------------------------- | ---------------------------------------------------- |
+| `WindowContainer`  | `DefaultWindowContainer { ... }` | `mainApp(scope: SpatialAppScope)`                    |
+| `Stage`            | `DefaultStage { ... }`           | `mainApp(scope: SpatialAppScope)`                    |
+| `Toolbar`          | `Toolbar { ... }`                | inside container; auto-positioned by container style |
 
 `WindowContainer` planar vs volumetric style is primarily controlled by
 manifest metadata such as `pico.spatial.windowcontainer.style = 1 / 2`.
@@ -23,63 +23,77 @@ Stage immersion mode is primarily controlled by manifest metadata such as
 
 ## Layout primitives
 
-| `type` | Kotlin | Notes |
-|---|---|---|
-| `Column` | `Column(modifier) { ... }` | vertical stack |
-| `Row` | `Row(modifier) { ... }` | horizontal stack |
-| `Box` | `Box(modifier) { ... }` | overlay / absolute positioning |
-| `LazyColumn` | `LazyColumn { items(...) { ... } }` | scrollable list |
-| `LazyRow` | `LazyRow { items(...) { ... } }` | horizontal scrollable list |
-| `Spacer` | `Spacer(Modifier.size(...))` | gap |
+| `type`       | Kotlin                              | Notes                          |
+| ------------ | ----------------------------------- | ------------------------------ |
+| `Column`     | `Column(modifier) { ... }`          | vertical stack                 |
+| `Row`        | `Row(modifier) { ... }`             | horizontal stack               |
+| `Box`        | `Box(modifier) { ... }`             | overlay / absolute positioning |
+| `LazyColumn` | `LazyColumn { items(...) { ... } }` | scrollable list                |
+| `LazyRow`    | `LazyRow { items(...) { ... } }`    | horizontal scrollable list     |
+| `Spacer`     | `Spacer(Modifier.size(...))`        | gap                            |
 
 ## Atomic components (`com.pico.spatial.ui.design`)
 
-| `type` | Kotlin | Common props |
-|---|---|---|
-| `Text` | `Text(text)` | `text`, `style` |
-| `Button` | `Button(onClick) { Text(...) }` | `text`, `enabled`, `variant` |
-| `IconButton` | `IconButton(onClick) { Icon(...) }` | `icon`, `contentDescription` |
-| `ButtonChip` / `RemovableChip` / `ToggleableChip` | `ButtonChip(...)`, `RemovableChip(...)`, `ToggleableChip(...)` | filter/tag chips |
-| `Icon` | `Icon(...)` | icon glyph only |
-| `TextField` | `TextField(value, onValueChange)` | `placeholder`, `label` |
-| `TextArea` | `TextArea(value, onValueChange)` | multiline input |
-| `SearchField` | `SearchField(...)` | search-box semantics |
-| `NumberField` | `NumberField(...)` | numeric input |
-| `Switch` | `Switch(checked, onCheckedChange)` | `enabled` |
-| `Slider` | `Slider(value, onValueChange)` | `range`, `steps` |
-| `Checkbox` | `Checkbox(checked, onCheckedChange)` | `enabled` |
-| `Option` | `Option(...)` | selectable option row |
-| `Divider` | `Divider()` | — |
-| `CircularProgressIndicator` | `CircularProgressIndicator()` | loading state |
-| `LinearProgressIndicator` | `LinearProgressIndicator()` | progress track |
-| `TitleBar` | `TitleBar(...)` | page header |
-| `SideNavigation` / `SideNavigationItem` | `SideNavigation { ... }` | in-page side navigation |
-| `SegmentControl` / `SegmentItem` | `SegmentControl { ... }` | segmented switching |
+| `type`                                                            | Kotlin                                       | Common props                          |
+| ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------- |
+| `Text`                                                            | `Text(text)`                                 | `text`, `style`                       |
+| `Button`                                                          | `Button(onClick) { Text(...) }`              | `text`, `enabled`, `variant`          |
+| `IconButton`                                                      | `IconButton(onClick) { Icon(...) }`          | `icon`, `contentDescription`          |
+| `ToggleButton` / `ToggleIconButton`                               | `ToggleButton(...)`, `ToggleIconButton(...)` | checked action state                  |
+| `ButtonChip` / `Chip` / `RemovableChip` / `ToggleableChip`        | corresponding chip API                       | filter/tag/display semantics          |
+| `Badge` / `DotBadge` / `NumberBadge`                              | corresponding badge API                      | status/count indicator                |
+| `Icon`                                                            | `Icon(...)`                                  | icon glyph only                       |
+| `TextField`                                                       | `TextField(value, onValueChange)`            | `placeholder`, `label`                |
+| `TextArea`                                                        | `TextArea(value, onValueChange)`             | multiline input                       |
+| `SearchField`                                                     | `SearchField(...)`                           | search-box semantics                  |
+| `NumberField`                                                     | `NumberField(...)`                           | numeric input                         |
+| `Stepper`                                                         | `Stepper(...)`                               | discrete increment/decrement          |
+| `Switch`                                                          | `Switch(checked, onCheckedChange)`           | `enabled`                             |
+| `Slider` / `SymbolSlider` / `SegmentSlider`                       | corresponding slider API                     | continuous/symbol/discrete adjustment |
+| `Checkbox` / `TriStateCheckbox`                                   | corresponding checkbox API                   | boolean/indeterminate state           |
+| `Option`                                                          | `Option(...)`                                | selectable option row                 |
+| `Divider` / `HorizontalDivider` / `VerticalDivider`               | corresponding divider API                    | orientation-specific separation       |
+| `CircularProgressIndicator` / `SymbolicCircularProgressIndicator` | corresponding circular progress API          | loading/progress with optional symbol |
+| `LinearProgressIndicator`                                         | `LinearProgressIndicator()`                  | progress track                        |
+| `PageControl` / `ProgressPageControl`                             | corresponding page-control API               | page index/progress                   |
+| `ScrollIndicator` / `BasicScrollIndicator`                        | corresponding scroll-indicator API           | bind to real scroll state             |
+| `DatePicker` / `DateRangePicker`                                  | corresponding date picker API                | date/date-range selection             |
+| `Timepicker` / `WheelPicker`                                      | corresponding picker API                     | time/general wheel selection          |
+| `Link`                                                            | `Link(...)`                                  | lightweight link action               |
+| `ListItem`                                                        | `ListItem(...)`                              | standard row with content slots       |
+| `TitleBar`                                                        | `TitleBar(...)`                              | page header                           |
+| `SideNavigation` / `SideNavigationSection` / `SideNavigationItem` | corresponding side-navigation API            | in-page side navigation               |
+| `SegmentControl` / `SegmentItem`                                  | `SegmentControl { SegmentItem(...) }`        | segmented switching                   |
+| `StereoImage`                                                     | `StereoImage(...)`                           | stereo texture layout                 |
 
 ## Window-level / spatial-specific UI
 
-| `type` | Kotlin | Notes |
-|---|---|---|
-| `TabBar` | `TabBar { ... }` | window-level edge navigation, not page content |
-| `Toolbar` | `Toolbar { ... }` | window-level action strip |
-| `Subwindow` | `Subwindow { ... }` | independently persistent auxiliary window |
-| `AlertDialog` | `AlertDialog(...)` | prompt / confirmation dialog |
-| `Sheet` | `Sheet { ... }` | heavier modal / bottom / side sheet |
-| `SpatialPopup` | `SpatialPopup(...) { ... }` | lightweight anchored floating layer |
-| `Menu` / `MenuItem` | `Menu { ... }` | menu semantics |
-| `SpatialView` | `SpatialView(modifier) { ... }` | embed any composable as a 3D-aware surface |
-| `SpatialModelView` | `SpatialModelView(model, modifier)` | embed a glTF/glb 3D model in a 2D layout |
+| `type`                                                                  | Kotlin                              | Notes                                          |
+| ----------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| `TabBar`                                                                | `TabBar { ... }`                    | window-level edge navigation, not page content |
+| `Toolbar`                                                               | `Toolbar { ... }`                   | window-level action strip                      |
+| `Subwindow`                                                             | `Subwindow { ... }`                 | independently persistent auxiliary window      |
+| `AlertDialog` / `BasicAlertDialog`                                      | corresponding alert-dialog API      | structured/raw confirmation dialog             |
+| `DatePickerDialog`                                                      | `DatePickerDialog(...)`             | specialized date-selection dialog              |
+| `Sheet` / `BasicSheet` / `HeadImageSheet`                               | corresponding sheet API             | structured/raw/header-image modal              |
+| `CoachmarkBox` / `SimpleCoachmark` / `RichCoachmark` / `ImageCoachmark` | corresponding coachmark API         | anchored instructional guidance                |
+| `SnackbarHost`                                                          | `SnackbarHost { ... }`              | transient feedback host + state                |
+| `SpatialPopup`                                                          | `SpatialPopup(...) { ... }`         | lightweight anchored floating layer            |
+| `Menu` / `SubMenu` / `MenuItem` / `BasicMenuItem`                       | corresponding menu API              | menu and nested-menu semantics                 |
+| `Augment`                                                               | `Augment(...) { ... }`              | foundation window-attached ornament            |
+| `SpatialView`                                                           | `SpatialView(modifier) { ... }`     | embed any composable as a 3D-aware surface     |
+| `SpatialModelView`                                                      | `SpatialModelView(model, modifier)` | embed a glTF/glb 3D model in a 2D layout       |
 
 ## Overlay / popup / subwindow boundary
 
 Use these distinctions consistently:
 
-| Input semantics | First choice |
-|---|---|
-| small help bubble / tooltip / anchored menu | overlay in the main panel, optionally `SpatialPopup` |
-| detached but lightweight contextual floating layer | `SpatialPopup` |
-| long-lived tool panel or side detail window | `Subwindow` |
-| multiple disconnected major surfaces | true `multi_window` reasoning, not `SpatialPopup` |
+| Input semantics                                    | First choice                                         |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| small help bubble / tooltip / anchored menu        | overlay in the main panel, optionally `SpatialPopup` |
+| detached but lightweight contextual floating layer | `SpatialPopup`                                       |
+| long-lived tool panel or side detail window        | `Subwindow`                                          |
+| multiple disconnected major surfaces               | true `multi_window` reasoning, not `SpatialPopup`    |
 
 If the input is ambiguous, choose the smallest explanation first:
 
@@ -185,12 +199,12 @@ PICO design rules require every hoverable container to use
 
 ### Authoritative imports
 
-| Symbol | Fully-qualified name |
-|---|---|
-| `Modifier.spatialHoverEffect` | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect` |
-| `SpatialHoverStyle.Default` / `.Highlight` | `com.pico.spatial.ui.foundation.hover.SpatialHoverStyle` |
-| `Modifier.spatialHoverEffectGroup(group)` | `com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup` |
-| `SpatialHoverEffectGroup.obtain()` | `com.pico.spatial.ui.foundation.hover.SpatialHoverEffectGroup` |
+| Symbol                                         | Fully-qualified name                                             |
+| ---------------------------------------------- | ---------------------------------------------------------------- |
+| `Modifier.spatialHoverEffect`                  | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect`        |
+| `SpatialHoverStyle.Default` / `.Highlight`     | `com.pico.spatial.ui.graphics.SpatialHoverStyle`                 |
+| `Modifier.spatialHoverEffectGroup(group)`      | `com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup`   |
+| `SpatialHoverEffectGroup.obtain()`             | `com.pico.spatial.ui.foundation.hover.SpatialHoverEffectGroup`   |
 | `Modifier.disableSpatialHoverEffect(disabled)` | `com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect` |
 
 ### Four usage shapes
@@ -198,7 +212,7 @@ PICO design rules require every hoverable container to use
 ```kotlin
 // 1. preset style (shortest)
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
-import com.pico.spatial.ui.foundation.hover.SpatialHoverStyle
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 
 Box(Modifier.size(100.dp).spatialHoverEffect())                     // = SpatialHoverStyle.Default
 Box(Modifier.spatialHoverEffect(style = SpatialHoverStyle.Highlight))

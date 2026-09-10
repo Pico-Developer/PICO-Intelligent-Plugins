@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import com.pico.spatial.ui.design.PicoTheme
 import com.pico.spatial.ui.foundation.dsl.DefaultWindowContainer
 import com.pico.spatial.ui.foundation.dsl.SpatialAppScope
-import com.pico.spatial.ui.foundation.dsl.windowConstraints
 
 fun mainApp(scope: SpatialAppScope) =
     with(scope) {
@@ -163,10 +162,10 @@ The manifest must do two jobs:
 
 `pico.spatial.windowcontainer.style` values:
 
-| Container | `style` value |
-|---|---|
-| `ON_PLAIN` | `"1"` (default in the example above) |
-| `IN_VOLUME` | `"2"` |
+| Container   | `style` value                        |
+| ----------- | ------------------------------------ |
+| `ON_PLAIN`  | `"1"` (default in the example above) |
+| `IN_VOLUME` | `"2"`                                |
 
 ### Stage example
 
@@ -221,35 +220,70 @@ needed for the selected container.
 
 `pico.spatial.windowcontainer.style` (only meaningful for `DefaultWindowContainer`):
 
-| Value | Meaning | Skill enum |
-|---|---|---|
+| Value | Meaning                                                        | Skill enum     |
+| ----- | -------------------------------------------------------------- | -------------- |
 | `"0"` | Form.Automatic — system default, currently maps to Form.Planar | (use ON_PLAIN) |
-| `"1"` | Form.Planar — flat panel with default depth (default) | `ON_PLAIN` |
-| `"2"` | Form.Volumetric — volume allowing custom depth | `IN_VOLUME` |
+| `"1"` | Form.Planar — flat panel with default depth (default)          | `ON_PLAIN`     |
+| `"2"` | Form.Volumetric — volume allowing custom depth                 | `IN_VOLUME`    |
 
 `pico.spatial.stage.style` (only meaningful for `DefaultStage`):
 
-| Value | Meaning | Skill enum |
-|---|---|---|
-| `"0"` | StageStyle.Automatic — system default, currently maps to Mixed | (use STAGE_MIXED) |
-| `"1"` | StageStyle.Mixed — virtual + real env at full intensity | `STAGE_MIXED` |
+| Value | Meaning                                                                                  | Skill enum          |
+| ----- | ---------------------------------------------------------------------------------------- | ------------------- |
+| `"0"` | StageStyle.Automatic — system default, currently maps to Mixed                           | (use STAGE_MIXED)   |
+| `"1"` | StageStyle.Mixed — virtual + real env at full intensity                                  | `STAGE_MIXED`       |
 | `"2"` | StageStyle.Progressive — adjustable balance (0–100% via `pico.spatial.stage.immersion*`) | `STAGE_PROGRESSIVE` |
-| `"3"` | StageStyle.Full — virtual content only | `STAGE_FULL` |
+| `"3"` | StageStyle.Full — virtual content only                                                   | `STAGE_FULL`        |
+
+### Choosing the Stage variant
+
+All three `STAGE_*` containers come from `pico-cli project create --template stage`,
+so the CLI cannot know which variant you decided on. It emits one Stage manifest;
+you edit the four values below to match the container from the Decide stage. These
+are the only manifest values you should touch after the CLI runs.
+
+| Container           | `stage.style` | `stage.immersion`      | `stage.immersion_min` | `stage.immersion_max` |
+| ------------------- | ------------- | ---------------------- | --------------------- | --------------------- |
+| `STAGE_MIXED`       | `"1"`         | `"0"`                  | `"0"`                 | `"0"`                 |
+| `STAGE_PROGRESSIVE` | `"2"`         | design's start value † | `"0"`                 | `"100"`               |
+| `STAGE_FULL`        | `"3"`         | `"100"`                | `"100"`               | `"100"`               |
+
+† `STAGE_PROGRESSIVE` is the only variant with a real range, so `immersion` is a
+product decision, not a fixed constant: it is the starting point inside
+`[immersion_min, immersion_max]`. Use the value the design specifies; `"50"` is a
+reasonable default when it does not. Verification checks `style`, `immersion_min`,
+and `immersion_max` for this variant and intentionally leaves the start value to
+you.
+
+Notes:
+
+- Edit the values in place. The CLI already emitted these `<meta-data>` entries in
+  the launcher activity — do not add, rename, or reorder them.
+- For `STAGE_MIXED` and `STAGE_FULL` the range is pinned (`min == max`), so the
+  user cannot slide immersion at runtime. That is intentional, and verification
+  enforces all four values.
+- `ON_PLAIN` / `IN_VOLUME` need no such step: `--template planar` and
+  `--template volumetric` already emit the correct
+  `pico.spatial.windowcontainer.style`.
+
+`scan_implementation.py` reads these values back to confirm the built app matches
+the container that was decided, so a mismatch here surfaces as a verification
+failure rather than a runtime surprise.
 
 `IN_VOLUME` only — extra meta-data observed in volumetric template:
 
-| Meta-data | Values | Default |
-|---|---|---|
-| `pico.spatial.windowcontainer.volumealignment` | `"0"` Gravity / `"1"` Tilted | `"0"` |
-| `pico.spatial.windowcontainer.volumebasepanel` | `"0"` Default (visible) / `"1"` None (hidden) | `"0"` |
-| `pico.spatial.windowcontainer.defaultsize` | 3D format `WxHxD` (e.g. `960x960x960`) | — |
+| Meta-data                                      | Values                                        | Default |
+| ---------------------------------------------- | --------------------------------------------- | ------- |
+| `pico.spatial.windowcontainer.volumealignment` | `"0"` Gravity / `"1"` Tilted                  | `"0"`   |
+| `pico.spatial.windowcontainer.volumebasepanel` | `"0"` Default (visible) / `"1"` None (hidden) | `"0"`   |
+| `pico.spatial.windowcontainer.defaultsize`     | 3D format `WxHxD` (e.g. `960x960x960`)        | —       |
 
 ## Common mistakes
 
-| Mistake | Symptom |
-|---|---|
-| Forgot `launch(::mainApp)` in `Application` | App launches but the SpatialUI root never initializes |
-| Launcher Activity extends plain `Activity` instead of `SpatialLaunchActivity` | Black screen or no SpatialUI entry |
-| `DefaultWindowContainer` / `DefaultStage` root does not match manifest metadata | App compiles but launches into the wrong spatial mode |
-| Used `windowConstraints` to fake first-open size | Resize bounds work, but initial window size is still wrong |
-| Switched an existing module from window to stage without need | Large diff, higher breakage risk, and possible UX mismatch |
+| Mistake                                                                         | Symptom                                                    |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Forgot `launch(::mainApp)` in `Application`                                     | App launches but the SpatialUI root never initializes      |
+| Launcher Activity extends plain `Activity` instead of `SpatialLaunchActivity`   | Black screen or no SpatialUI entry                         |
+| `DefaultWindowContainer` / `DefaultStage` root does not match manifest metadata | App compiles but launches into the wrong spatial mode      |
+| Used `windowConstraints` to fake first-open size                                | Resize bounds work, but initial window size is still wrong |
+| Switched an existing module from window to stage without need                   | Large diff, higher breakage risk, and possible UX mismatch |

@@ -1,0 +1,70 @@
+# 可选：覆盖报告头部信息
+header:
+  app_package: "com.picoxr.spatial.demo"
+  app_name: "PICO Spatial Gallery"
+  analysis_time: "2026-07-30 22:34:12 CST"
+  # 分析的上下文
+  context:
+    app_type: "no_debug" # debug / no_debug
+    device_type: "real"  # real  / emulator
+    os_version: "6.1.0"
+  # 分析的数据
+  analysis_data:
+    trace_file: "trace_spatial_gallery_20260730_221508.perfetto-trace"
+    fast_perf_file: ""
+    simple_perf_file: ""
+  
+# 注意：最终根因分类不写在这里。它是独立产物
+# session-output-<timestamp>/root-cause-classification.yaml，
+# 见 templates/root_cause_classification_example.yaml 与
+# references/routing/root-cause-classification-contract.md。
+
+# 必填：按 Topic 组织的分析正文。每个 topic 内的 report 保持六节输出结构。
+analysis_topics:
+  - topic: "Spatial Engine"
+    protocol: "spatial-engine"
+    conclusion_level: "likely"
+    root_cause_one_line: "场景切换时资源重建触发 GPU 峰值升高，叠加主线程 Binder 查询与短时 GC，导致 90Hz 预算窗口被连续击穿。"
+    output_file: "topic-result/output-spatial-engine.md"
+    report:
+      symptom: |
+        拖拽模型后的 1~2 秒内出现明显掉帧与画面抖动；头动跟随略有延迟。
+        问题可稳定复现，并且在资源加载完成后更明显。
+
+      existing_evidence:
+        - id: e1
+          type: perfetto_trace
+          location: trace_spatial_gallery_20260730_221508.perfetto-trace
+          finding: issue window 内连续 Late Frames，APP Produce/EngineRender 超预算
+        - id: e2
+          type: sql
+          location: sql-report-queries.md#spatial
+          finding: Late/Miss 峰值与 Eng-Render runnable starvation 窗口对齐
+        - id: e3
+          type: screenshot
+          location: Perfetto SpatialFrames 面板截图
+          finding: Late Frames 在拖拽后短窗口集中
+
+      investigation_process: |
+        先在 SpatialFrames/SpatialMetrics 锁定 Late Frame 簇与时间窗 →
+        对齐 Eng-Render / RenderThread Slice 与调度状态 →
+        检查同窗是否存在长 Binder 等待或 GC STW →
+        结合 GPU/CPU 负载趋势，排除纯 GPU 饱和的单一解释。
+
+      root_cause_judgment:
+        one_line: "场景切换时资源重建触发 GPU 峰值升高，叠加主线程 Binder 查询与短时 GC，导致 90Hz 预算窗口被连续击穿。"
+        conclusion_level: likely
+        reasoning: |
+          证据链表明：Late Frame 窗口与 EngineRender 超预算强相关，
+          同时存在主线程同步等待与一次明显 GC。
+          尚缺 GPU counters / 更精细的 contenders 证据来完全闭环。
+
+      actions:
+        - "优先降低拖拽/场景切换路径渲染工作量：减少每帧更新对象数、合批 DrawCall、降低材质复杂度"
+        - "将主线程 Binder 查询迁移到缓存或后台线程，并补充耗时埋点确认调用来源"
+        - "补采含 sched + GPU 频点/计数器的 trace，用于区分 CPU 争抢 vs GPU 饱和"
+
+      limitations_and_next_validation: |
+        当前 trace 缺少完整 GPU counters，无法确认同窗 GPU 是否饱和；contenders 识别仍偏粗。
+        下一步：补采含 GPU+调度信息的 trace，并做降低工作量回归验证；
+        若 Late Frames 显著下降，则进一步支持“工作量/调度争抢”为主因。

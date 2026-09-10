@@ -6,7 +6,7 @@ Capability: `Modifier.spatialHoverEffect`, `spatialHoverEffectGroup`, `disableSp
 
 ```kotlin
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
-import com.pico.spatial.ui.foundation.hover.SpatialHoverStyle
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 
 Box(
     Modifier
@@ -104,7 +104,7 @@ Box(
 
 ```kotlin
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
-import com.pico.spatial.ui.foundation.hover.SpatialHoverStyle
+import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import com.pico.spatial.ui.foundation.hover.SpatialHoverEffectGroup
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup
 import com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect

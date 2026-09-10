@@ -1,0 +1,35 @@
+{
+  "groups": [
+    {
+      "id": "3d-render",
+      "label": "3D Render",
+      "process_name": "com.pico.spatial.runtime",
+      "unit_label": "count",
+      "counters": [
+        "Draw Call Count",
+        "3D Mesh Draw Call Count",
+        "Particle Draw Call Count",
+        "Shadow Draw Call Count",
+        "Triangle Count",
+        "3D Mesh Triangle Count",
+        "Particle Triangle Count",
+        "Shadow Triangle Count",
+        "Vertex Count",
+        "3D Mesh Vertex Count",
+        "Particle Vertex Count",
+        "Shadow Vertex Count"
+      ]
+    },
+    {
+      "id": "memory",
+      "label": "Memory",
+      "process_name": "com.pico.spatial.runtime",
+      "unit_label": "bytes",
+      "counters": [
+        "Texture2D Memory",
+        "Mesh Memory",
+        "Scene Graph Memory"
+      ]
+    }
+  ]
+}

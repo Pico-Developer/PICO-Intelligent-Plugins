@@ -13,11 +13,11 @@ passthrough spatial content, anchors, environment mesh, or a virtual world.
 
 ## Three immersion levels
 
-| Stage mode | Background | Typical cue |
-|---|---|---|
-| `MIXED` | Real world / passthrough behind virtual content | free spatial content in the real room |
-| `PROGRESSIVE` | Adjustable blend between real and virtual | explicit immersion control or partial environment replacement |
-| `FULL` | Pure virtual environment | fully immersive world, no real-world background |
+| Stage mode    | Background                                      | Typical cue                                                   |
+| ------------- | ----------------------------------------------- | ------------------------------------------------------------- |
+| `MIXED`       | Real world / passthrough behind virtual content | free spatial content in the real room                         |
+| `PROGRESSIVE` | Adjustable blend between real and virtual       | explicit immersion control or partial environment replacement |
+| `FULL`        | Pure virtual environment                        | fully immersive world, no real-world background               |
 
 ## Registration
 
@@ -78,16 +78,20 @@ For input-driven scaffolding:
 
 Treat a Stage as **Full Space + ECS/SpatialView content**, not a Compose page.
 The failure mode to prevent: a Stage entry whose body is ordinary `Box` /
-`Column` / `Canvas`, or immersive content (e.g. a radar/sphere) placed inside a
-2D WindowContainer content tree so it renders as a flat 2D widget, or Stage
-controls (summary / layers / timeline / exit) dropped in as plain Compose
-overlays that end up invisible, unclickable, or detached from the 3D scene.
+`Column` / `Canvas`, required immersive content placed inside a 2D
+WindowContainer content tree so it renders as a flat 2D widget, or task-defined
+Stage controls dropped in as plain Compose overlays that end up invisible,
+unclickable, or detached from the 3D scene.
 
 Root cause of that bug: confusing the `Stage` container with a Compose page, and
 not modeling Stage as Full Space + ECS. 2D controls inside a Stage must be
 attached to an ECS anchor via `AttachmentPanel`, never floated as a bare overlay.
 
 ### Every Stage branch must declare a 3D content strategy
+
+The strategy list classifies how already-required content is implemented. It does not
+require a model, light, panel, effect, or Editor bundle unless current evidence or an
+accepted upstream contract requires that content.
 
 Pick exactly one and record it in the handoff / contract:
 
@@ -96,8 +100,8 @@ Pick exactly one and record it in the handoff / contract:
 - **Editor-authored bundle** — load a pre-authored scene bundle with
   `Entity.load(name, AssetBundle.load("asset://...bundle"))`.
 - **Explicit fallback** — if no real 3D content exists yet, state the fallback
-  explicitly (e.g. "single SpatialModelView placeholder, immersive scene TBD"),
-  so a flat page is a declared decision, not an accident.
+  explicitly using the minimal placeholder allowed by the accepted contract, so
+  a flat page is a declared decision, not an accident.
 
 ### 3D content: `SpatialView` hosts the scene
 
@@ -116,21 +120,24 @@ SpatialView(
     modifier = Modifier.fillMaxSize(),
     attachments = {
         // 2D controls attached to ECS anchors (see below)
-        AttachmentPanel("summary") { SummaryPanel() }
-        AttachmentPanel("timeline") { TimelinePanel() }
-        AttachmentPanel("exit") { ExitButton() }
+        AttachmentPanel("primary_control") { PrimaryControl() }
+        AttachmentPanel("secondary_control") { SecondaryControl() }
     },
 ) { content, attachments ->
     // ECS root entity; spatial children attach under it
     val root = Entity()
     content.addEntity(root)
 
-    val model = Entity.load("radar", AssetBundle.load("asset://radar.bundle"))
+    val model = Entity.load("content", AssetBundle.load("asset://content.bundle"))
     root.addChild(model)
 
-    // position each attached 2D panel in meters, relative to the anchor
-    attachments.entity("summary")?.apply {
-        components[TransformComponent::class.java]?.setPosition(0f, 0.2f, -1.2f)
+    // Apply task-derived metric positions from the accepted layout contract.
+    attachments.entity("primary_control")?.apply {
+        components[TransformComponent::class.java]?.setPosition(
+            primaryControlPosition.x,
+            primaryControlPosition.y,
+            primaryControlPosition.z,
+        )
         root.addChild(this)
     }
 }
@@ -151,13 +158,13 @@ panel, the anchor it attaches to and its metric position.
 in `com.pico.spatial.core.ecs`), added via `components.set(...)`. Mind the
 dependency chain:
 
-| Component | Purpose | Requires |
-|---|---|---|
-| `ModelComponent` | mesh + material to render | — |
-| `TransformComponent` | position / rotation / scale (meters) | — |
-| `CollisionComponent` | collider for hit-testing | — |
-| `InteractableComponent` | pointer/gesture target | `CollisionComponent` |
-| `HoverEffectComponent` | hover visual feedback | `CollisionComponent` + `InteractableComponent` |
+| Component               | Purpose                              | Requires                                       |
+| ----------------------- | ------------------------------------ | ---------------------------------------------- |
+| `ModelComponent`        | mesh + material to render            | —                                              |
+| `TransformComponent`    | position / rotation / scale (meters) | —                                              |
+| `CollisionComponent`    | collider for hit-testing             | —                                              |
+| `InteractableComponent` | pointer/gesture target               | `CollisionComponent`                           |
+| `HoverEffectComponent`  | hover visual feedback                | `CollisionComponent` + `InteractableComponent` |
 
 ### Reference sample
 
@@ -183,5 +190,5 @@ Because a 2D reference under-specifies immersive behavior, always state:
 - Multiple apps need to coexist on screen → `WindowContainer`
 - You don't need anchors / env mesh / ray casting / global skybox
 
-If the input is basically a flat settings, dashboard, chat, or file panel,
-`Stage` is usually the wrong choice.
+If the accepted contract describes a bounded 2D task without required immersive
+behavior, `Stage` is usually the wrong choice.

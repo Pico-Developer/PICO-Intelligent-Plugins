@@ -1,10 +1,10 @@
 # Privacy and Local Support Bundles
 
-This marketplace provides agent skills and MCP configuration for PICO Spatial SDK development. The plugin does not intentionally upload prompts, tool calls, project files, logs, or support bundles to PICO services by itself.
+This marketplace provides agent skills and MCP configuration for PICO Spatial SDK and PICO Unity development. The plugins do not intentionally upload prompts, tool calls, project files, logs, or support bundles to PICO services by themselves.
 
 ## Local plugin audit bundles
 
-The `pico-spatial-agentic-tools` plugin includes a user-triggered support workflow for setup and visibility debugging:
+The `pico-spatial-agentic-tools` plugin includes a user-triggered support workflow for setup and visibility debugging. This workflow is specific to the Spatial plugin; the Unity plugin does not currently provide an equivalent support-bundle workflow.
 
 ```bash
 pico-cli plugin audit
@@ -22,10 +22,10 @@ Review and redact transcript exports before sharing them externally.
 
 ## MCP servers
 
-The public plugin starts MCP servers through the public npm package:
+The public plugins start their `pico-cli`-backed MCP servers through the public npm package. For example, the development knowledge server uses:
 
 ```bash
-npx -y @picoxr/pico-cli mcp:dev-knowledge
+npx -y @picoxr/pico-cli knowledge:server
 ```
 
 Public marketplace releases must not contain private package scopes, private registries, private repository URLs, or internal service URLs.

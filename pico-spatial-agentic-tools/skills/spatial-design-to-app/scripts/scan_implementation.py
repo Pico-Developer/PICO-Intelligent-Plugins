@@ -1,34 +1,38 @@
 #!/usr/bin/env python3
 """Implementation-level scanner for spatial-design-to-app.
 
-Goes one step beyond `check_layout_structure.py`: instead of only validating
-the .scratch/ artifacts, this scanner reads the actual generated Kotlin and
-AndroidManifest.xml files and compares them to the Spatial Layout Contract.
+Reads the generated Kotlin and AndroidManifest.xml and validates them directly.
+There is no intermediate layout-contract JSON: the container the app registers
+is inferred from AndroidManifest meta-data, which is what the runtime actually
+honours.
 
 Usage:
     python3 -m scripts.scan_implementation --target ./myapp
-    python3 /abs/path/to/scan_implementation.py --target ./generated-spatial-app
+    python3 /abs/path/to/scan_implementation.py --target ./generated-spatial-app \
+        --generation-mode existing_module --profile default
 
-It writes a structured artifact to `<target>/.scratch/implementation_scan_result.json`
-with per-check pass/fail and concrete failure messages, and exits non-zero when
-any check fails.
+It writes `<target>/.scratch/implementation_scan_result.json` with per-check
+pass/fail plus concrete messages, and exits non-zero when any check fails.
 
 Checks performed (best-effort, regex-based; never blocks on missing files):
 
-- root_match            — Root container in code matches contract.container
-- entry_wired           — `mainApp` / `Application.launch(::mainApp)` are present
-- manifest_consistency  — Manifest declares the right windowcontainer.id and
-                          (when applicable) windowcontainer.style for IN_VOLUME
-- stage_api_legality    — Stage-only APIs (anchor, env_mesh, ECS) only appear
-                          when contract.container is a Stage container
-- whitelist_components  — Compose imports do not reference invented SpatialUI
-                          symbols outside a small allow-list
-- window_chrome_ornaments — edge-pinned window ornaments declared in the
-                          contract use window-level fittings instead of
-                          hand-rolled in-page overlays
+- root_match                 — code root matches the container the manifest declares
+- entry_wired                — `mainApp` / `Application.launch(::mainApp)` present
+- manifest_consistency       — required windowcontainer / stage meta-data values
+- stage_api_legality         — Stage-only APIs (anchor, env_mesh, ECS) stay in Stage flows
+- whitelist_components       — imports do not reference invented SpatialUI symbols
+- invented_component_names   — no SDK names the reference marks as non-existent
+- spatialui_component_floor  — positive evidence that SpatialUI built-ins were used
+                               instead of hand-rolled Box + Text equivalents (warns)
+- window_chrome_ornaments    — edge-pinned chrome uses window-level fittings (warns)
+- root_change_guard          — existing modules do not silently switch root architecture
+
+The SpatialUI component vocabulary is parsed from
+`references/spatial-ui-components.md` and `references/spatial-windows-guide.md`
+so those documents stay the single source of truth.
 
 This scanner is intentionally conservative: false positives are worse than
-false negatives. Unknown patterns degrade to WARN, not FAIL.
+false negatives. Heuristic signals degrade to WARN, not FAIL.
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -62,13 +67,6 @@ STAGE_MANIFEST_EXPECTATIONS = {
         "pico.spatial.stage.immersion_max": "100",
     },
 }
-LAYOUT_CANDIDATES = [
-    "spatial_layout_contract.json",
-    "spatial_layout.json",
-    "window_structure.json",
-]
-PATCH_CONTRACT = "patch_contract.json"
-
 # Patterns used to detect container invocations in code. Imports alone are ignored.
 #
 # CRITICAL distinction (verified against PICO SpatialSDK source):
@@ -94,20 +92,20 @@ SECONDARY_STAGE_PATTERN = r"\bStage\s*\("
 # source (sensepack + spatialpack/core/ecs). Each manager / anchor type below
 # is annotated `@RequiredFullSpace` and throws when called outside Full Space.
 STAGE_ONLY_API_PATTERNS = (
-    r"\bWorldTrackingManager\b",      # com.pico.spatial.sense.world.WorldTrackingManager
-    r"\bPlaneTrackingManager\b",      # com.pico.spatial.sense.plane.PlaneTrackingManager
-    r"\bMeshTrackingManager\b",       # com.pico.spatial.sense.mesh.MeshTrackingManager
-    r"\bWorldAnchor\b",               # com.pico.spatial.sense.world.WorldAnchor
-    r"\bPlaneAnchor\b",               # com.pico.spatial.sense.plane.PlaneAnchor
-    r"\bMeshAnchor\b",                # com.pico.spatial.sense.mesh.MeshAnchor
-    r"\bWorldTrackingResult\b",       # sealed result type
-    r"\bAnchorEntity\b",              # com.pico.spatial.core.ecs.AnchorEntity
-    r"\bAnchorComponent\b",           # com.pico.spatial.core.ecs.AnchorComponent
-    r"\bAnchorTarget\b",              # com.pico.spatial.core.ecs.anchor.AnchorTarget
-    r"\b@RequiredFullSpace\b",        # com.pico.spatial.core.annotation.RequiredFullSpace
-    r"\bscene\.rayCast\b",            # raycast on scene instance (Stage-only)
-    r"\bscene\.convexCast\b",         # convex cast on scene instance
-    r"\bcom\.pico\.spatial\.sense\.", # any sensepack import is Stage-only
+    r"\bWorldTrackingManager\b",  # com.pico.spatial.sense.world.WorldTrackingManager
+    r"\bPlaneTrackingManager\b",  # com.pico.spatial.sense.plane.PlaneTrackingManager
+    r"\bMeshTrackingManager\b",  # com.pico.spatial.sense.mesh.MeshTrackingManager
+    r"\bWorldAnchor\b",  # com.pico.spatial.sense.world.WorldAnchor
+    r"\bPlaneAnchor\b",  # com.pico.spatial.sense.plane.PlaneAnchor
+    r"\bMeshAnchor\b",  # com.pico.spatial.sense.mesh.MeshAnchor
+    r"\bWorldTrackingResult\b",  # sealed result type
+    r"\bAnchorEntity\b",  # com.pico.spatial.core.ecs.AnchorEntity
+    r"\bAnchorComponent\b",  # com.pico.spatial.core.ecs.AnchorComponent
+    r"\bAnchorTarget\b",  # com.pico.spatial.core.ecs.anchor.AnchorTarget
+    r"\b@RequiredFullSpace\b",  # com.pico.spatial.core.annotation.RequiredFullSpace
+    r"\bscene\.rayCast\b",  # raycast on scene instance (Stage-only)
+    r"\bscene\.convexCast\b",  # convex cast on scene instance
+    r"\bcom\.pico\.spatial\.sense\.",  # any sensepack import is Stage-only
 )
 
 ENTRY_TOKENS = (
@@ -131,59 +129,206 @@ ALLOWED_SPATIAL_PACKAGE_PREFIXES = (
 )
 
 
-def _load_json(path: Path) -> Any:
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError as exc:
-        raise SystemExit(f"[impl-scan] Missing required file: {path}") from exc
-    except json.JSONDecodeError as exc:
-        raise SystemExit(f"[impl-scan] Invalid JSON in {path}: {exc}") from exc
-
-
-def resolve_layout_contract_path(scratch_dir: Path) -> Path:
-    for candidate in LAYOUT_CANDIDATES:
-        path = scratch_dir / candidate
-        if path.exists():
-            return path
-    tried = ", ".join(LAYOUT_CANDIDATES)
-    raise SystemExit(
-        f"[impl-scan] Missing Spatial Layout Contract under {scratch_dir}. Tried: {tried}"
-    )
-
-
-def load_contract_for_scan(scratch_dir: Path) -> dict[str, Any]:
-    input_path = scratch_dir / "input_envelope.json"
-    input_envelope: dict[str, Any] = {}
-    if input_path.exists():
-        loaded = _load_json(input_path)
-        if isinstance(loaded, dict):
-            input_envelope = loaded
-    if input_envelope.get("input_mode") == "incremental_patch":
-        patch = _load_json(scratch_dir / PATCH_CONTRACT)
-        if not isinstance(patch, dict):
-            raise SystemExit("[impl-scan] Patch Contract must be a JSON object")
-        inherits = patch.get("inherits")
-        if not isinstance(inherits, dict):
-            raise SystemExit("[impl-scan] Patch Contract.inherits must be a JSON object")
-        return {
-            "container": inherits.get("container"),
-            "container_reason": "Inherited from existing module by incremental_patch Patch Contract.",
-            "window_model": inherits.get("window_model"),
-            "window_reason": "Inherited from existing module by incremental_patch Patch Contract.",
-            "spatial_features": [],
-        }
-    contract = _load_json(resolve_layout_contract_path(scratch_dir))
-    if not isinstance(contract, dict):
-        raise SystemExit("[impl-scan] Spatial Layout Contract must be a JSON object")
-    return contract
-
-
 def container_kind(container: str | None) -> str | None:
     if container in WINDOW_CONTAINERS:
         return "window"
     if container in STAGE_CONTAINERS:
         return "stage"
     return None
+
+
+# --------------------------------------------------------------------------
+# Component vocabulary
+#
+# The whitelist is PARSED from references/spatial-ui-components.md and
+# references/spatial-windows-guide.md rather than hard-coded, so the docs stay
+# the single source of truth. A hard-coded copy would silently drift from the
+# reference the skill tells the agent to obey.
+# --------------------------------------------------------------------------
+
+# Generic layout/text primitives. Legal to use, but they are NOT evidence that
+# SpatialUI built-ins were preferred over hand-rolled UI, so they never count
+# toward the component floor.
+GENERIC_PRIMITIVES = frozenset(
+    {
+        "Box",
+        "Column",
+        "Row",
+        "LazyColumn",
+        "LazyRow",
+        "Spacer",
+        "Text",
+        "Icon",
+        "PicoTheme",
+    }
+)
+
+# Names that appear in the guides as prose/material vocabulary rather than as
+# callable components.
+_VOCABULARY_NOISE = frozenset(
+    {
+        "None",
+        "Regular",
+        "Thick",
+        "Thickest",
+        "Material",
+        "Tooltip",
+        "Modifier",
+        "Alignment",
+        "Color",
+        "Form",
+        "Automatic",
+        "Planar",
+        "Volumetric",
+        "TabBarPlacement",
+        "CoachmarkDirection",
+        "CoachmarkDefaults",
+        "SpatialWindowType",
+        "SpatialWindowProperties",
+        "LocalSnackbarHostState",
+        "SpatialAppScope",
+    }
+)
+
+_TABLE_ROW_RE = re.compile(r"^\|\s*(`[^|]+`)\s*\|", re.MULTILINE)
+_BACKTICK_NAME_RE = re.compile(r"`([A-Z][A-Za-z0-9]*)`")
+_HEADING_RE = re.compile(r"^##\s+(.*)$", re.MULTILINE)
+
+
+def _reference_dir() -> Path:
+    return Path(__file__).resolve().parents[1] / "references"
+
+
+def _forbidden_names_from_components_doc(text: str) -> set[str]:
+    """Names listed under 'What's NOT here (do not emit)'."""
+    forbidden: set[str] = set()
+    match = re.search(
+        r"^##\s+What's NOT here.*?$(.*?)(?=^##\s+|\Z)",
+        text,
+        flags=re.MULTILINE | re.DOTALL,
+    )
+    if match:
+        forbidden.update(_BACKTICK_NAME_RE.findall(match.group(1)))
+    # `Box` appears in that section only as the *recommended fallback* prose
+    # ("generate a `Box` with a TODO"), not as a banned name.
+    forbidden.discard("Box")
+    # `Window` / `Screen` / `Page` are banned as Spatial *container* types, but
+    # they are ordinary words that legitimately appear inside composable names
+    # (HomeScreen, SettingsPage). Flagging them by bare name would be noise, and
+    # this scanner treats false positives as worse than false negatives.
+    forbidden -= {"Window", "Screen", "Page"}
+    return forbidden
+
+
+def load_component_vocabulary() -> tuple[set[str], set[str]]:
+    """Returns (allowed_components, forbidden_components).
+
+    `allowed_components` excludes generic primitives, so it answers the question
+    "which SpatialUI built-ins did this code actually use?" rather than "is this
+    a Compose file?".
+    """
+    references = _reference_dir()
+    allowed: set[str] = set()
+    forbidden: set[str] = set()
+
+    components_doc = references / "spatial-ui-components.md"
+    if components_doc.exists():
+        text = read_text_safe(components_doc)
+        forbidden = _forbidden_names_from_components_doc(text)
+        # Skip the trailing prose sections so their examples do not leak in.
+        body = re.split(r"^##\s+What's NOT here", text, flags=re.MULTILINE)[0]
+        for cell in _TABLE_ROW_RE.findall(body):
+            allowed.update(_BACKTICK_NAME_RE.findall(cell))
+
+    windows_doc = references / "spatial-windows-guide.md"
+    if windows_doc.exists():
+        text = read_text_safe(windows_doc)
+        for cell in _TABLE_ROW_RE.findall(text):
+            allowed.update(_BACKTICK_NAME_RE.findall(cell))
+
+    allowed -= GENERIC_PRIMITIVES
+    allowed -= _VOCABULARY_NOISE
+    allowed -= forbidden
+    return allowed, forbidden
+
+
+# --------------------------------------------------------------------------
+# Container inference from AndroidManifest
+#
+# Replaces the former `contract.container` field: the manifest meta-data IS the
+# runtime source of truth for which root the app registers, so it needs no
+# intermediate JSON artifact. Mirrors the value matrix documented in
+# references/manifest-and-entry.md -> "Choosing the Stage variant".
+# --------------------------------------------------------------------------
+
+WINDOW_STYLE_TO_CONTAINER = {
+    "1": "ON_PLAIN",
+    "2": "IN_VOLUME",
+}
+STAGE_STYLE_TO_CONTAINER = {
+    "1": "STAGE_MIXED",
+    "2": "STAGE_PROGRESSIVE",
+    "3": "STAGE_FULL",
+}
+
+
+def parse_manifest_meta(manifests: list[tuple[Path, str]]) -> dict[str, set[str]]:
+    meta: dict[str, set[str]] = {}
+    for _, text in manifests:
+        for name, value in re.findall(
+            r'android:name="([^"]+)"[\s\S]{0,200}?android:value="([^"]+)"',
+            text,
+        ):
+            meta.setdefault(name, set()).add(value)
+    return meta
+
+
+def infer_container(
+    manifests: list[tuple[Path, str]],
+    kotlin_sources: list[tuple[Path, str]],
+) -> tuple[str | None, list[str]]:
+    """Infer the declared container from manifest meta-data.
+
+    Falls back to the code root kind when the manifest only says *which* family
+    the app is in without pinning a style value.
+    """
+    evidence: list[str] = []
+    meta = parse_manifest_meta(manifests)
+
+    stage_styles = meta.get("pico.spatial.stage.style", set())
+    for value in sorted(stage_styles):
+        if value in STAGE_STYLE_TO_CONTAINER:
+            container = STAGE_STYLE_TO_CONTAINER[value]
+            evidence.append(f"manifest pico.spatial.stage.style={value} -> {container}")
+            return container, evidence
+
+    window_styles = meta.get("pico.spatial.windowcontainer.style", set())
+    for value in sorted(window_styles):
+        if value in WINDOW_STYLE_TO_CONTAINER:
+            container = WINDOW_STYLE_TO_CONTAINER[value]
+            evidence.append(f"manifest pico.spatial.windowcontainer.style={value} -> {container}")
+            return container, evidence
+
+    # No explicit style value: fall back to the family declared in the manifest,
+    # then to the root actually invoked in code.
+    if "pico.spatial.stage.id" in meta:
+        evidence.append("manifest declares pico.spatial.stage.id without style -> STAGE_MIXED")
+        return "STAGE_MIXED", evidence
+    if "pico.spatial.windowcontainer.id" in meta:
+        evidence.append(
+            "manifest declares pico.spatial.windowcontainer.id without style -> ON_PLAIN"
+        )
+        return "ON_PLAIN", evidence
+
+    detected, root_evidence = detect_root_kind(kotlin_sources)
+    evidence.extend(root_evidence)
+    if detected == "stage":
+        evidence.append("no manifest meta; code root DefaultStage -> STAGE_MIXED")
+        return "STAGE_MIXED", evidence
+    if detected == "window":
+        evidence.append("no manifest meta; code root DefaultWindowContainer -> ON_PLAIN")
+        return "ON_PLAIN", evidence
+    return None, evidence
 
 
 def collect_kotlin_files(target: Path) -> list[Path]:
@@ -265,16 +410,19 @@ def detect_root_kind(kotlin_sources: list[tuple[Path, str]]) -> tuple[str | None
 
 
 def check_root_match(
-    contract: dict[str, Any],
+    container: str | None,
     kotlin_sources: list[tuple[Path, str]],
 ) -> dict[str, Any]:
-    contract_container = contract.get("container")
-    contract_kind = container_kind(str(contract_container) if contract_container else None)
+    declared_kind = container_kind(container)
     detected, evidence = detect_root_kind(kotlin_sources)
 
     failures: list[str] = []
-    if contract_kind is None:
-        failures.append(f"contract.container={contract_container!r} is not a recognized container")
+    if declared_kind is None:
+        failures.append(
+            "could not determine the app container from AndroidManifest meta-data "
+            "(pico.spatial.windowcontainer.* / pico.spatial.stage.*) or from a "
+            "DefaultWindowContainer / DefaultStage root in code"
+        )
     elif detected is None:
         failures.append(
             "no DefaultWindowContainer / DefaultStage / WindowContainer / Stage root invocation found in code"
@@ -285,9 +433,9 @@ def check_root_match(
             "only one default root is allowed (secondary WindowContainer(id=...) / "
             "Stage(id=...) are fine and do not count as roots)"
         )
-    elif detected != contract_kind:
+    elif detected != declared_kind:
         failures.append(
-            f"contract.container={contract_container} ({contract_kind}) does not match code root ({detected})"
+            f"manifest declares {container} ({declared_kind}) but code root is {detected}"
         )
     return {
         "passed": not failures,
@@ -313,7 +461,7 @@ def check_entry_wired(kotlin_sources: list[tuple[Path, str]]) -> dict[str, Any]:
 
 
 def check_manifest_consistency(
-    contract: dict[str, Any],
+    container: str | None,
     manifests: list[tuple[Path, str]],
 ) -> dict[str, Any]:
     failures: list[str] = []
@@ -331,34 +479,33 @@ def check_manifest_consistency(
         if "pico.spatial.windowcontainer.id" in text:
             has_windowcontainer_meta = True
             evidence[path.name] = "declares pico.spatial.windowcontainer.id"
-        if 'pico.spatial.windowcontainer.style' in text and 'value="2"' in text:
+        if "pico.spatial.windowcontainer.style" in text and 'value="2"' in text:
             has_in_volume_style = True
         for meta_name, meta_value in re.findall(
             r'android:name="([^"]+)"\s+android:value="([^"]+)"',
             text,
         ):
             manifest_meta.setdefault(meta_name, set()).add(meta_value)
-    contract_container = contract.get("container")
-    contract_kind = container_kind(str(contract_container) if contract_container else None)
-    if contract_kind == "window":
+    declared_kind = container_kind(container)
+    if declared_kind == "window":
         if not has_windowcontainer_meta:
             failures.append(
                 "WindowContainer flow but manifest is missing pico.spatial.windowcontainer.id meta-data"
             )
-        if contract_container == "IN_VOLUME" and not has_in_volume_style:
+        if container == "IN_VOLUME" and not has_in_volume_style:
             failures.append(
                 "container=IN_VOLUME but manifest does not set pico.spatial.windowcontainer.style=2"
             )
-    elif contract_kind == "stage":
+    elif declared_kind == "stage":
         if "pico.spatial.stage.id" not in manifest_meta:
             failures.append("Stage flow but manifest is missing pico.spatial.stage.id meta-data")
-        expected = STAGE_MANIFEST_EXPECTATIONS.get(str(contract_container), {})
+        expected = STAGE_MANIFEST_EXPECTATIONS.get(str(container), {})
         for name, expected_value in expected.items():
             actual_values = manifest_meta.get(name, set())
             if expected_value not in actual_values:
                 actual = ", ".join(sorted(actual_values)) if actual_values else "<missing>"
                 failures.append(
-                    f"container={contract_container} expects {name}={expected_value}, got {actual}"
+                    f"container={container} expects {name}={expected_value}, got {actual}"
                 )
         if expected:
             evidence["stage_manifest"] = {
@@ -368,11 +515,10 @@ def check_manifest_consistency(
 
 
 def check_stage_api_legality(
-    contract: dict[str, Any],
+    container: str | None,
     kotlin_sources: list[tuple[Path, str]],
 ) -> dict[str, Any]:
-    contract_container = contract.get("container")
-    contract_kind = container_kind(str(contract_container) if contract_container else None)
+    declared_kind = container_kind(container)
     hits: list[str] = []
     compiled = [re.compile(p) for p in STAGE_ONLY_API_PATTERNS]
     for path, text in kotlin_sources:
@@ -392,7 +538,7 @@ def check_stage_api_legality(
 
     failures: list[str] = []
     warnings: list[str] = []
-    if hits and contract_kind == "window":
+    if hits and declared_kind == "window":
         if has_secondary_stage:
             warnings.append(
                 "WindowContainer default root uses Stage-only API symbols; this is "
@@ -429,234 +575,322 @@ def check_whitelist_components(
     return {
         "passed": not failures,
         "failures": failures,
-        "warnings": [f"unrecognized spatial import (verify against whitelist): {sym}" for sym in sorted(suspicious)],
+        "warnings": [
+            f"unrecognized spatial import (verify against whitelist): {sym}"
+            for sym in sorted(suspicious)
+        ],
     }
 
 
-def _contract_window_chrome_ornaments(contract: dict[str, Any]) -> list[dict[str, Any]]:
-    raw = contract.get("window_chrome_ornaments")
-    ornaments: list[dict[str, Any]] = []
-    if isinstance(raw, list):
-        ornaments.extend(item for item in raw if isinstance(item, dict))
-    for region in contract.get("regions", []):
-        if not isinstance(region, dict):
-            continue
-        region_type = str(region.get("type", "")).lower()
-        implementation = str(region.get("implementation", ""))
-        if "window_chrome" in region_type or any(name in implementation for name in ("TabBar", "Toolbar", "Subwindow")):
-            ornaments.append(region)
-    return ornaments
+def _invocations(combined_body: str, names: set[str]) -> set[str]:
+    """Which of `names` are actually invoked (`Name(`, `Name {`, `Name<`)."""
+    found: set[str] = set()
+    for name in names:
+        if re.search(rf"\b{re.escape(name)}\s*[\(<{{]", combined_body):
+            found.add(name)
+    return found
 
 
-def check_window_chrome_ornaments(
-    contract: dict[str, Any],
+# Rough size signal: how much UI surface the module actually has. Drives which
+# component floor applies, so a two-control patch is not held to the same bar as
+# a full product screen.
+def _ui_scale(combined_body: str, profile: str) -> tuple[str, int]:
+    composables = len(re.findall(r"@Composable", combined_body))
+    if profile == "patch":
+        return "patch", composables
+    if composables >= 5:
+        return "non_trivial", composables
+    return "small", composables
+
+
+COMPONENT_FLOORS = {"non_trivial": 4, "small": 2, "patch": 1}
+
+
+def check_spatialui_component_floor(
     kotlin_sources: list[tuple[Path, str]],
+    profile: str = "default",
 ) -> dict[str, Any]:
-    ornaments = _contract_window_chrome_ornaments(contract)
-    if not ornaments:
-        return {"passed": True, "failures": [], "evidence": {"note": "no window_chrome_ornaments declared"}}
+    """Positive evidence that SpatialUI built-ins were used, not hand-rolled UI.
+
+    Replaces the contract-declared `required_spatialui_components` list. Without
+    a contract to name the expected components, the machine-checkable question
+    becomes "did this code reach for the SpatialUI vocabulary at all, or did it
+    rebuild everything out of Box + Text + clickable?".
+
+    Reported as warnings, not failures: the floor is a heuristic and this
+    scanner treats false positives as worse than false negatives. Semantic
+    component choice stays an LLM-owned review item.
+    """
+    allowed, forbidden = load_component_vocabulary()
+    if not allowed:
+        # Never silently pass: an empty vocabulary means the reference docs moved
+        # or the parser broke, which would disable this check entirely.
+        return {
+            "passed": False,
+            "failures": [
+                "component vocabulary could not be parsed from references/"
+                "spatial-ui-components.md; cannot verify SpatialUI component usage"
+            ],
+            "evidence": {},
+        }
 
     combined_body = "\n".join(strip_comments_and_imports(text) for _, text in kotlin_sources)
-    has_tabbar = re.search(r"\bTabBar\s*\(", combined_body) is not None
-    has_toolbar = re.search(r"\bToolbar\s*\(", combined_body) is not None
-    has_subwindow = re.search(r"\bSubwindow\s*\(", combined_body) is not None
-    has_window_fitting = has_tabbar or has_toolbar or has_subwindow
-    manual_edge_overlay = re.search(
-        r"Box\s*\([^)]*\.align\s*\(\s*Alignment\.(?:CenterStart|CenterEnd|TopCenter|BottomCenter|TopStart|TopEnd|BottomStart|BottomEnd)[\s\S]{0,500}\b(?:IconButton|Column|Row)\b",
-        combined_body,
-    ) is not None
+    used = _invocations(combined_body, allowed)
+    scale, composables = _ui_scale(combined_body, profile)
+    floor = COMPONENT_FLOORS[scale]
 
-    failures: list[str] = []
-    expected_types = {str(item.get("type", "")).lower() for item in ornaments}
-    if "tabbar" in expected_types and not has_tabbar:
-        failures.append("window_chrome_ornaments declares TabBar but code has no TabBar(...) invocation")
-    if "toolbar" in expected_types and not has_toolbar:
-        failures.append("window_chrome_ornaments declares Toolbar but code has no Toolbar(...) invocation")
-    if "subwindow" in expected_types and not has_subwindow:
-        failures.append("window_chrome_ornaments declares Subwindow but code has no Subwindow(...) invocation")
-    if not has_window_fitting:
-        failures.append(
-            "window_chrome_ornaments declared but code uses no window-level fitting (TabBar/Toolbar/Subwindow)"
-        )
-    if manual_edge_overlay and not has_window_fitting:
-        failures.append(
-            "window_chrome_ornaments must not be hand-rolled with Box.align(...) / offset(...) page overlays"
+    warnings: list[str] = []
+    if len(used) < floor:
+        warnings.append(
+            f"only {len(used)} SpatialUI built-in component(s) used ({', '.join(sorted(used)) or 'none'}); "
+            f"a {scale} UI ({composables} @Composable) is expected to use at least {floor}. "
+            "Prefer built-ins from references/spatial-ui-components.md over hand-rolled "
+            "Box + Text + clickable equivalents."
         )
 
     return {
-        "passed": not failures,
-        "failures": failures,
+        "passed": True,
+        "failures": [],
+        "warnings": warnings,
         "evidence": {
-            "declared": ornaments,
-            "has_tabbar": has_tabbar,
-            "has_toolbar": has_toolbar,
-            "has_subwindow": has_subwindow,
-            "manual_edge_overlay": manual_edge_overlay,
+            "used_components": sorted(used),
+            "vocabulary_size": len(allowed),
+            "ui_scale": scale,
+            "composables": composables,
+            "floor": floor,
         },
     }
 
 
-def _function_body(combined_body: str, function_name: str) -> str:
-    match = re.search(rf"\bfun\s+{re.escape(function_name)}\s*\([^)]*\)\s*\{{", combined_body)
-    if not match:
-        return ""
-    start = match.end()
-    depth = 1
-    index = start
-    while index < len(combined_body) and depth > 0:
-        char = combined_body[index]
-        if char == "{":
-            depth += 1
-        elif char == "}":
-            depth -= 1
-        index += 1
-    return combined_body[start:index - 1]
-
-
-def check_visual_content_contract(contract: dict[str, Any], kotlin_sources: list[tuple[Path, str]]) -> dict[str, Any]:
-    visual_contract = contract.get("visual_content_contract")
-    if not isinstance(visual_contract, dict):
-        return {"passed": True, "failures": [], "evidence": {"note": "no visual_content_contract declared"}}
+def check_invented_component_names(
+    kotlin_sources: list[tuple[Path, str]],
+) -> dict[str, Any]:
+    """Flag SDK names the reference explicitly says do not exist."""
+    _, forbidden = load_component_vocabulary()
+    if not forbidden:
+        return {"passed": True, "failures": [], "evidence": {"note": "no forbidden list parsed"}}
 
     combined_body = "\n".join(strip_comments_and_imports(text) for _, text in kotlin_sources)
+    used = _invocations(combined_body, forbidden)
+    failures = [
+        f"invented SDK component {name}(...) — not in references/spatial-ui-components.md; "
+        "use a documented built-in or a Box with // TODO(missing-component)"
+        for name in sorted(used)
+    ]
+    return {
+        "passed": not failures,
+        "failures": failures,
+        "evidence": {"forbidden_used": sorted(used)},
+    }
+
+
+# Edge-pinned chrome that was hand-rolled instead of using TabBar / Toolbar /
+# Subwindow. Formerly gated on a contract declaration; now a standalone
+# anti-pattern check, with an explicit opt-out for deliberate in-page overlays.
+_MANUAL_EDGE_OVERLAY_RE = re.compile(
+    r"Box\s*\([^)]*\.align\s*\(\s*Alignment\."
+    r"(?:CenterStart|CenterEnd|TopCenter|BottomCenter|TopStart|TopEnd|BottomStart|BottomEnd)"
+    r"[\s\S]{0,500}\b(?:IconButton|Column|Row)\b"
+)
+_INTENTIONAL_OVERLAY_MARKER = "spatial-ui: intentional-in-page-overlay"
+
+
+def check_window_chrome_ornaments(
+    kotlin_sources: list[tuple[Path, str]],
+) -> dict[str, Any]:
+    combined_raw = "\n".join(text for _, text in kotlin_sources)
+    combined_body = "\n".join(strip_comments_and_imports(text) for _, text in kotlin_sources)
+
+    has_tabbar = re.search(r"\bTabBar\s*[\(\{]", combined_body) is not None
+    has_toolbar = re.search(r"\bToolbar\s*[\(\{]", combined_body) is not None
+    has_subwindow = re.search(r"\bSubwindow\s*[\(\{]", combined_body) is not None
+    has_window_fitting = has_tabbar or has_toolbar or has_subwindow
+    manual_edge_overlay = _MANUAL_EDGE_OVERLAY_RE.search(combined_body) is not None
+    # Comments are stripped from `combined_body`, so read the marker from raw text.
+    declared_intentional = _INTENTIONAL_OVERLAY_MARKER in combined_raw
+
+    warnings: list[str] = []
+    if manual_edge_overlay and not has_window_fitting and not declared_intentional:
+        warnings.append(
+            "edge-pinned strip looks hand-rolled with Box(Modifier.align(...)); long-lived edge "
+            "navigation / action strips are window-level fittings (TabBar / Toolbar / Subwindow), "
+            "not page children. See references/spatial-windows-guide.md. If this really is an "
+            f"in-page overlay, mark it with `// {_INTENTIONAL_OVERLAY_MARKER} <reason>`."
+        )
+
+    return {
+        "passed": True,
+        "failures": [],
+        "warnings": warnings,
+        "evidence": {
+            "has_tabbar": has_tabbar,
+            "has_toolbar": has_toolbar,
+            "has_subwindow": has_subwindow,
+            "manual_edge_overlay": manual_edge_overlay,
+            "declared_intentional": declared_intentional,
+        },
+    }
+
+
+def check_root_change_guard(target: Path, generation_mode: str) -> dict[str, Any]:
+    """Guard against silently switching an existing module's root architecture.
+
+    Replaces the artifact-based `existing_module_root_preserved` check. Instead
+    of comparing a declared `existing_root_container` field, it asks git what the
+    manifest's root meta-data looked like before this run.
+
+    Only meaningful for `existing_module` runs inside a git work tree; anywhere
+    else it reports skipped rather than inventing a verdict.
+    """
+    if generation_mode != "existing_module":
+        return {
+            "passed": True,
+            "failures": [],
+            "evidence": {"note": f"generation_mode={generation_mode}; guard not applicable"},
+        }
+
+    manifests = collect_manifests(target)
+    if not manifests:
+        return {
+            "passed": True,
+            "failures": [],
+            "evidence": {"note": "no AndroidManifest.xml found; skipped"},
+        }
+
     failures: list[str] = []
-
-    tabs = visual_contract.get("tabs") if isinstance(visual_contract.get("tabs"), dict) else {}
-    visible_count = tabs.get("visible_count") if isinstance(tabs, dict) else None
-    if isinstance(visible_count, int):
-        for take in re.findall(r"\btabs\s*\.\s*take\s*\(\s*(\d+)\s*\)", combined_body):
-            if int(take) < visible_count:
-                failures.append(
-                    f"visual_content_contract.tabs.visible_count={visible_count} but code uses tabs.take({take})"
-                )
-    tab_style = str(tabs.get("style", "")) if isinstance(tabs, dict) else ""
-    if "capsule" in tab_style or "pill" in tab_style:
-        tabs_body = _function_body(combined_body, "TabsRow")
-        if tabs_body and ".background" not in tabs_body:
-            failures.append("visual_content_contract.tabs requires capsule/pill background but TabsRow has no background modifier")
-
-    cards = visual_contract.get("cards") if isinstance(visual_contract.get("cards"), dict) else {}
-    cards_body = _function_body(combined_body, "ResultCardView")
-    if isinstance(cards, dict):
-        if cards.get("content") == "image_only" or cards.get("has_text_overlay") is False:
-            has_scrim_overlay = "Brush.verticalGradient" in cards_body or "ImageScrim" in cards_body
-            has_card_text_overlay = re.search(
-                r"\bText\s*\(\s*(?:text\s*=\s*)?card\.(?:title|subtitle)\b",
-                cards_body,
+    warnings: list[str] = []
+    evidence: dict[str, Any] = {}
+    for manifest in manifests:
+        try:
+            completed = subprocess.run(
+                ["git", "show", f"HEAD:./{manifest.relative_to(target)}"],
+                cwd=target,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=False,
             )
-            if has_scrim_overlay or has_card_text_overlay:
-                failures.append("visual_content_contract.cards declares image_only/no text overlay but ResultCardView renders scrim/title/subtitle")
-        if cards.get("layout") == "fixed_3x2" and "LazyColumn" in combined_body:
-            failures.append("visual_content_contract.cards.layout=fixed_3x2 but code uses LazyColumn instead of a fixed grid")
+        except (OSError, ValueError):
+            warnings.append(f"could not read git history for {manifest.name}; guard skipped")
+            continue
+        if completed.returncode != 0 or not completed.stdout.strip():
+            warnings.append(f"{manifest.name} has no committed baseline; guard skipped")
+            continue
 
-    sidebar = visual_contract.get("sidebar") if isinstance(visual_contract.get("sidebar"), dict) else {}
-    if isinstance(sidebar, dict):
-        filter_body = _function_body(combined_body, "FilterSidebar")
-        if sidebar.get("has_surface") is True and filter_body and ".background" not in filter_body:
-            failures.append("visual_content_contract.sidebar.has_surface=true but FilterSidebar has no background/surface")
-        if sidebar.get("preferred_component") == "SideNavigation":
-            if filter_body and "SideNavigation" not in filter_body:
-                failures.append(
-                    "visual_content_contract.sidebar.preferred_component=SideNavigation but FilterSidebar does not use SpatialUI SideNavigation"
-                )
-        search_pill = sidebar.get("search_pill") if isinstance(sidebar.get("search_pill"), dict) else {}
-        if search_pill.get("present") is False:
-            search_pill = {}
-        if search_pill.get("width_policy") == "fill_sidebar_content_width":
-            search_body = _function_body(combined_body, "SearchPill")
-            if search_body and "fillMaxWidth" not in search_body and ".width" not in search_body:
-                failures.append("visual_content_contract.sidebar.search_pill requires fill_sidebar_content_width but SearchPill has no fillMaxWidth/width")
-        if search_pill.get("interaction_role") == "search_input":
-            search_body = _function_body(combined_body, "SearchPill")
-            has_search_field = "SearchField" in search_body
-            has_value_binding = "value" in search_body and "onValueChange" in search_body
-            has_search_event = "onSearch" in search_body or "UpdateQuery" in search_body
-            if search_body and not (has_search_field and has_value_binding and has_search_event):
-                failures.append(
-                    "visual_content_contract.sidebar.search_pill interaction_role=search_input requires SpatialUI SearchField with value/onValueChange/onSearch binding"
-                )
-        chips = sidebar.get("chips") if isinstance(sidebar.get("chips"), dict) else {}
-        if chips.get("present") is False:
-            chips = {}
-        if chips.get("active_preferred_component") == "RemovableChip":
-            if "RemovableChip" not in combined_body:
-                failures.append(
-                    "visual_content_contract.sidebar.chips active_preferred_component=RemovableChip but code does not use SpatialUI RemovableChip"
-                )
-        if chips.get("recommendation_preferred_component") == "ButtonChip":
-            if "ButtonChip" not in combined_body:
-                failures.append(
-                    "visual_content_contract.sidebar.chips recommendation_preferred_component=ButtonChip but code does not use SpatialUI ButtonChip"
-                )
+        before, _ = infer_container([(manifest, completed.stdout)], [])
+        after, _ = infer_container([(manifest, read_text_safe(manifest))], [])
+        evidence[manifest.name] = {"before": before, "after": after}
+        if before and after and container_kind(before) != container_kind(after):
+            failures.append(
+                f"{manifest.name}: root architecture changed from {before} to {after}. "
+                "Switching a WindowContainer app to Stage (or back) is a Decide-phase "
+                "change: re-run the container decision and update the manifest, entry "
+                "chain, coordinates, and ornaments together — not as a build-time fix."
+            )
 
     return {
         "passed": not failures,
         "failures": failures,
-        "evidence": {"declared": visual_contract},
+        "warnings": warnings,
+        "evidence": evidence,
     }
 
 
-def scan(target: Path, scratch_dir: Path | None = None) -> dict[str, Any]:
+def scan(
+    target: Path,
+    scratch_dir: Path | None = None,
+    generation_mode: str = "unknown",
+    profile: str = "default",
+) -> dict[str, Any]:
     actual_scratch = scratch_dir or (target / ".scratch")
-    if not actual_scratch.exists() or not actual_scratch.is_dir():
-        raise SystemExit(f"[impl-scan] Scratch directory not found: {actual_scratch}")
-
-    contract = load_contract_for_scan(actual_scratch)
+    actual_scratch.mkdir(parents=True, exist_ok=True)
 
     kotlin_paths = collect_kotlin_files(target)
     kotlin_sources = [(p, read_text_safe(p)) for p in kotlin_paths]
     manifest_paths = collect_manifests(target)
     manifests = [(p, read_text_safe(p)) for p in manifest_paths]
 
+    container, container_evidence = infer_container(manifests, kotlin_sources)
+
     checks: dict[str, Any] = {
-        "root_match": check_root_match(contract, kotlin_sources),
+        "root_match": check_root_match(container, kotlin_sources),
         "entry_wired": check_entry_wired(kotlin_sources),
-        "manifest_consistency": check_manifest_consistency(contract, manifests),
-        "stage_api_legality": check_stage_api_legality(contract, kotlin_sources),
+        "manifest_consistency": check_manifest_consistency(container, manifests),
+        "stage_api_legality": check_stage_api_legality(container, kotlin_sources),
         "whitelist_components": check_whitelist_components(kotlin_sources),
-        "window_chrome_ornaments": check_window_chrome_ornaments(contract, kotlin_sources),
-        "visual_content_contract": check_visual_content_contract(contract, kotlin_sources),
+        "invented_component_names": check_invented_component_names(kotlin_sources),
+        "spatialui_component_floor": check_spatialui_component_floor(kotlin_sources, profile),
+        "window_chrome_ornaments": check_window_chrome_ornaments(kotlin_sources),
+        "root_change_guard": check_root_change_guard(target, generation_mode),
     }
     failures: list[str] = []
+    warnings: list[str] = []
     for name, result in checks.items():
         for failure in result.get("failures", []):
             failures.append(f"[{name}] {failure}")
+        for warning in result.get("warnings", []):
+            warnings.append(f"[{name}] {warning}")
 
     summary = {
-        "schema_version": 1,
+        "schema_version": 2,
         "scanned": {
             "kotlin_files": len(kotlin_paths),
             "manifest_files": len(manifest_paths),
         },
+        "container": container,
+        "container_evidence": container_evidence,
         "checks": checks,
         "failures_or_explicit_none": failures if failures else "none",
+        "warnings_or_explicit_none": warnings if warnings else "none",
         "passed": not failures,
     }
     output_path = actual_scratch / "implementation_scan_result.json"
-    output_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    output_path.write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"[impl-scan] WROTE {output_path}")
     return summary
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target", required=True, help="Project directory containing .scratch/ and source files")
+    parser.add_argument(
+        "--target", required=True, help="Project directory containing the generated sources"
+    )
     parser.add_argument(
         "--scratch-dir",
         help="Optional override for the scratch directory. Defaults to <target>/.scratch",
+    )
+    parser.add_argument(
+        "--generation-mode",
+        default="unknown",
+        choices=["existing_module", "new_project", "unknown"],
+        help="Enables the root-architecture guard for existing_module runs",
+    )
+    parser.add_argument(
+        "--profile",
+        default="default",
+        choices=["default", "patch"],
+        help="Use 'patch' for bounded incremental edits (lower component floor)",
     )
     args = parser.parse_args(argv)
 
     target = Path(args.target).expanduser().resolve()
     scratch_dir = Path(args.scratch_dir).expanduser().resolve() if args.scratch_dir else None
-    summary = scan(target, scratch_dir)
+    summary = scan(target, scratch_dir, args.generation_mode, args.profile)
+
+    if isinstance(summary["warnings_or_explicit_none"], list):
+        for warning in summary["warnings_or_explicit_none"]:
+            print(f"[impl-scan] WARN {warning}")
 
     if not summary["passed"]:
         failures = summary["failures_or_explicit_none"]
         raise SystemExit("[impl-scan] BLOCKED\n- " + "\n- ".join(failures))
 
-    print(f"[impl-scan] SUCCESS scanned {summary['scanned']['kotlin_files']} kotlin files, "
-          f"{summary['scanned']['manifest_files']} manifest files")
+    print(
+        f"[impl-scan] SUCCESS scanned {summary['scanned']['kotlin_files']} kotlin files, "
+        f"{summary['scanned']['manifest_files']} manifest files, container={summary['container']}"
+    )
     return 0
 
 

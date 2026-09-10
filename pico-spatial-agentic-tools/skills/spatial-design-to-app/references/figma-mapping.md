@@ -1,7 +1,7 @@
 ---
 title: Figma Annotation → SpatialUI Code Mapping
-audience: spatial-design-to-app / figma-adapter
-trigger: Phase 1.5 figma-adapter, when input_mode == "visual_design" and platform == "android"
+audience: spatial-design-to-app / Build stage
+trigger: input_mode == "visual_design" and platform == "android"
 migrated_from: legacy-d2c-reference/figma-to-code-mapping.md (Phase B1.1)
 ---
 
@@ -25,17 +25,17 @@ Use this guide to convert Figma annotations into SpatialUI code with high fideli
 
 ## 1. Vibrant Token Mapping (`(Vibrant)` suffix)
 
-| Figma Annotation | Code | Typical Use |
-|------------------|------|-------------|
-| `Darkest (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Darkest)` | body text, main titles |
-| `UltraDark (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.UltraDark)` | emphasized foreground |
-| `Darker (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Darker)` | primary button background |
-| `Semidark (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Semidark)` | supporting foreground, section labels |
-| `Dark (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Dark)` | secondary foreground |
-| `Neutral (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Neutral)` | cards, list rows, secondary buttons |
-| `Light (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.Light)` | section background |
-| `SemiLight (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.SemiLight)` | selected state |
-| `UltraLight (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.UltraLight)` | very light foreground |
+| Figma Annotation       | Code                                            | Typical Use                           |
+| ---------------------- | ----------------------------------------------- | ------------------------------------- |
+| `Darkest (Vibrant)`    | `Color.Vibrant.withVibrant(Vibrant.Darkest)`    | body text, main titles                |
+| `UltraDark (Vibrant)`  | `Color.Vibrant.withVibrant(Vibrant.UltraDark)`  | emphasized foreground                 |
+| `Darker (Vibrant)`     | `Color.Vibrant.withVibrant(Vibrant.Darker)`     | primary button background             |
+| `Semidark (Vibrant)`   | `Color.Vibrant.withVibrant(Vibrant.Semidark)`   | supporting foreground, section labels |
+| `Dark (Vibrant)`       | `Color.Vibrant.withVibrant(Vibrant.Dark)`       | secondary foreground                  |
+| `Neutral (Vibrant)`    | `Color.Vibrant.withVibrant(Vibrant.Neutral)`    | cards, list rows, secondary buttons   |
+| `Light (Vibrant)`      | `Color.Vibrant.withVibrant(Vibrant.Light)`      | section background                    |
+| `SemiLight (Vibrant)`  | `Color.Vibrant.withVibrant(Vibrant.SemiLight)`  | selected state                        |
+| `UltraLight (Vibrant)` | `Color.Vibrant.withVibrant(Vibrant.UltraLight)` | very light foreground                 |
 
 > **Common aliases**: `Label Primary` usually maps to `Darkest`; `Label Tertiary` often maps to `Dark`.
 
@@ -45,24 +45,24 @@ Use this guide to convert Figma annotations into SpatialUI code with high fideli
 
 > For the full role model, defer to `spatial-ui-design-style/references/tokens.md`. This section keeps the high-frequency mappings used during D2C.
 
-| Figma Annotation | Code |
-|------------------|------|
-| `Fill Primary / Secondary / Tertiary / Light` | `PicoTheme.colorScheme.fillPrimary / fillSecondary / fillTertiary / fillLight` |
+| Figma Annotation                                    | Code                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `Fill Primary / Secondary / Tertiary / Light`       | `PicoTheme.colorScheme.fillPrimary / fillSecondary / fillTertiary / fillLight`          |
 | `Label Primary / Secondary / Tertiary / Quaternary` | `PicoTheme.colorScheme.labelPrimary / labelSecondary / labelTertiary / labelQuaternary` |
-| `Label Primary Light` | `PicoTheme.colorScheme.labelPrimaryLight` |
-| `Lighten Hover / Pressed` | `PicoTheme.colorScheme.lightenHover / lightenPressed` |
+| `Label Primary Light`                               | `PicoTheme.colorScheme.labelPrimaryLight`                                               |
+| `Lighten Hover / Pressed`                           | `PicoTheme.colorScheme.lightenHover / lightenPressed`                                   |
 
 ---
 
 ## 3. Semantic Fixed Colors
 
-| Figma Annotation | Code |
-|------------------|------|
-| `Error` | `PicoTheme.colorScheme.error` |
-| `Alert` | `PicoTheme.colorScheme.alert` |
-| `Passable` | `PicoTheme.colorScheme.passable` |
-| `Interaction` | `PicoTheme.colorScheme.interaction` |
-| `Divider Line` | `PicoTheme.colorScheme.dividerLine` |
+| Figma Annotation    | Code                                                            |
+| ------------------- | --------------------------------------------------------------- |
+| `Error`             | `PicoTheme.colorScheme.error`                                   |
+| `Alert`             | `PicoTheme.colorScheme.alert`                                   |
+| `Passable`          | `PicoTheme.colorScheme.passable`                                |
+| `Interaction`       | `PicoTheme.colorScheme.interaction`                             |
+| `Divider Line`      | `PicoTheme.colorScheme.dividerLine`                             |
 | literal fixed color | `Color(0xFFxxxxxx) // design-style: fixed-figma-color <source>` |
 
 ---
@@ -85,13 +85,13 @@ Modifier.vibrantEffect(Vibrant.UltraDark).background(Color(0xff28ad00))
 
 > For typography role details, see `spatial-ui-design-style/references/tokens.md`.
 
-| Figma Style | Code |
-|-------------|------|
-| `Display Large / Medium / Small` | `PicoTheme.typography.displayLarge / displayMedium / displaySmall` |
+| Figma Style                       | Code                                                                  |
+| --------------------------------- | --------------------------------------------------------------------- |
+| `Display Large / Medium / Small`  | `PicoTheme.typography.displayLarge / displayMedium / displaySmall`    |
 | `Headline Large / Medium / Small` | `PicoTheme.typography.headlineLarge / headlineMedium / headlineSmall` |
-| `Title Large / Medium / Small` | `PicoTheme.typography.titleLarge / titleMedium / titleSmall` |
-| `Label Large / Medium / Small` | `PicoTheme.typography.labelLarge / labelMedium / labelSmall` |
-| `Body Large / Medium / Small` | `PicoTheme.typography.bodyLarge / bodyMedium / bodySmall` |
+| `Title Large / Medium / Small`    | `PicoTheme.typography.titleLarge / titleMedium / titleSmall`          |
+| `Label Large / Medium / Small`    | `PicoTheme.typography.labelLarge / labelMedium / labelSmall`          |
+| `Body Large / Medium / Small`     | `PicoTheme.typography.bodyLarge / bodyMedium / bodySmall`             |
 
 ---
 
@@ -141,6 +141,50 @@ For `WindowContainer` shell material, use `enableMaterialBackground = true`.
 
 ---
 
+## 7.2 Single design-color source (`ui/theme/<App>Colors`) + `res/color`
+
+The design package restores its exact color values into **one Kotlin color
+source**, and every screen/component reads colors from that source instead of
+re-typing literals or falling back to raw system defaults. This is what keeps a
+generated app's background / surface / text on the _design's_ palette rather
+than drifting to the environment's default look.
+
+**Where each color family lives (this split is mandatory — it tracks the
+`spatial-ui-design-style` R1b gate, which only reads `.kt`):**
+
+| Color family (from the design's `visual_tokens`)                                                                                                      | Home                                                                                                                                                                   | Why                                                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `theme_overrides[]` + `semantic_colors[]` → the 16 `ColorScheme` roles (`interaction`/`alert`/`passable`/`error`/`dividerLine`/`labelPrimaryLight` …) | **Kotlin `object <App>Colors`** as `val X = Color(0x…) // design-style: fixed-figma-color <token>`                                                                     | R1b requires these exact values to resolve to a `Color(0x…)` literal in Kotlin and be injected via `PicoTheme(colorScheme = …)`. A `colorResource(...)` indirection is **not** accepted for these slots and will fail the gate. |
+| `brand_tokens[]` (decorative colors with no `ColorScheme` role), plus surface / text / panel grays used directly by components                        | **`res/color/*.xml`**, referenced through the same `<App>Colors` object via `colorResource(R.color.…)` (or `Color(0x…)` literals if you prefer to keep them in Kotlin) | These never enter `ColorScheme`, so R1b/R5 don't require Kotlin literals. `res/color` is allowed here and gives designers one XML place to tweak non-semantic palette values.                                                   |
+
+**Rules for the generated app:**
+
+1. Create exactly one design-color source object under `ui/theme/`, e.g.
+   `object LearningColors`. All UI code references colors through it — no ad-hoc
+   `Color(0x…)` scattered across components, and no silently relying on
+   `systemColorScheme(...)` defaults for background / surface / text.
+2. Define the complete 16-role scheme. Store
+   `val system = systemColorScheme(LocalContext.current)`, then name every
+   public role in `system.copy(...)`. Exact design values use `<App>Colors`
+   tokens; deliberately adaptive values use `role = system.role`. A partial
+   `.copy(...)` is not a complete theme definition.
+3. The semantic `ColorScheme` roles the design pins **must** be Kotlin
+   `Color(0x…)` values in that object and wired into `PicoTheme(colorScheme = …)`
+   (see `spatial-ui-components.md` theme setup). Referencing the _object's_ token
+   from the `colorScheme = system.copy(interaction = <App>Colors.X)` assignment is
+   accepted by R1b's token-mapping branch.
+4. Non-semantic colors (background/panel/text grays, brand accents) **may** live
+   in `res/color/*.xml`; expose them through the same object with
+   `colorResource(R.color.…)` so callers still have a single import surface.
+5. Surfaces still obey R4: the window root keeps system glass; these tokens fill
+   **inner** cards/panels/text, never the window root as a solid color.
+
+> This mirrors the design package's SpatialUI Web premise: the design was judged
+> on the vendored `vibrant` + `Material.Regular` glass surface. Carrying every
+> role explicitly into one Color source preserves that contract on device.
+
+---
+
 ## 8. Visual Feature -> Code Mapping (Screenshot Flow)
 
 When there are no Figma tokens and only screenshots are available, infer code from visual structure.
@@ -149,62 +193,62 @@ When there are no Figma tokens and only screenshots are available, infer code fr
 
 ### 8.1 Shape Cues
 
-| Visual Feature | Code |
-|----------------|------|
-| rounded rectangle | `Modifier.clip(RoundedCornerShape(X.dp))` |
-| circle | `Modifier.clip(CircleShape)` |
-| pill | `Modifier.clip(RoundedCornerShape(50))` |
-| no visible rounding | omit `clip` |
+| Visual Feature      | Code                                      |
+| ------------------- | ----------------------------------------- |
+| rounded rectangle   | `Modifier.clip(RoundedCornerShape(X.dp))` |
+| circle              | `Modifier.clip(CircleShape)`              |
+| pill                | `Modifier.clip(RoundedCornerShape(50))`   |
+| no visible rounding | omit `clip`                               |
 
 ### 8.2 Shadow / Elevation Cues
 
-| Visual Feature | Code |
-|----------------|------|
-| element appears lifted / floating | `Modifier.zOffset { value }` |
-| real 3D depth | `Box3D` + `depth()` |
-| popup-like floating layer | `AlertDialog` / `Sheet` / `SpatialPopup` |
-| edge-attached tool rail | `TabBar` / `Toolbar` |
+| Visual Feature                    | Code                                     |
+| --------------------------------- | ---------------------------------------- |
+| element appears lifted / floating | `Modifier.zOffset { value }`             |
+| real 3D depth                     | `Box3D` + `depth()`                      |
+| popup-like floating layer         | `AlertDialog` / `Sheet` / `SpatialPopup` |
+| edge-attached tool rail           | `TabBar` / `Toolbar`                     |
 
 ### 8.3 Layout Cues
 
-| Visual Feature | Code |
-|----------------|------|
-| equally divided horizontal layout | `Row` + `Modifier.weight(1f)` |
-| vertical stack | `Column` |
-| grid of cards | `LazyVerticalGrid(columns = GridCells.Fixed(N))` |
-| vertical scroll list | `LazyColumn` |
-| wrapping tags | `FlowRow` |
-| carousel / paged horizontal content | `HorizontalPager` + `PageControl` |
-| in-page left navigation + right content | `Row { SideNavigation(); Content() }` |
-| floating edge navigation around a window | `TabBar` / `Toolbar` |
-| segmented choice + content swap | `SegmentControl` + `Crossfade` / `AnimatedContent` |
+| Visual Feature                           | Code                                               |
+| ---------------------------------------- | -------------------------------------------------- |
+| equally divided horizontal layout        | `Row` + `Modifier.weight(1f)`                      |
+| vertical stack                           | `Column`                                           |
+| grid of cards                            | `LazyVerticalGrid(columns = GridCells.Fixed(N))`   |
+| vertical scroll list                     | `LazyColumn`                                       |
+| wrapping tags                            | `FlowRow`                                          |
+| carousel / paged horizontal content      | `HorizontalPager` + `PageControl`                  |
+| in-page left navigation + right content  | `Row { SideNavigation(); Content() }`              |
+| floating edge navigation around a window | `TabBar` / `Toolbar`                               |
+| segmented choice + content swap          | `SegmentControl` + `Crossfade` / `AnimatedContent` |
 
 ### 8.4 Interaction Cues
 
-| Visual Feature | Code |
-|----------------|------|
+| Visual Feature                      | Code                                        |
+| ----------------------------------- | ------------------------------------------- |
 | clickable card with hover highlight | `.clip().spatialHoverEffect().clickable {}` |
-| hover emphasis | `.spatialHoverEffect()` |
-| toggle switch | `Switch` |
-| checkbox | `Checkbox` |
-| draggable value adjustment | `Slider` |
+| hover emphasis                      | `.spatialHoverEffect()`                     |
+| toggle switch                       | `Switch`                                    |
+| checkbox                            | `Checkbox`                                  |
+| draggable value adjustment          | `Slider`                                    |
 
 ### 8.5 Transparency / Glass Cues
 
-| Visual Feature | Code |
-|----------------|------|
-| translucent blurred shell | `enableMaterialBackground = true` or `Modifier.backgroundMaterial()` |
-| color adapts to background | Vibrant color system |
-| translucent mixed overlay | `Color.Xxx.withVibrant(Vibrant.Yyy)` |
+| Visual Feature             | Code                                                                 |
+| -------------------------- | -------------------------------------------------------------------- |
+| translucent blurred shell  | `enableMaterialBackground = true` or `Modifier.backgroundMaterial()` |
+| color adapts to background | Vibrant color system                                                 |
+| translucent mixed overlay  | `Color.Xxx.withVibrant(Vibrant.Yyy)`                                 |
 
 ### 8.6 Icons and Placeholder Images
 
-| XML / screenshot evidence | Required implementation |
-|---------------------------|-------------------------|
-| `<Icon download-url>` | Download through `d2c_download_icons`; use the generated drawable / vector resource at the same size as XML |
+| XML / screenshot evidence                              | Required implementation                                                                                                                             |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Icon download-url>`                                  | Download through `d2c_download_icons` (external `codin-d2c-figma-to-code` MCP — see `../SKILL.md` stage 1b); use the generated drawable / vector resource at the same size as XML |
 | `<Image src>` app thumbnail / avatar / placeholder art | Download the bitmap to `drawable-nodpi`; render with `Image(painterResource(...), contentScale = ContentScale.Crop)` and the XML size / clip radius |
-| Missing / failed image asset | Record URL and failure in `assumption_ledger.json`; use a visibly marked fallback only for that failed asset |
-| Generic generated gradients / initials | Forbidden when Figma provides an image source |
+| Missing / failed image asset                           | State the URL and the failure explicitly in your handoff; use a visibly marked fallback only for that failed asset                                  |
+| Generic generated gradients / initials                 | Forbidden when Figma provides an image source                                                                                                       |
 
 ---
 
@@ -285,29 +329,29 @@ Decision rules:
 
 ### 9.2 Visual quick lookup
 
-| If the design looks like … | Real question | First-choice component |
-|---|---|---|
-| top title + back / actions | page header semantics | `TitleBar` |
-| left category navigation | in-page navigation | `SideNavigation` + `SideNavigationItem` |
-| row of switching tabs | same-page segmented switch | `SegmentControl` + `SegmentItem` |
-| capsule filter tag | tag filter / state toggle | `ButtonChip` / `ToggleableChip` |
-| prominent clickable block | one-shot action | `Button` |
-| icon-only click target | icon action | `IconButton` |
-| on/off control | boolean state | `Switch` |
-| multi-select item | checkbox semantics | `Checkbox` |
-| card-style radio choice | single option card | `Option` |
-| plain input | single-line text | `TextField` |
-| search box | search semantics | `SearchField` |
-| long description field | multi-line text | `TextArea` |
-| value bar | continuous numeric input | `Slider` |
-| date / time panel | picker | `DatePicker` / `TimePicker` |
-| settings / message row | standard row semantics | `ListItem` |
-| carousel dots | page indicator | `PageControl` |
-| loading spinner / bar | status feedback | `CircularProgressIndicator` / `LinearProgressIndicator` |
-| hover hint | auxiliary hint | `Tooltip` |
-| glass / material surface | spatial material ability | `backgroundMaterial` |
-| custom card hover highlight | hover ability | `spatialHoverEffect` |
-| detached popup / side surface | window-level structure | `Subwindow` / `Sheet` / `SpatialPopup` / `AlertDialog` |
+| If the design looks like …    | Real question              | First-choice component                                  |
+| ----------------------------- | -------------------------- | ------------------------------------------------------- |
+| top title + back / actions    | page header semantics      | `TitleBar`                                              |
+| left category navigation      | in-page navigation         | `SideNavigation` + `SideNavigationItem`                 |
+| row of switching tabs         | same-page segmented switch | `SegmentControl` + `SegmentItem`                        |
+| capsule filter tag            | tag filter / state toggle  | `ButtonChip` / `ToggleableChip`                         |
+| prominent clickable block     | one-shot action            | `Button`                                                |
+| icon-only click target        | icon action                | `IconButton`                                            |
+| on/off control                | boolean state              | `Switch`                                                |
+| multi-select item             | checkbox semantics         | `Checkbox`                                              |
+| card-style radio choice       | single option card         | `Option`                                                |
+| plain input                   | single-line text           | `TextField`                                             |
+| search box                    | search semantics           | `SearchField`                                           |
+| long description field        | multi-line text            | `TextArea`                                              |
+| value bar                     | continuous numeric input   | `Slider`                                                |
+| date / time panel             | picker                     | `DatePicker` / `TimePicker`                             |
+| settings / message row        | standard row semantics     | `ListItem`                                              |
+| carousel dots                 | page indicator             | `PageControl`                                           |
+| loading spinner / bar         | status feedback            | `CircularProgressIndicator` / `LinearProgressIndicator` |
+| hover hint                    | auxiliary hint             | `Tooltip`                                               |
+| glass / material surface      | spatial material ability   | `backgroundMaterial`                                    |
+| custom card hover highlight   | hover ability              | `spatialHoverEffect`                                    |
+| detached popup / side surface | window-level structure     | `Subwindow` / `Sheet` / `SpatialPopup` / `AlertDialog`  |
 
 ---
 

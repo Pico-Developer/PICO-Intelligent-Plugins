@@ -10,6 +10,7 @@ m_EditorVersionWithRevision: 6000.0.73f1 (a166abc3bf0e)
 ```
 
 The first segment of `m_EditorVersion` is the major version:
+
 - `6000.x.y` → Unity 6 (i.e., "Unity 6 and later").
 - Major version `< 6000` (e.g. `2022.3.x`, `2021.3.x`) → older than Unity 6.
 

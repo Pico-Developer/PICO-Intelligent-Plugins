@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes apply to the latest published version of this marketplace and the latest published version of the `pico-spatial-agentic-tools` plugin.
+Security fixes apply to the latest published version of this marketplace and the latest published versions of its plugins, including `pico-spatial-agentic-tools` and `pico-unity-agentic-tools`.
 
 ## Reporting a vulnerability
 

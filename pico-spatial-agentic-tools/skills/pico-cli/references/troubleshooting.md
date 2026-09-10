@@ -108,7 +108,24 @@ Route execution workflows to `spatial-emulator-usage`.
 
 ## Performance Tooling Fails
 
-For `pico-cli perf` failures, route to `spatial-app-perf-diagnose`. That skill owns profiler toolchain setup, real-time diagnosis, trace capture, trace loading, and Perfetto query interpretation.
+For `pico-cli perf` failures, route to `spatial-app-performance-analysis`. That skill owns profiler toolchain setup, real-time diagnosis, trace capture, trace loading, and Perfetto query interpretation.
+
+## SpatialML Command Fails
+
+Route the investigation to the unified `spatialml` skill, then load `spatialml-commands.md` if exact
+command or output details are needed. Preserve the distinction between project detection, setup,
+package installation, and the installed pySpatialML delegation boundary.
+
+- Detection failure: verify `--project` is the actual Native OpenXR, Unity, or Kotlin SDK project root.
+- Setup returns `action-required`: complete the returned parent-SDK or SDK-owned handoff; do not fake
+  readiness by creating marker files.
+- Unity install returns `PARTIAL` or `action-required`: the package is staged but not imported; follow
+  the returned Unity importer handoff.
+- `PSM_TOOL_UNAVAILABLE` with exit code `3`: `pipeline verify`, `model inspect`, or `model visualize`
+  could not find a compatible pySpatialML executable. Install or update it with
+  `python3.13 -m pip install --upgrade pyspatialml-pico`, verify `pyspatialml --version` reports 0.5.0
+  or newer, and ensure it is on `PATH`. If it is installed elsewhere, set
+  `PICO_CLI_PYSPATIALML` to its executable path. Do not substitute legacy Docker/QNN/JSON tooling.
 
 ## Report Template
 

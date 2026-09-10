@@ -11,10 +11,12 @@
 ## Cheatsheet
 
 ### Enable Locomotion (whole root)
+
 - Pre: XR Origin (via orchestration step B.1).
 - Call: `pico_xr_locomotion(action=enable)`.
 
 ### Configure Locomotion subset
+
 - Pre: XR Origin (via orchestration step B.1).
 - Call: `pico_xr_locomotion(action=configure, presets="Move,Turn,Teleportation,Gravity")`.
 - Valid preset tokens (case-insensitive, comma/space/`|`/`;` separated):
@@ -22,10 +24,12 @@
   `Default` (= Move|Turn|Teleportation|Gravity), `All`, `None`.
 
 ### Disable Locomotion (whole root)
+
 - No deps to check.
 - Call: `pico_xr_locomotion(action=disable)`.
 
 ### Status
+
 - Call: `pico_xr_locomotion(action=status)`.
 
 ## Typical pipeline — enable (XR Origin already present)

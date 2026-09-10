@@ -1,24 +1,18 @@
 ---
 name: pico-unity-package-manager
+description: >-
+  Manage Unity Package Manager packages and samples through the Unity MCP
+  `pico_xr_package` tool, including install, remove, update, query, sample
+  import, domain-reload waits, and guarded post-initialization repair of
+  recognized official PICO Unity SDK moving Git references. Also called by
+  `pico-unity-buildingblocks` to satisfy dependencies.
+
+  Trigger for a named Unity package or sample plus install/remove/update/query
+  intent, installed-package queries, or SDK refresh/repair in an initialized
+  PICO Unity project. Do not trigger for feature-level requests such as hand
+  tracking or passthrough; route those to `pico-unity-buildingblocks`. Requires
+  a running Unity Editor, PICO MCP Extensions, and a connected MCP client.
 license: 'Apache-2.0'
-description: |
-  Manage Unity Package Manager packages and their samples for PICO XR
-  workflows via the Unity MCP `pico_xr_package` tool. Handles install, remove,
-  update, query, list-samples, and import-sample operations, and waits for the
-  Editor to finish recompiling / domain-reloading after every mutating action
-  so downstream steps run safely. Also called internally by
-  `pico-unity-buildingblocks` before enabling a feature block.
-
-  Trigger when the user wants to install / add / 安装, remove / 卸载, or
-  update / 升级 a Unity package (XRI, XR Hands, XR Interaction Toolkit, Input
-  System, OpenXR, etc.), import / 导入 a package sample (e.g. Starter Assets), or query installed packages / versions / samples. Also triggered indirectly
-  when another skill (e.g. pico-unity-buildingblocks) needs a package or
-  sample.
-
-  Prerequisites: Unity Editor running with PICO MCP Extensions installed (the
-  `pico_xr_package` tool exposed by the Unity MCP bridge) and the MCP client
-  connected; if not, see the connection-precheck in
-  `pico-unity-buildingblocks`.
 ---
 
 # pico-unity-package-manager
@@ -49,7 +43,9 @@ The underlying C# layer is **idempotent**:
 - Adding an already-installed package returns `status=already_present` (no-op).
 - Removing a not-installed package returns `status=ok` (no-op).
 - Importing an already-imported sample returns `status=already_present` (no-op).
-- Importing a sample whose **package is not installed** returns `status=skipped` with a `warning` — DO NOT treat as failure; treat as "need to install the package first."
+- Importing a sample whose **package is not installed** returns
+  `status=skipped` with a `warning` — DO NOT treat as failure; treat as
+  "need to install the package first."
 
 ## 2. Result envelope
 
@@ -145,8 +141,9 @@ MCP client.
 
 ```
 1. call pico_xr_package(action=add, identifier=P)
-     - status=error → STOP and ask user.
-     - status=ok | already_present → run post-write settle loop.
+     - status=error            → STOP and ask user.
+     - status=already_present  → relay summary, proceed directly to step 2 (no settle needed).
+     - status=ok               → run post-write settle loop, then proceed to step 2.
 2. call pico_xr_package(action=import_sample, packageName=P, sampleName=S)
      - Apply step 4.2 rules to the result.
 ```
@@ -166,6 +163,41 @@ MCP client.
     call pico_xr_package(action=list_samples, packageName=X) →
       render `data.samples` (displayName + imported flag) as a table.
 ```
+
+### 4.5 Repair an initialized official PICO Unity SDK Git dependency
+
+Use this procedure after initialization when SpatialML setup, doctor, or Pipeline Zoo reports that
+the resolved `com.bytedance.pico.xr` package is incomplete or lacks
+`SpatialMLPipelineZooImporterCli`. Do not route this case back to `/pico-unity-init`; its guard
+intentionally stops when `.pico-cli/config.json` already exists.
+
+```
+1. Run the Unity MCP connection pre-check. The project must be open and the bridge ready.
+2. Read Packages/manifest.json and capture the exact value of com.bytedance.pico.xr.
+3. Classify that value without rewriting it:
+     - recognized official PICO-Unity-SDK Git URL whose ref is known to be a moving branch (the
+       shipped default is https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/XR#main)
+       → continue.
+     - pinned commit or tag, local/file dependency, embedded package, registry version, or any
+       custom/unrecognized source, or a Git ref whose branch status is uncertain → report BLOCKED,
+       show the current value, and ask the developer for the explicit target identifier. Do not
+       replace it automatically.
+4. call pico_xr_package(action=add, identifier=<the exact captured Git URL>)
+     - status=error           → relay summary + error and STOP.
+     - status=ok              → run the post-write settle loop.
+     - status=already_present → relay the summary; if the expected SDK capability is still absent,
+                                report BLOCKED instead of looping the same request.
+5. Rerun the operation that exposed the stale SDK:
+     - pico-cli spatialml setup --project <unity-project> --format json
+     - pico-cli spatialml doctor --project <unity-project> --format json
+     - or the original pico-cli spatialml pipeline install command.
+6. Confirm SpatialMLPipelineZooImporterCli is now available before reporting the repair complete.
+```
+
+Re-adding the exact moving Git URL is the refresh operation: Unity Package Manager resolves the
+branch again and updates its lock. Do not substitute generic
+`pico_xr_package(action=update, packageName=com.bytedance.pico.xr)` for this Git repair, and do not
+remove the package first.
 
 ## 5. Identifier hints
 
@@ -199,8 +231,15 @@ MCP client.
 - DO NOT call `pico_xr_package(action=add)` followed by `import_sample` in the
   same agent turn without the settle loop in between.
 - DO NOT hand-edit `Packages/manifest.json`; always go through `pico_xr_package`.
+  The sole exception is `pico-unity-init`, which bootstraps the manifest directly
+  before the Unity MCP bridge (and therefore `pico_xr_package`) is available; once
+  initialization is done and the bridge is running, every package change goes
+  through `pico_xr_package`.
 - DO NOT hard-code package versions in your replies unless the user asks. Let
   the registry resolve "latest" when `version` is omitted.
+- DO NOT automatically replace pinned, local, embedded, registry, custom, unrecognized, or
+  branch-uncertain PICO SDK sources during repair. Require an explicit target from the developer.
+- DO NOT route an initialized project to `/pico-unity-init` for SDK repair.
 - DO NOT treat `status=skipped` as a hard failure. It's an actionable warning.
 - DO NOT loop a failed `add` more than once without changing parameters; relay
   the error to the user and let them decide.

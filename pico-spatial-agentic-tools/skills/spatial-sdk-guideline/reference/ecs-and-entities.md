@@ -46,6 +46,14 @@ Checklist when transforms look wrong:
 - [ ] Did I set `TransformComponent` on the right entity (root vs mesh child)?
 - [ ] Did I accidentally parent the entity under something with a non-identity transform?
 
+### Entity naming safety
+
+- `Entity.setName(...)` rejects hyphenated names such as `"a-b"` at runtime with
+  `IllegalArgumentException: Invalid name!`. Prefer SDK-safe identifiers such as
+  `"a_b"` or apply a shared sanitizer before calling `setName`.
+- Keep user-facing labels separate from entity names, and include a startup/runtime test
+  because a successful build does not validate entity names.
+
 ## Components: adding, reading, updating
 
 Common operations:

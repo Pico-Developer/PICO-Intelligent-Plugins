@@ -1,6 +1,6 @@
 ---
 name: pico-cli
-description: Generic pico-cli usage guide for command discovery, command-family selection, help/version/setup checks, output formats, device targeting, safe defaults, and deciding when to hand off to spatial-emulator-usage, spatial-app-perf-diagnose, spatial-app-onboarding, or lower-level adb escape hatches.
+description: Generic pico-cli usage guide for command discovery, command-family selection, help/version/setup checks, output formats, device targeting, safe defaults, and deciding when to hand off to spatial-emulator-usage, spatial-app-performance-analysis, spatial-app-onboarding, or lower-level adb escape hatches. Use whenever the user asks which pico-cli command or command family to run, including basic discovery of pico-cli spatialml commands.
 license: 'Apache-2.0'
 ---
 
@@ -17,6 +17,7 @@ Load shared references only when needed:
 | Reference                              | Load when                                                                                                          |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `references/command-families.md`       | Choosing the right `pico-cli` command family or explaining what each family owns                                   |
+| `references/spatialml-commands.md`     | Exact SpatialML command names, flags, output states, or availability boundaries after routing the workflow         |
 | `references/conventions-and-safety.md` | Device targeting, output formats, verification, destructive commands, raw `adb` fallback, or long-running commands |
 | `references/troubleshooting.md`        | CLI setup, unknown commands, missing devices, command discovery, or first-pass diagnosis                           |
 
@@ -31,15 +32,20 @@ Use this skill for requests like:
 - "How do I pick a target device?"
 - "When should I use `pico-cli adb` instead of `pico-cli app` or `pico-cli device`?"
 - "What is the safe way to inspect my emulator/device/app state first?"
+- "Which `pico-cli spatialml` command should I use?"
 
 ## Route Away For Specialized Workflows
 
 Prefer the most specific skill once the user's intent is clear:
 
 - Use `spatial-emulator-usage` when the task is to operate an emulator or connected device end-to-end: create/start/stop emulator, inspect devices, install/launch APKs, push/pull files, collect screenshots/logcat, or clean up emulator resources.
-- Use `spatial-app-perf-diagnose` for `pico-cli perf`, Perfetto Trace capture/load/query, frame drops, jank, high CPU/GPU load, slow startup, or rendering-pipeline diagnosis.
+- Use `spatial-app-performance-analysis` for `pico-cli perf`, Perfetto Trace capture/load/query, frame drops, jank, high CPU/GPU load, slow startup, or rendering-pipeline diagnosis.
 - Use `spatial-app-onboarding` for `pico-cli project create` or first Spatial SDK project scaffolding.
 - Use `spatial-sdk-guideline`, `spatial-ui-*`, or migration skills when the request is about app code, SDK APIs, UI implementation, or Gradle migration rather than CLI usage.
+- Use `spatialml` when the user wants to add, configure, diagnose, validate, inspect, run, or debug
+  SpatialML in an SDK-owned app, including discovering, adapting, installing, importing, loading, or
+  verifying a reusable Pipeline Zoo package. Load `spatialml-commands.md` only when exact CLI syntax
+  is needed.
 
 If a request starts as generic `pico-cli` help but becomes an emulator/device
 execution workflow, hand off to `spatial-emulator-usage`. A request that is
@@ -55,7 +61,7 @@ already clearly about a multi-step emulator/device workflow may trigger
    - `pico-cli doctor --help`, then `pico-cli doctor --format json` when available for broad read-only diagnostics
    - `pico-cli <family> --help`
    - `pico-cli <family> <command> --help`
-   - `pico-cli setup --tool <host>` when plugin/host setup is the issue and the user wants repair
+   - `pico-cli setup --agent-tool <host>` when plugin/host setup is the issue and the user wants repair
 4. Prefer JSON output when a command supports it and the result will drive later decisions.
 5. Choose explicit device targeting when more than one target may exist.
 6. For destructive or long-running actions, route to the specialized skill or confirm intent before proceeding.
@@ -77,6 +83,7 @@ Use this summary for routing; load `command-families.md` for details.
 | Capture screenshots                       | `pico-cli capture screenshot ...`                                                              |
 | Read logs                                 | `pico-cli log`, `pico-cli app logcat`                                                          |
 | Performance profiling and Perfetto        | `pico-cli perf ...`                                                                            |
+| SpatialML project and Pipeline Zoo work   | `pico-cli spatialml ...`; start with `spatialml onboard`, `doctor`, or `pipeline search`       |
 | Raw device escape hatch                   | `pico-cli adb ...` or `pico-cli shell ...` only when high-level commands do not cover the need |
 
 ## Safe Defaults
@@ -87,6 +94,8 @@ Use this summary for routing; load `command-families.md` for details.
 - Inspect before writing, deleting, uninstalling, clearing logs, or starting a long-running watch.
 - Treat `pico-cli shell ...` as a raw escape hatch: if the CLI needs to auto-start a managed emulator first, explain that wait explicitly instead of treating it like immediate shell output.
 - Do not route volumetric/spatial interaction through `pico-cli shell input tap x y`; that path only covers 2D screen-coordinate input and is not reliable for spatial containers.
+- For SpatialML, route workflow decisions to the unified `spatialml` skill; use this skill's reference
+  only for exact command syntax and generic output handling.
 - Do not invent command names or flags; use help output or repository command definitions when uncertain.
 
 ## Response Pattern

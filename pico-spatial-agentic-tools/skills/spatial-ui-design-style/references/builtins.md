@@ -1,10 +1,11 @@
 # Built-In Components Lookup
 
 > Package convention:
+>
 > - `com.pico.spatial.ui.design.*` — main components (incl. `TitleBar`)
 > - `com.pico.spatial.ui.design.windows.*` — `Subwindow` / `Toolbar` / `TabBar` / `Sheet` / `AlertDialog` / `SpatialPopup` / `Menu` / `SnackbarHost` / `CoachmarkBox` / ...
 > - `com.pico.spatial.ui.design.menu.*` — `Menu`, `SubMenu`, `MenuItem`
-> - `com.pico.spatial.ui.augment.Augment` — window-attached ornament (NOT a `design.windows.*` component, NOT a window root)
+> - `com.pico.spatial.ui.foundation.window.Augment` — window-attached ornament (NOT a `design.windows.*` component, NOT a window root)
 
 ## Decision Rule
 
@@ -51,7 +52,7 @@
 ## Window-Attached Ornament (separate package)
 
 - `Augment(...)` — ornament window attached to a parent window. Lives in
-  `com.pico.spatial.ui.augment.Augment`, NOT in `design.windows.*`. Glass
+  `com.pico.spatial.ui.foundation.window.Augment`, NOT in `design.windows.*`. Glass
   toggle is the DSL parameter `enableMaterialBackground` (default `true`).
   See `window-background.md` and `spatial-capabilities.md`.
 
