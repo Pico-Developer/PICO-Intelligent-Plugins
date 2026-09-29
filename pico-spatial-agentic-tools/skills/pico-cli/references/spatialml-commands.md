@@ -5,20 +5,20 @@ visualize SpatialML content through `pico-cli`.
 
 ## Required Order
 
-SpatialML setup extends an existing SDK project. It does not install or replace the owning SDK.
+SpatialML setup extends an existing Kotlin Spatial SDK project. It does not install or replace the
+Kotlin SDK.
 
-1. Start with an existing Native OpenXR, Unity, or Kotlin Spatial SDK project.
+1. Start with an existing Kotlin Spatial SDK project. Hand Unity requests to PICO Unity Agentic
+   Tools' `spatialml` skill.
 2. Assess the project:
 
    ```bash
    pico-cli spatialml onboard --project <project-path> --format json
    ```
 
-3. If onboarding reports that the parent SDK is missing, complete that SDK's setup first.
-   - Unity: invoke the PICO Unity plugin's `pico-unity-init` skill explicitly.
+3. If onboarding reports that the Kotlin SDK is missing, complete its setup first.
    - Kotlin: create or prepare the Spatial SDK project through the normal project workflow.
-   - Native: start from an existing PICO OpenXR project.
-4. Configure SpatialML only after the parent SDK is ready:
+4. Configure SpatialML only after the Kotlin SDK is ready:
 
    ```bash
    pico-cli spatialml setup --project <project-path> --format json
@@ -35,11 +35,11 @@ inspect its JSON result and report every changed path.
 
 ## Project Commands
 
-| Goal                               | Command                                                     | Notes                                                                                             |
-| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Detect the SDK and next setup step | `pico-cli spatialml onboard --project <path> --format json` | Routes to the owning SDK workflow; it does not install the SDK.                                   |
-| Configure SpatialML                | `pico-cli spatialml setup --project <path> --format json`   | Run only after SDK setup. Kotlin may update project files; Native and Unity may return a handoff. |
-| Diagnose project readiness         | `pico-cli spatialml doctor --project <path> --format json`  | Reports SDK, mode/configuration checks, and the next action.                                      |
+| Goal                               | Command                                                     | Notes                                                           |
+| ---------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------- |
+| Detect the SDK and next setup step | `pico-cli spatialml onboard --project <path> --format json` | Routes to the Kotlin SDK workflow; it does not install the SDK. |
+| Configure SpatialML                | `pico-cli spatialml setup --project <path> --format json`   | Run only after SDK setup; Kotlin may update project files.      |
+| Diagnose project readiness         | `pico-cli spatialml doctor --project <path> --format json`  | Reports SDK, mode/configuration checks, and the next action.    |
 
 If detection fails, confirm that `--project` points at the actual SDK project root. Do not create
 generic marker files merely to make detection pass.
@@ -68,22 +68,10 @@ pico-cli spatialml pipeline install <picoxr/repository-id> \
   --format json
 ```
 
-Optional Unity flags:
-
-```bash
---overwrite fail|replace
---unity-editor <path-to-Unity>
-```
-
 Installation downloads the ZIP into a temporary local directory and extracts the complete package
-before SDK-specific installation begins.
+before Kotlin installation begins.
 
-- Kotlin and Native install into the adapter-resolved project assets location.
-- Unity stages the extracted package under `.pico-cli/spatialml-downloads/` and invokes the
-  SDK-owned importer when available.
-- For Unity, treat only `status=installed` and a returned importer/package asset as complete.
-  `status=action-required` or `PARTIAL` means follow the returned handoff in Unity. Staging or copying
-  files alone is not a completed Unity import.
+- Kotlin installs into the adapter-resolved project assets location.
 
 For adaptation, preserve the installed package and work on a separately named copy. Compare the old
 and new model's input/output count, names, shape/layout, dtype, quantization, normalization, and
@@ -93,15 +81,11 @@ does not install arbitrary local derived packages.
 
 ### Runtime Loading
 
-Always load the complete package through the detected SDK's package loader. Package JSON may be
+Always load the complete package through the Kotlin SDK's package loader. Package JSON may be
 inspected for a bounded adaptation, but application code must not reconstruct its graph:
 
-- Unity imports with `SpatialMLPipelineZooImporterCli.Import` or the SDK menu importer and consumes
-  the generated `SpatialMLPipelineZooAsset`.
 - Kotlin calls `SpatialMLSession.loadPipelinePackageFromAssets(assetRoot, externalGlobals)` and uses
   the returned `PipelinePackageBundle`.
-- Native calls `SecureMrUtils::LoadModelPackagePipelinesFromAssets(...)` from the samples'
-  `base/securemr_utils` package.
 
 Do not substitute standalone JSON deserialization or hand-written operator, tensor, edge, scheduling,
 or global-binding code for these loaders, including for a derived package.
@@ -113,7 +97,7 @@ pico-cli spatialml pipeline verify --package <package-directory-or-zip> --format
 ```
 
 This command delegates to `pyspatialml package validate`. Install the public package with
-`python3.13 -m pip install --upgrade pyspatialml-pico`; pico-cli supports pySpatialML 0.5.0 or newer.
+`uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`; pico-cli supports pySpatialML 0.5.0 or newer.
 It resolves `pyspatialml` from `PATH`, or uses the executable named by `PICO_CLI_PYSPATIALML`. A
 missing or incompatible executable returns `PSM_TOOL_UNAVAILABLE` with exit code `3`. Do not
 substitute legacy Docker, QNN context-binary, or standalone JSON-pipeline tooling.

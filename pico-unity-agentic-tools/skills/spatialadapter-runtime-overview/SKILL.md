@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill as the discovery entry point for the Spatial Adapter runtime package. It summarizes the high-level Unity-facing APIs, explains when to prefer them over low-level native bridge calls, and points to the more specific package skills for runtime core, camera and windowing, input, and component APIs.
 
+## Compatibility and Scope
+
+Confirm PICO Spatial / Unity Spatial mode from `.pico-cli/config.json` when available and from installed packages and scene components. If evidence conflicts with the request, ask before switching modes. Verify `ByteDance.PICO.SpatialAdapter` types and signatures against the installed package; do not substitute `ByteDance.PICO.Spatial` names from another SDK snapshot. API discovery is read-only and does not require an Editor connection. Use a narrower skill directly when the topic is already known.
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -22,7 +26,7 @@ Use this skill as the discovery entry point for the Spatial Adapter runtime pack
 ## When to Use
 
 - Use when you need a starting point for Spatial Adapter runtime APIs and do not yet know which topic skill is the right one.
-- Use when working with `SpatialAdapterRuntime.Initialize()`, `SpatialCamera`, native text, video, surface-texture video, input, mesh sync, or dynamic textures.
+- Use when comparing runtime, camera, input, or component APIs before choosing a topic. Once the topic is known, use its specific skill directly.
 - Use when deciding whether to use a high-level Unity component workflow or a low-level `public static extern` runtime call.
 - Use when you want the package-level return conventions and agent notes before diving into a narrower API area.
 
@@ -44,14 +48,17 @@ Use this skill as the discovery entry point for the Spatial Adapter runtime pack
 
 ## Related Skills
 
-- `spatialadapter-runtime-core-api`: initialization, scene graph, resources, mesh sync, dynamic textures, manager state, DTOs.
-- `spatialadapter-camera-window-api`: `SpatialCamera`, spatial window lifecycle, modes, dimensions, metadata.
-- `spatialadapter-input-api`: `SpatialInputSupport`, `SpatialInputDevice`, interaction state, touch mapping.
-- `spatialadapter-components-api`: native text, video, surface-texture video, hover, shadow, collision, canvas sorting.
+- [pico-unity-spatial](../pico-unity-spatial/SKILL.md): general Spatial setup, space selection, and feature routing.
+- [spatialadapter-scene-setup](../spatialadapter-scene-setup/SKILL.md): inspect or create the active scene's `SpatialCamera`.
+- [spatialadapter-spatial-camera-focus](../spatialadapter-spatial-camera-focus/SKILL.md): keep a moving target inside camera bounds.
+- [spatialadapter-runtime-core-api](../spatialadapter-runtime-core-api/SKILL.md): initialization, scene graph, resources, mesh sync, dynamic textures, manager state, DTOs.
+- [spatialadapter-camera-window-api](../spatialadapter-camera-window-api/SKILL.md): `SpatialCamera`, spatial window lifecycle, modes, dimensions, metadata.
+- [spatialadapter-input-api](../spatialadapter-input-api/SKILL.md): `SpatialInputSupport`, `SpatialInputDevice`, interaction state, touch mapping.
+- [spatialadapter-components-api](../spatialadapter-components-api/SKILL.md): native text, video, surface-texture video, hover, shadow, collision, canvas sorting.
 
 ## Reference
 
-Read `reference.md` in this folder for the original package-level overview, common return conventions, file map, and important agent notes.
+Read [reference.md](reference.md) for the original package-level overview, common return conventions, file map, and important agent notes.
 
 ## Common Mistakes
 

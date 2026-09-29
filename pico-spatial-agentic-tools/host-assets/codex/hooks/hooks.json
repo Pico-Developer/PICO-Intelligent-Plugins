@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|exec_command|shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pico-cli workflow capture-context codex --integration pico-spatial-agentic-tools",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

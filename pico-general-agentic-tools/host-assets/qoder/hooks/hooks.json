@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(Skill|Read|mcp__pico-(?:dev-knowledge|spatial-editor)__)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${QODER_PLUGIN_ROOT}/hooks/ingest.mjs\" pico-general-agentic-tools",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "^mcp__pico-(?:dev-knowledge|spatial-editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${QODER_PLUGIN_ROOT}/hooks/ingest.mjs\" pico-general-agentic-tools",
+            "timeout": 65
+          }
+        ]
+      }
+    ]
+  }
+}

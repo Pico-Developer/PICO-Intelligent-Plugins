@@ -1,6 +1,6 @@
 ---
 name: spatialadapter-input-api
-description: Use when working with Spatial Adapter, PICO Spatial, or Unity Spatial input, SpatialInputSupport, EnhancedTouch mapping, interaction IDs, or target colliders.
+description: 'Use for concrete Spatial Input implementation in Spatial Adapter, PICO Spatial, or Unity Spatial: target selection, click, tap, pinch, drag, manipulation, colliders, EnhancedTouch mapping, SpatialInputSupport, SpatialInputDevice, and interaction IDs.'
 license: 'Apache-2.0'
 ---
 
@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill when you need the Spatial Adapter input bridge between backend interaction data and Unity input systems. It covers interaction enums, state structs, target lookup, required collider setup for interactive objects, drag/manipulation patterns, and the custom `SpatialInputDevice` and `SpatialInputControl` types.
 
+## Compatibility and Scope
+
+Confirm Spatial mode from the saved `mode`, installed package, and scene evidence; ask if they conflict. Verify `ByteDance.PICO.SpatialAdapter`, Input System APIs, and the project's render pipeline before using the templates or creating URP materials. API explanations are read-only. Before scene changes, verify the running Editor and an available scene-editing tool; if unavailable, report the blocker and provide manual steps. Preserve existing scripts and configured materials, wait for successful compilation after script writes, register Undo, and save the intended scene after authorized changes.
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -18,6 +22,10 @@ Use this skill when you need the Spatial Adapter input bridge between backend in
 - `SpatialInputSupport`
 - `Spatial Input`
 - `IndirectPinch`
+- target selection
+- click, tap, or pinch
+- drag or manipulation
+- target collider
 
 ## When to Use
 
@@ -25,6 +33,7 @@ Use this skill when you need the Spatial Adapter input bridge between backend in
 - Use when reading or mutating `SpatialInputState`.
 - Use when mapping `touchId` values to Spatial Adapter interaction slots.
 - Use when routing interaction logic based on the currently hit `GameObject`.
+- Use when handling click, tap, pinch, or target-selection interactions.
 - Use when deciding what collider an interactable GameObject should have for Spatial Input.
 - Use when a user wants to drag or manipulate GameObjects with Spatial Adapter input.
 - Use when debugging primary versus secondary spatial input device state.
@@ -143,6 +152,7 @@ public class ManipulationInputManager : MonoBehaviour
         }
 
         m_CurrentSelections.Clear();
+        EnhancedTouchSupport.Disable();
     }
 
     void Update()
@@ -152,10 +162,11 @@ public class ManipulationInputManager : MonoBehaviour
             SpatialInputState inputState = SpatialInputSupport.GetInputState(touch);
             int interactionId = inputState.interactionId;
 
-            TryBeginSelection(inputState, interactionId);
-
             switch (inputState.phase)
             {
+                case TouchPhase.Began:
+                    TryBeginSelection(inputState, interactionId);
+                    break;
                 case TouchPhase.Moved:
                     UpdateSelectionPose(inputState, interactionId);
                     break;
@@ -230,7 +241,7 @@ public class ManipulationInputManager : MonoBehaviour
 
 ## Reference
 
-Read `reference.md` in this folder for enum values, field layouts, control definitions, and Unity Input System integration details.
+Read [reference.md](reference.md) for enum values, field layouts, control definitions, and Unity Input System integration details.
 
 ## Common Mistakes
 

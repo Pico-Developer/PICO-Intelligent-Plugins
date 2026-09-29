@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node hooks/ingest.mjs post",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

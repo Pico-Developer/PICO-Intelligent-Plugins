@@ -107,6 +107,53 @@ class CheckArchitectureTest(unittest.TestCase):
 
         self.assertFalse(report.errors)
 
+    def test_rejects_repository_reference_in_screen(self) -> None:
+        checker = load_architecture_module()
+        (self.feature_dir / "SearchScreen.kt").write_text(
+            """
+            @Composable
+            fun SearchScreen() {
+                val repository = FakeSearchRepository()
+                SearchContent(repository.search("spatial"))
+            }
+            """,
+            encoding="utf-8",
+        )
+
+        report = checker.Report()
+        checker.check_no_repository_in_composables(self.module_root, report)
+
+        self.assertEqual(["A5"], [finding.rule for finding in report.errors])
+        self.assertIn("FakeSearchRepository", report.errors[0].message)
+        self.assertIn("SearchScreen.kt", report.errors[0].file)
+
+    def test_allows_screen_that_only_references_factory(self) -> None:
+        checker = load_architecture_module()
+        (self.feature_dir / "SearchViewModelFactory.kt").write_text(
+            """
+            class SearchViewModelFactory {
+                fun create(): SearchViewModel = SearchViewModel(FakeSearchRepository())
+            }
+            """,
+            encoding="utf-8",
+        )
+        (self.feature_dir / "SearchScreen.kt").write_text(
+            """
+            @Composable
+            fun SearchScreen() {
+                val vm = viewModel<SearchViewModel>(factory = SearchViewModelFactory())
+                val state by vm.state.collectAsStateWithLifecycle()
+                SearchContent()
+            }
+            """,
+            encoding="utf-8",
+        )
+
+        report = checker.Report()
+        checker.check_no_repository_in_composables(self.module_root, report)
+
+        self.assertFalse(report.errors)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,8 +11,8 @@ consistent with SpatialUI built-ins (`Button`, `Switch`, `Card`, ...).
    \- callbacks                  : onClick, onCheckedChange, onValueChange ...
 2. modifier                      — immediately after required params, default Modifier
 3. enabled                       — Boolean = true (when supported)
-4. Visual / semantic optionals   — colors / shape / elevation / contentPadding / textStyle / border
-                                   (semantic first, then visual; outer→inner: shape/border → container color
+4. Visual / semantic optionals   — colors / shape / elevation / contentPadding / textStyle
+                                   (semantic first, then visual; outer→inner: shape → container color
                                     → content color → spacing)
 5. Slot composables              — leadingIcon / trailingIcon / label / supportingText / header ...
                                    🔴 MUST be `(@Composable () -> Unit)? = null`
@@ -70,14 +70,14 @@ fun MyAvatar(
 
 ### Common Bad Orders
 
-| Anti-pattern | Problem |
-| --- | --- |
-| `MyCard(modifier, onClick, ...)` | `modifier` before required args |
-| `MyCard(onClick, content, modifier)` | `content` not last → trailing lambda broken |
-| `MyCard(onClick, interactionSource, modifier, ...)` | `interactionSource` front-loaded |
-| `MyCard(onClick, modifier, content, enabled)` | optionals after `content` |
-| `MyToggle(onCheckedChange, checked, ...)` | callback before value |
-| `leadingIcon: Painter? = null` | slots must be `(@Composable () -> Unit)?` |
+| Anti-pattern                                        | Problem                                     |
+| --------------------------------------------------- | ------------------------------------------- |
+| `MyCard(modifier, onClick, ...)`                    | `modifier` before required args             |
+| `MyCard(onClick, content, modifier)`                | `content` not last → trailing lambda broken |
+| `MyCard(onClick, interactionSource, modifier, ...)` | `interactionSource` front-loaded            |
+| `MyCard(onClick, modifier, content, enabled)`       | optionals after `content`                   |
+| `MyToggle(onCheckedChange, checked, ...)`           | callback before value                       |
+| `leadingIcon: Painter? = null`                      | slots must be `(@Composable () -> Unit)?`   |
 
 ## 2. Modifier Chain Order
 
@@ -104,8 +104,9 @@ Rules:
 
 - Put layout constraints (`fillMaxWidth`, `fillMaxSize`, `width`, `height`,
   `size`, `defaultMinSize`) toward the front of the chain.
-- Put drawing decoration (`background`, `border`, `backgroundMaterial`) after
-  size / shape / interaction and before inner content padding.
+- Put drawing decoration (`background`, `backgroundMaterial`) after size /
+  shape / interaction and before inner content padding. Do not add
+  app-authored content borders.
 - `Modifier.size(100.dp).padding(16.dp)` means a 100dp visual box with inset
   content; `Modifier.padding(16.dp).size(100.dp)` changes outer layout and often
   produces the wrong background / hit area.
@@ -177,7 +178,21 @@ Modifier.graphicsLayer {
 }
 ```
 
-## 3. Clickable + Indication + Haptics
+## 3. Clickable + Indication + Optional Haptics
+
+For an ordinary click action, use the concise overload. `clickable` reads
+`LocalIndication.current`, which `PicoTheme` supplies, so the source does not
+need to pass it explicitly:
+
+```kotlin
+Modifier.clickable(
+    enabled = enabled,
+    onClick = onClick,
+)
+```
+
+When the interaction specifically requires controller haptics, create one
+interaction source and share it:
 
 ```kotlin
 val interactionSource = remember { MutableInteractionSource() }
@@ -198,11 +213,12 @@ Box(
 ```
 
 Rules:
-- `clickable` / `toggleable` / `selectable` MUST pass
-  `indication = LocalIndication.current`. Omitting or `null` loses
-  hover + press + click audio.
-- `controllerHapticFeedback` MUST share the same `interactionSource` as
-  `clickable`.
+
+- `clickable` / `toggleable` / `selectable` use `LocalIndication.current` by
+  default. Pass it explicitly only when selecting an overload that takes a
+  custom `interactionSource`.
+- `controllerHapticFeedback` is optional. When used, it must share the same
+  `interactionSource` as the clickable modifier.
 - `spatialHoverEffect` is a no-op off PICO OS — no platform branching needed.
 
 ## 4. Audio for Stateful (Switch / Toggle) Components

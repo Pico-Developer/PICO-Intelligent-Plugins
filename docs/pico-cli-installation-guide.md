@@ -12,7 +12,7 @@ Give this page to an AI coding agent when you want it to install PICO CLI and co
 
 ## 1. Inspect the Environment
 
-PICO CLI requires Node.js 18 or later, npm, and Git. Start with read-only checks:
+PICO CLI requires Node.js 20 or later, npm, and Git. Start with read-only checks:
 
 ```shell
 node --version
@@ -20,7 +20,7 @@ npm --version
 git --version
 ```
 
-If a prerequisite is missing or Node.js is older than version 18, explain the problem and ask the user before installing or upgrading anything.
+If a prerequisite is missing or Node.js is older than version 20, explain the problem and ask the user before installing or upgrading anything.
 
 ## 2. Install PICO CLI
 
@@ -56,6 +56,11 @@ Resolve the following values from the user's request and the current workspace, 
   - Cursor: `cursor`
   - GitHub Copilot: `copilot`
   - Trae CLI: `traecli`
+  - OpenCode V2: `opencode2`
+  - CodeBuddy Code: `codebuddy`
+  - Qoder CLI: `qoder`
+  - Antigravity CLI: `antigravity`
+  - Grok CLI: `grok`
 
 Do not silently choose `all`. Configure only the Agent tool requested by the user unless they explicitly ask to configure every supported tool.
 
@@ -100,7 +105,10 @@ After approval, run the command non-interactively. Preserve the original setup o
 
 ## 5. Verify the Result
 
-Run the comprehensive read-only check from the configured project directory. `pico-cli doctor` uses the current working directory as project context; it does not accept a project-path option.
+Run the comprehensive read-only check from the configured project directory. `pico-cli doctor`
+uses the current working directory as project context and automatically selects the effective setup
+platform; it does not accept a project-path option. Pass `--platform` to assert the expected setup
+platform without changing the diagnostic target.
 
 ```shell
 cd "<PROJECT_ABSOLUTE_PATH>"
@@ -109,6 +117,11 @@ pico-cli doctor \
   --platform <spatial|unity> \
   --format json
 ```
+
+If the assertion does not match the effective setup, doctor returns a structured platform error and
+does not run either platform's specialized checks or repairs. JSON consumers must accept `null` for
+both `data.targetPlatform` and `data.overview.sdk` when setup has not selected a valid platform or
+the assertion fails.
 
 When `local` scope was selected, also verify the project guidance routing from the same directory:
 

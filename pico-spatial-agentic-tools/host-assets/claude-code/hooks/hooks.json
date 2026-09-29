@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pico-cli workflow capture-context claude-code --integration pico-spatial-agentic-tools",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

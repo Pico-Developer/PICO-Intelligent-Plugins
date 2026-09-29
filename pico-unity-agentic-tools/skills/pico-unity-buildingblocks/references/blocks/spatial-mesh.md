@@ -72,8 +72,16 @@ configured exactly as follows:
 
 - Pre: XR Origin (via orchestration step B.1) AND VST enabled (see orchestration step B.2).
 - Call: `pico_xr_spatial_mesh(action=enable)`.
-- The tool ensures a Spatial Mesh root GameObject exists under the XR Origin
-  and attaches the `SpatialMeshManager` driver.
+- **Two-phase on first enable:**
+  1. The first call copies `SpatialMeshManager.cs` and the bundled visual assets
+     into `Assets/PICO_MCP/SpatialMesh`; it returns `skipped` with
+     `data.recompiling=true`.
+  2. Run the post-write settle loop until `pico_xr_status` responds again.
+  3. Call `pico_xr_spatial_mesh(action=enable)` once more. The tool now ensures
+     the Spatial Mesh root under the XR Origin and mounts/configures the loaded
+     driver, returning `ok`.
+- If the same `spatial_mesh:SpatialMeshManager` transition repeats after the
+  settle/retry, stop and report it; do not loop.
 - After the tool returns `ok`, verify the driver's serialized fields match the
   **Inspector config** table above. If `Mesh Calc Prefab` / `Transparent
 Material` could not be resolved, relay the warning and ask the user to wire
@@ -95,7 +103,9 @@ Material` could not be resolved, relay the warning and ask the user to wire
 
 ```
 pico_xr_status()                        → xr_origin=ok, vst=on, spatial_mesh=off
-pico_xr_spatial_mesh(action=enable)     → ok  (attaches SpatialMeshManager driver)
+pico_xr_spatial_mesh(action=enable)     → skipped (recompiling=true; assets imported)
+pico_xr_status() [settle loop]          → poll until the MCP bridge returns
+pico_xr_spatial_mesh(action=enable)     → ok  (mounts SpatialMeshManager driver)
    → verify Inspector config: maxRenderPerFrame=200, meshAmount=300,
      Mask=TA_MR_Unlit, meshPrefab=MeshTriangleFadeOutPrefab,
      wireframeMaterial=TriangleFadeOutFromCenter
@@ -108,7 +118,9 @@ Save Scene                              → ok
 ```
 pico_xr_status()                        → xr_origin=ok, vst=off, spatial_mesh=off
 pico_xr_vst(action=enable)              → ok      (auto by orchestration step B.2)
-pico_xr_spatial_mesh(action=enable)     → ok      (attaches SpatialMeshManager driver)
+pico_xr_spatial_mesh(action=enable)     → skipped (recompiling=true; assets imported)
+pico_xr_status() [settle loop]          → poll until the MCP bridge returns
+pico_xr_spatial_mesh(action=enable)     → ok      (mounts SpatialMeshManager driver)
 pico_xr_status()                        → vst=on, spatial_mesh=on
 Save Scene                              → ok
 ```

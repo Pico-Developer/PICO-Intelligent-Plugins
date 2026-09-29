@@ -1,7 +1,8 @@
 # SpatialML Implementation Workflows
 
 Use this reference after the parent `spatialml` skill has identified an implementation, review, or
-debugging task inside a Unity, Kotlin Spatial SDK, or Native OpenXR project. It adapts the reusable
+debugging task inside a Kotlin Spatial SDK project. Unity work belongs to PICO Unity Agentic Tools'
+`spatialml` skill. This reference adapts the reusable
 workflow knowledge from the SDK documentation without assuming that any documentation repository or
 Markdown path exists in the user's workspace.
 
@@ -13,7 +14,7 @@ tensor encodings, permissions, and lifecycle rules are versioned SDK facts. Retr
 
 1. Inspect project-local manifests, dependencies, imports, and existing SpatialML code. Project-local
    evidence determines the SDK version and existing conventions.
-2. Use `spatialml doctor` to confirm the detected SDK and runtime mode when live CLI execution is in
+2. Use `spatialml doctor` to confirm the Kotlin SDK and Spatial runtime mode when live CLI execution is in
    scope. Do not infer mode only from the requested output.
 3. Query `pico-dev-knowledge` with the SDK, mode, workflow goal, and named concept. Start broad enough
    to retrieve the workflow page, then query the relevant operator or API card for exact bindings.
@@ -22,44 +23,36 @@ tensor encodings, permissions, and lifecycle rules are versioned SDK facts. Retr
 5. If the knowledge graph is unavailable, continue from project evidence and stable guidance here,
    but mark unverified API spelling or mode support instead of guessing.
 
-Do not search for or require paths such as `docs/securemr/...`, `docs/spatialml/...`, or
-`docs/spatialml-native/...` in the consuming project. Those source documents are inputs to the
-knowledge graph, not runtime skill dependencies.
+Do not search for or require paths such as `docs/securemr/...` or `docs/spatialml/...` in the consuming
+project. Those source documents are inputs to the knowledge graph, not runtime skill dependencies.
 
 ### Query Recipes
 
 Adapt these as natural-language `query_graph` requests. Include the installed SDK version when known.
 
-| Goal                     | Initial knowledge query                                                               | Follow-up evidence                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Core app graph           | `SpatialML <SDK> <mode> session pipeline tensor execution lifecycle cleanup`          | Core API and execution-model results                                                    |
-| Camera to model          | `SpatialML <SDK> <mode> VST camera preprocessing model inference workflow`            | Camera, affine/resize, color, normalization, layout, and inference operator cards       |
-| Select an operator       | `SpatialML <SDK> <mode> operator catalog <task>`                                      | The exact operator card, including operands, results, tensor contract, and mode support |
-| LiteRT/TFLite inference  | `SpatialML <SDK> <mode> LiteRT TFLite model node bindings input output encoding`      | Model inference card plus model/tensor troubleshooting                                  |
-| 2D to 3D placement       | `SpatialML <SDK> <mode> project image UV detection to camera and world space`         | VST metadata, projection, coordinate-transform, and output API results                  |
-| Visible output           | `SpatialML <SDK> <mode> visible output rendering owner scene graph glTF texture text` | Mode-specific output operators and container/rendering rules                            |
-| Pipeline ordering        | `SpatialML <SDK> <mode> pipeline synchronization dependency run handle global tensor` | Submit/execute ordering and placeholder/global binding APIs                             |
-| Readback or tensor debug | `SpatialML <SDK> <mode> readback global tensor privacy permission debug`              | Readback API, resource cleanup, and privacy boundary                                    |
+| Goal                     | Initial knowledge query                                                                      | Follow-up evidence                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Core app graph           | `Kotlin SpatialML Spatial session pipeline tensor execution lifecycle cleanup`               | Core API and execution-model results                                                    |
+| Camera to model          | `Kotlin SpatialML Spatial VST camera preprocessing model inference workflow`                 | Camera, affine/resize, color, normalization, layout, and inference operator cards       |
+| Select an operator       | `Kotlin SpatialML Spatial operator catalog <task>`                                           | The exact operator card, including operands, results, tensor contract, and mode support |
+| LiteRT/TFLite inference  | `Kotlin SpatialML Spatial LiteRT TFLite model node bindings input output encoding`           | Model inference card plus model/tensor troubleshooting                                  |
+| 2D to 3D placement       | `Kotlin SpatialML Spatial project image UV detection to camera and world space`              | VST metadata, projection, coordinate-transform, and output API results                  |
+| Visible output           | `Kotlin SpatialML Spatial visible output rendering owner scene graph component texture text` | Spatial output operators and container/rendering rules                                  |
+| Pipeline ordering        | `Kotlin SpatialML Spatial pipeline synchronization dependency run handle global tensor`      | Submit/execute ordering and placeholder/global binding APIs                             |
+| Readback or tensor debug | `Kotlin SpatialML Spatial readback global tensor privacy permission debug`                   | Readback API, resource cleanup, and privacy boundary                                    |
 
 One broad query is not enough when code depends on exact operand names, shapes, enum values, or cleanup
 semantics. Retrieve the specific API/operator result before coding those details.
 
-## Select The SDK And Mode Adapter
+## Confirm The Kotlin Spatial Mode
 
-Runtime mode and privacy mode are different decisions. `xr` versus `spatial` selects the rendering and
-integration owner. Secure Mode versus Readback Mode selects whether protected results remain inside
-SpatialML or cross into application memory.
+The runtime mode and privacy mode are different decisions. The Kotlin workflow uses Spatial mode and
+SpatialEngine as the rendering owner. Secure Mode versus Readback Mode selects whether protected
+results remain inside SpatialML or cross into application memory.
 
-| Parent SDK                          | Runtime mode | Rendering/output owner                               | Implementation boundary                                                                                   |
-| ----------------------------------- | ------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Unity with Spatial Adapter disabled | XR           | Unity plus SpatialML XR glTF/text/texture output     | Use the Unity plugin's `spatialml` implementation reference for current C# APIs                           |
-| Unity with Spatial Adapter enabled  | Spatial      | SpatialEngine scene graph/components                 | Use the Unity plugin's Spatial-mode adapter and container rules                                           |
-| Kotlin Spatial SDK                  | Spatial      | SpatialEngine                                        | Use Kotlin fluent `Pipeline` APIs and SpatialML session/scene output retrieved from the Kotlin docs graph |
-| Native OpenXR                       | XR           | OpenXR app plus protected glTF/render-command output | Prefer the documented `securemr_utils` layer; use raw extension APIs only for low-level validation        |
-
-Do not translate APIs mechanically across rows. A Unity `Provider`/`TensorMapping` pattern, a Kotlin
-fluent `Pipeline` call, and a Native C++ placeholder map may represent the same graph concept without
-sharing names, ownership, or asynchronous behavior.
+| Parent SDK         | Runtime mode | Rendering/output owner | Implementation boundary                                                                                   |
+| ------------------ | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| Kotlin Spatial SDK | Spatial      | SpatialEngine          | Use Kotlin fluent `Pipeline` APIs and SpatialML session/scene output retrieved from the Kotlin docs graph |
 
 ## Build The Graph By Stages
 
@@ -76,7 +69,7 @@ also the fastest way to isolate most model and rendering bugs.
 
 Before building a graph manually, check Pipeline Zoo for an exact package or reusable topology. When
 a package already supplies acquisition, projection, scheduling, or display pipelines, preserve those
-stages and their shared bindings. Load and execute the result through the owning SDK as described in
+stages and their shared bindings. Load and execute the result through the Kotlin SDK as described in
 `pipeline-zoo.md`; do not reconstruct its graph from JSON.
 
 Shared construction rules:
@@ -87,7 +80,7 @@ Shared construction rules:
 - Use compatible global tensors and the SDK's documented binding mechanism for cross-pipeline data.
 - Carry dependency/run handles between stages whose data must be ordered. Do not rely on incidental
   submission timing.
-- Tie asynchronous work and resource cleanup to the parent SDK's lifecycle. Destroy children before
+- Tie asynchronous work and resource cleanup to the Kotlin SDK lifecycle. Destroy children before
   their session/framework owner and release readback resources promptly.
 
 ## Camera-To-Model And LiteRT/TFLite Inference
@@ -118,10 +111,10 @@ Choose operators from the task, not from remembered class names:
 - preprocessing: affine crop/resize, color conversion, type conversion, normalization, layout change;
 - inference and postprocessing: LiteRT inference, comparison/reduction, argmax, NMS, tensor math;
 - spatial transforms: image/UV to camera space, camera to world/local space, transform construction;
-- output: XR glTF/text/texture or SpatialEngine scene graph/component changes;
+- output: SpatialEngine scene graph/component changes;
 - diagnostics: explicit global-tensor readback or protected in-runtime debug output.
 
-For each selected operator, retrieve its SDK-specific card and verify constructor/configuration,
+For each selected operator, retrieve its Kotlin SDK card and verify constructor/configuration,
 operands, results, tensor attributes, mode support, and lifecycle. Package declarations remain subject
 to the same constraints; JSON does not bypass the operator contract.
 
@@ -132,8 +125,8 @@ to the same constraints; JSON does not bypass the operator contract.
    coordinates, axis order, origin, and image dimensions.
 3. Project image coordinates into camera space with the SDK's documented operator.
 4. Apply explicit axis, scale, rotation, and offset adjustments; record both source and target spaces.
-5. Use the capture timestamp when resolving camera-to-world/OpenXR-local transforms.
-6. Hand the resulting transform to the selected mode's output adapter.
+5. Use the capture timestamp when resolving camera-to-world or app-local transforms.
+6. Hand the resulting transform to the Spatial output adapter.
 7. If a package display pipeline already performs projection and placement, preserve its shared camera
    metadata and dependency order instead of rebuilding the stage.
 
@@ -142,14 +135,8 @@ metadata, swapped UV axes, a missing space conversion, or a stale dependency—n
 
 ## Choose The Visible Output Path
 
-- **Unity XR:** query and use the current XR glTF/text/texture operators or generated package display
-  pipeline. Unity owns the app rendering path.
-- **Unity Spatial:** use the documented SpatialEngine scene-graph/component output path for
-  SpatialAdapter-converted content. Do not mix in XR glTF output operators.
 - **Kotlin Spatial SDK:** use SpatialML scene-graph output for protected display, or explicit readback
   followed by app-owned SpatialEngine entities. There is no Kotlin XR-mode adapter in this workflow.
-- **Native OpenXR:** prefer protected glTF/render-command output through the utility layer. Keep poses
-  in the intended OpenXR reference space and preserve `waitFor` dependencies.
 
 Bind durable scene assets, textures, or visibility once when possible. Per-frame pipelines should
 update only values that actually change.
@@ -186,8 +173,15 @@ app/device diagnostics for crashes, process state, complete app logs, screenshot
 - Each stage has an explicit tensor and coordinate contract.
 - Cross-pipeline values use compatible global bindings and explicit dependency ordering.
 - The model is portable LiteRT/TFLite and its real node/shape/preprocessing contract is respected.
-- Visible output matches the rendering owner; XR and Spatial output operators are not mixed.
+- Visible output uses the Kotlin Spatial rendering owner and compatible Spatial output operators.
 - Readback exists only when app-side data is required and its privacy/permission/cleanup obligations
   are handled.
 - Graph resources are built once, submitted repeatedly, and released in owner-safe order.
 - Build/runtime evidence covers the target SDK and device-dependent behavior.
+
+## Service Debug Channel
+
+For verbose service events or an explicit global tensor probe, use this plugin's
+`spatialml-debugging` skill. It covers the device-wide readback permission bypass, mode-specific
+log coverage, SDK snapshot lifetimes, and setting `debug.pico.spatialml.debug` to `0` afterward.
+Completion markers alone do not establish correct output; correlate ordinary errors and values.

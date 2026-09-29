@@ -25,7 +25,12 @@ VALID_RECEIPT = {
     "visual_asset_present": False,
     "gate_required": True,
     "status": "designer_passed",
-    "pre_gates": {"designDocComplete": True, "postBuildVerdict": "pass"},
+    "pre_gates": {
+        "designDocComplete": True,
+        "designSpecValid": True,
+        "previewMatchesSpec": True,
+        "postBuildVerdict": "pass",
+    },
 }
 
 VALID_HANDOFF = {
@@ -36,8 +41,9 @@ VALID_HANDOFF = {
     "scaffold_only": True,
     "product_ui_implemented": False,
     "template": "planar",
-    "package": "com.example.demo",
-    "entry_points": ["com.example.demo.Main"],
+    "package": "com.example.demo.p1234abcd",
+    "package_source": "generated_default",
+    "entry_points": ["com.example.demo.p1234abcd.Main"],
     "build_passed": True,
     "launch_checked": True,
     "resume_required": True,
@@ -51,6 +57,10 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.target_dir = Path(self.temp_dir.name) / "generated-app"
         self.scratch_dir = self.target_dir / ".scratch"
         self.scratch_dir.mkdir(parents=True)
+        (self.scratch_dir / "intent-brief.md").write_text(
+            "# Intent Brief\n\nGoal: Build the requested app.\n",
+            encoding="utf-8",
+        )
         self.checker = load_checker_module()
 
     def tearDown(self) -> None:
@@ -69,10 +79,36 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
             kwargs.get("generation_mode", "existing_module"),
             "--visual-asset",
             kwargs.get("visual_asset", "false"),
+            "--design-gate-result",
+            kwargs.get("design_gate_result", "designer_passed"),
         ]
         return self.checker.main(argv)
 
     # ---- designer gate ----------------------------------------------------
+
+    def test_intent_only_requires_an_intent_brief(self) -> None:
+        (self.scratch_dir / "intent-brief.md").unlink()
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="intent_only")
+
+        self.assertIn("intent-brief.md", str(ctx.exception))
+
+    def test_intent_brief_must_be_non_empty(self) -> None:
+        (self.scratch_dir / "intent-brief.md").write_text("\n", encoding="utf-8")
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="intent_only")
+
+        self.assertIn("non-empty", str(ctx.exception))
+
+    def test_non_intent_input_does_not_require_an_intent_brief(self) -> None:
+        (self.scratch_dir / "intent-brief.md").unlink()
+
+        self.assertEqual(
+            0,
+            self.run_main(input_mode="visual_reference", visual_asset="true"),
+        )
 
     def test_no_visual_input_requires_a_receipt(self) -> None:
         with self.assertRaises(SystemExit) as ctx:
@@ -84,6 +120,48 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
 
         self.assertEqual(0, self.run_main(input_mode="intent_only"))
+
+    def test_valid_user_package_does_not_require_designer_receipt(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "1.0"})
+
+        self.assertEqual(
+            0,
+            self.run_main(
+                input_mode="product_doc",
+                design_gate_result="user_package_passed",
+            ),
+        )
+
+    def test_user_package_result_requires_design_spec(self) -> None:
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(
+                input_mode="product_doc",
+                design_gate_result="user_package_passed",
+            )
+
+        self.assertIn("design-spec.json", str(ctx.exception))
+
+    def test_user_package_result_requires_valid_json_object(self) -> None:
+        (self.scratch_dir / "design-spec.json").write_text("{", encoding="utf-8")
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(
+                input_mode="product_doc",
+                design_gate_result="user_package_passed",
+            )
+
+        self.assertIn("Invalid JSON", str(ctx.exception))
+
+    def test_user_package_result_rejects_intent_only_mode(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "1.0"})
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(
+                input_mode="intent_only",
+                design_gate_result="user_package_passed",
+            )
+
+        self.assertIn("product_doc or hybrid", str(ctx.exception))
 
     def test_fallback_receipt_is_rejected(self) -> None:
         receipt = dict(VALID_RECEIPT, status="fallback_accepted")
@@ -114,6 +192,26 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
 
         self.assertIn("postBuildVerdict", str(ctx.exception))
 
+    def test_invalid_design_spec_is_rejected(self) -> None:
+        receipt = json.loads(json.dumps(VALID_RECEIPT))
+        receipt["pre_gates"]["designSpecValid"] = False
+        self.write("design_escalation_receipt.json", receipt)
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="intent_only")
+
+        self.assertIn("designSpecValid", str(ctx.exception))
+
+    def test_preview_spec_divergence_is_rejected(self) -> None:
+        receipt = json.loads(json.dumps(VALID_RECEIPT))
+        receipt["pre_gates"]["previewMatchesSpec"] = False
+        self.write("design_escalation_receipt.json", receipt)
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="intent_only")
+
+        self.assertIn("previewMatchesSpec", str(ctx.exception))
+
     def test_product_doc_also_requires_the_gate(self) -> None:
         with self.assertRaises(SystemExit):
             self.run_main(input_mode="product_doc")
@@ -126,9 +224,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertEqual(0, self.run_main(input_mode="hybrid", visual_asset="true"))
 
     def test_visual_input_does_not_require_the_gate(self) -> None:
-        self.assertEqual(
-            0, self.run_main(input_mode="visual_reference", visual_asset="true")
-        )
+        self.assertEqual(0, self.run_main(input_mode="visual_reference", visual_asset="true"))
 
     def test_receipt_input_mode_must_match_the_run(self) -> None:
         receipt = dict(VALID_RECEIPT, input_mode="product_doc")
@@ -153,15 +249,11 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write("onboarding_handoff.json", VALID_HANDOFF)
 
-        self.assertEqual(
-            0, self.run_main(input_mode="intent_only", generation_mode="new_project")
-        )
+        self.assertEqual(0, self.run_main(input_mode="intent_only", generation_mode="new_project"))
 
     def test_rejects_handoff_that_implemented_product_ui(self) -> None:
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
-        self.write(
-            "onboarding_handoff.json", dict(VALID_HANDOFF, product_ui_implemented=True)
-        )
+        self.write("onboarding_handoff.json", dict(VALID_HANDOFF, product_ui_implemented=True))
 
         with self.assertRaises(SystemExit) as ctx:
             self.run_main(input_mode="intent_only", generation_mode="new_project")
@@ -176,6 +268,31 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
             self.run_main(input_mode="intent_only", generation_mode="new_project")
 
         self.assertIn("build_passed", str(ctx.exception))
+
+    def test_explicit_pico_package_is_accepted(self) -> None:
+        self.write("design_escalation_receipt.json", VALID_RECEIPT)
+        self.write(
+            "onboarding_handoff.json",
+            dict(
+                VALID_HANDOFF,
+                package="com.pico.explicit",
+                package_source="user_provided",
+            ),
+        )
+
+        self.assertEqual(0, self.run_main(input_mode="intent_only", generation_mode="new_project"))
+
+    def test_generated_package_must_use_safe_default_shape(self) -> None:
+        self.write("design_escalation_receipt.json", VALID_RECEIPT)
+        self.write(
+            "onboarding_handoff.json",
+            dict(VALID_HANDOFF, package="com.picoxr.generated"),
+        )
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="intent_only", generation_mode="new_project")
+
+        self.assertIn("Generated Onboarding Handoff.package", str(ctx.exception))
 
     def test_unchecked_launch_requires_a_note(self) -> None:
         self.write("design_escalation_receipt.json", VALID_RECEIPT)

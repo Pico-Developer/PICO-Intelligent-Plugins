@@ -66,7 +66,7 @@ Editors installed via `unity install` may not automatically appear in Unity Hub'
 
 > Note: version queries and installations go through the **Unity CLI**; only the "make Hub aware of this editor" step involves a Unity Hub action. Developers not using Unity Hub can skip this subsection.
 
-## Register and open the project (corresponds to Stage D.7)
+## Register and open the project (corresponds to Stage D.5)
 
 When wrapping up initialization, first register the project into Unity's known-projects list (so the developer can later open it directly from the project list), then open it with the selected version, forcing the target platform to Android:
 

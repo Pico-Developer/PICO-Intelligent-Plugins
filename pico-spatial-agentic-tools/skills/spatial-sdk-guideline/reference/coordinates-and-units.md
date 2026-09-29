@@ -101,10 +101,34 @@ val metersValue = c.dpToLength(dpValue, metersUnit)
 val dpBack = c.lengthToDp(metersValue, metersUnit)
 ```
 
+Do not replace this conversion with a fixed ratio such as `1000 dp = 1 m`. The converter is the
+runtime authority, and the active `worldScale` can affect the observed physical result. State both
+facts whenever an answer compares or converts dp and meters.
+
 ### px ↔ meters
 Combine the two:
 - px → dp via `Density`
 - dp → meters via `PhysicalLengthConverter`
+
+## Volumetric WindowContainer sizing answer contract
+
+Apply this contract whenever the question asks for a Volumetric size, unit, range, or default:
+
+1. State that Volumetric sizes can use **dp or meters**; keep the declared unit attached to every
+   value.
+2. If the answer relates dp to meters, use `PhysicalLengthConverter` rather than a fixed ratio and
+   note that `worldScale` can affect the observed physical result.
+3. Label `320 x 320 x 320` through `2700 x 2700 x 2700` as design guidance / an Editor-supported
+   authoring range. Do not call it a runtime-enforced minimum, maximum, legal range, or hard limit
+   without target-version runtime evidence.
+4. Report the unresolved PICO OS 6.1 default conflict verbatim: one available source says
+   `960 x 960 x 960`, while another says `1280 x 1280 x 1280`. Do not silently choose one. Ask for
+   a check in the target SDK template/Editor and on the target runtime, or request an SDK owner
+   ruling.
+
+When giving implementation guidance, prefer preserving the project's explicit manifest or API
+value over replacing it with either disputed default. A scaffold's emitted value is evidence for
+that scaffold/version, not proof of a universal platform default.
 
 ## Known behaviors and pitfalls
 

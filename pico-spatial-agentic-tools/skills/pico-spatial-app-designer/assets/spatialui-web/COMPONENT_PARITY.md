@@ -50,7 +50,7 @@ methods rather than DOM elements.
 | `TextArea`                          | `sui-text-area`                  | Multiline TextField alias                      |
 | `TextField`                         | `sui-text-field`                 | Direct equivalent                              |
 | `Timepicker`                        | `sui-timepicker`                 | Composes wheel pickers                         |
-| `TitleBar`                          | `sui-title-bar`                  | Named action slots                             |
+| `TitleBar`                          | `sui-title-bar`                  | Composed title; repeated actions               |
 | `ToggleButton`                      | `sui-toggle-button`              | Direct equivalent                              |
 | `ToggleIconButton`                  | `sui-toggle-icon-button`         | Emits `checked-change`                         |
 | `WheelPicker`                       | `sui-wheel-picker`               | Direct equivalent                              |

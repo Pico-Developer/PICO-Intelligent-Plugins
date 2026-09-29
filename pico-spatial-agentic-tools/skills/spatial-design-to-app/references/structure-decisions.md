@@ -175,7 +175,7 @@ Pick exactly one. Never output "A or B".
 | `single_panel_with_popup` | main panel plus dropdown / menu / contextual overlay     | same root; popup stays an overlay or `SpatialPopup`                                                                                                           |
 | `sidebar_content`         | persistent left rail plus main content                   | one panel root with `Row(sidebar, content)`                                                                                                                   |
 | `master_detail`           | list pane and detail pane visible simultaneously         | one panel root with two persistent panes                                                                                                                      |
-| `window_plus_subwindow`   | primary window plus a secondary persistent tool panel    | main window plus `Subwindow`, or one extra `WindowContainer(...)`                                                                                             |
+| `window_plus_subwindow`   | primary window plus a secondary persistent tool panel    | main window plus `Subwindow`                                                                                                                                  |
 | `multi_window`            | multiple clearly independent panels in space             | `DefaultWindowContainer` plus additional `WindowContainer(...)`, opened via `navigator.openWindowContainer(id)` (`navigator = LocalSpatialNavigator.current`) |
 
 ### Hard rules
@@ -200,10 +200,15 @@ When the input shows more than one panel, do not jump to `multi_window`:
 
 1. **Layered UI inside one panel** (popup / dropdown / contextual menu) → stay in `single_panel` or `single_panel_with_popup`. No new window.
 2. **One persistent auxiliary tool panel in the same session** → `Subwindow` (`window_plus_subwindow`). One launcher, one manifest entry, shared lifecycle.
-3. **Multiple panels needing independent open/close lifecycles, or independent sizes/positions remembered across launches** → additional `WindowContainer(...)` blocks (`multi_window`). Each is bound to its own Activity and opened from Kotlin — **not** declared as extra `<activity>` meta-data.
+3. **Panels with independent lifecycle requirements, or independent sizes/positions remembered across launches** → additional `WindowContainer(...)` blocks (`multi_window`). Showing or hiding an auxiliary panel while using the main window does not by itself establish an independent lifecycle. Use the existing navigator and entry conventions when implementing the chosen windows.
 
-If you cannot point to a concrete reason from rule #3 (independent launcher /
-lifecycle / placement memory), the correct answer is `Subwindow`.
+For a persistent auxiliary panel, use `Subwindow` unless a concrete requirement establishes rule #3. User wording such as "a separate window" or "open settings in a new window" describes presentation, but does not by itself establish independent lifecycle or placement memory. When the panel only configures the current main view, state that relationship and proceed with `Subwindow`; ask only if unresolved lifecycle or placement intent would change the decision.
+
+Incremental examples:
+
+- Add a font-size and sorting settings panel to the current notes app, preferably in a new window → `window_plus_subwindow`; these controls serve the current notes view.
+- Add a companion window that must remain usable when the main window closes and retain its own size/position across launches → `multi_window`; the requirement supplies the independent lifecycle and placement facts.
+- Change a label or control inside the existing panel → keep the existing window model; no window-structure review is needed.
 
 > ⚠ No machine check can prove disconnected-surface evidence from code alone.
 > An unjustified `multi_window` will pass every automated gate — this rule is
@@ -225,12 +230,13 @@ window-level fitting, not a hand-rolled `Box.align(...)` overlay inside the main
 panel. Visual similarity (a rounded capsule pinned to the top) is not semantic
 equivalence.
 
-| Region semantics                                                                | Correct implementation                                                                                 | Wrong implementation                                                            |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Persistent navigation pinned to a window edge                                   | `TabBar(placement = TabBarPlacement.Top \| Bottom \| Start \| End)` as a **sibling** of the main panel | `Box.align(Alignment.TopCenter) { Row { … capsules … } }` inside the main panel |
-| Persistent action strip / icon rail pinned to an edge                           | `Toolbar { … }` as a sibling of the main panel                                                         | hand-built `Row` with `clickable` icons in the page tree                        |
-| Long-lived auxiliary panel sharing window lifecycle but rendering independently | `Subwindow { … }` (or a second `WindowContainer(...)`)                                                 | a wide `Box` beside the main content with manual resize handling                |
-| In-content floater / anchored popup / contextual menu                           | `SpatialPopup` or an in-page overlay                                                                   | (ok to keep as `Box.align(...)` inside the page)                                |
+| Region semantics                                                                 | Correct implementation                                                                                 | Wrong implementation                                                            |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Persistent navigation pinned to a window edge                                    | `TabBar(placement = TabBarPlacement.Top \| Bottom \| Start \| End)` as a **sibling** of the main panel | `Box.align(Alignment.TopCenter) { Row { … capsules … } }` inside the main panel |
+| Persistent action strip / icon rail pinned to an edge                            | `Toolbar { … }` as a sibling of the main panel                                                         | hand-built `Row` with `clickable` icons in the page tree                        |
+| Long-lived auxiliary panel sharing window lifecycle but rendering independently  | `Subwindow { … }`                                                                                      | a wide `Box` beside the main content with manual resize handling                |
+| Surface with explicit independent lifecycle or remembered placement requirements | Additional `WindowContainer(...)` after the escalation decision above                                  | treating it as a main-window attachment solely because it contains tools        |
+| In-content floater / anchored popup / contextual menu                            | `SpatialPopup` or an in-page overlay                                                                   | (ok to keep as `Box.align(...)` inside the page)                                |
 
 `TabBar` and `Toolbar` do **not** accept a `modifier` — position is owned by the
 system. If you want to pass `Modifier.align`, you have picked the wrong shape.
@@ -238,8 +244,9 @@ system. If you want to pass `Modifier.align`, you have picked the wrong shape.
 ### Pre-code checklist (run BEFORE writing UI for each region)
 
 1. Pinned to a window edge regardless of page scroll? → window-level fitting (`TabBar` / `Toolbar`)
-2. Long-lived sibling surface with its own lifecycle / placement? → `Subwindow` (or a second `WindowContainer(...)`)
-3. Moves with page content / appears inside a card? → normal Composable in the page tree
+2. Long-lived auxiliary surface that shares the main window's lifecycle? → `Subwindow`
+3. Explicit independent lifecycle or remembered placement requirements? → additional `WindowContainer(...)` under the escalation rules above
+4. Moves with page content / appears inside a card? → normal Composable in the page tree
 
 Failing this checklist for a `TabBar`-shaped element is the single most common
 regression in this skill. `scan_implementation.py` warns on the hand-rolled

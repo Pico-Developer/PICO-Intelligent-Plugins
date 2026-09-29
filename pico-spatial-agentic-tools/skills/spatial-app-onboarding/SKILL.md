@@ -69,7 +69,7 @@ Routing boundary: this skill owns the first runnable scaffold and first-run stab
 
 Hard stop for product generation: if the complete request contains product-specific UI generation, Figma/screenshot/mockup/visual reference assets, PRD-derived layout, multi-page app behavior, visual-fidelity goals, **or any named application feature, page, or business flow — even a single-line intent with no visual asset and no user-provided design package**, do not use onboarding as the primary workflow. Route to `spatial-design-to-app` (its designer gate escalates to `pico-spatial-app-designer` when no visual asset and no user design package are present). The decision is made solely on whether the user already provided an executable design, not on application complexity, keyword presence, or design depth. Onboarding is the primary workflow only when the request is genuinely scaffold-only — an empty scaffold or a first runnable demo with no product feature described. If `spatial-design-to-app` later calls this skill for its Build-stage scaffolding, perform only `pico-cli project create`, first-run checks, and the scaffold handoff described in `../spatial-design-to-app/references/scaffold-handoff.md`; do not implement product UI, navigation, page cards, custom icons, or visual-reference layout here.
 
-Use this skill when the user asks to create, bootstrap, scaffold, initialize, quickstart, or try a PICO Spatial SDK project, especially from an empty directory or from a 3D model/demo prompt.
+Use this skill when the user asks only to create, bootstrap, scaffold, initialize, quickstart, or try a featureless PICO Spatial SDK project. A 3D model or scene prompt that defines app behavior is feature-bearing and must enter through `spatial-design-to-app`. A user-provided executable design lets that workflow skip its designer gate; it does not turn onboarding into the implementation owner.
 
 At the start of each run:
 
@@ -146,15 +146,15 @@ For an editor-authored requirement, skip the editor step only when:
 If Spatial Editor can satisfy part of the requirement, use it for that part. Exceptions 2 and 3 require runtime evidence from the editor workflow.
 
 For an editor-authored step, activate `spatial-editor` and call
-`start_editor_workflow`. The managed Controller owns installation, startup,
-readiness, and recovery; do not call `ensure_editor_ready` as a preflight. An
-initial lifecycle status is not failure evidence. Only a structured workflow
-blocker after one reasonable recovery attempt may authorize an App/ECS fallback,
-and the handoff must record the blocker, repair attempted, degraded scope, and
-user-visible impact.
+`start_editor_workflow`. The public Workflow Service owns the Run lifecycle, and
+Editor Domain Drivers own installation, startup, readiness, and recovery; do not
+call a dynamic backend readiness tool as a preflight. An initial lifecycle status
+is not failure evidence. Only a structured public Run blocker after one reasonable
+recovery attempt may authorize an App/ECS fallback, and the handoff must record the
+blocker, repair attempted, degraded scope, and user-visible impact.
 
-The managed Editor Workflow Controller owns capability checks, blockers, retries,
-evidence gates, and cleanup. Onboarding consumes only its completed handoff or
+The Editor Domain Workflow owns capability checks, retries, evidence gates, and
+cleanup inside that public Run. Onboarding consumes only its completed Result or
 structured blocker.
 
 ### 2.2 Keep the core file generic
@@ -199,14 +199,35 @@ Execution order:
 4. Modify only what the MVP needs: package name, entry logic, handoff integration, required config, and required tests
 5. Place user assets where the generated project and docs expect them
 6. Remove sample code or assets that distract from the first MVP
-7. When invoked as a `spatial-design-to-app` scaffold substep, write `<target>/.scratch/onboarding_handoff.json` before returning and set `product_ui_implemented=false`. Product UI implementation must resume in `spatial-design-to-app`.
+7. When invoked as a `spatial-design-to-app` scaffold substep, write `<target>/.scratch/onboarding_handoff.json` before returning, record the final package and its `package_source`, and set `product_ui_implemented=false`. Product UI implementation must resume in `spatial-design-to-app`.
 
 Package-name rules:
 
-- If the user already provided a valid package name, use it
-- If the user did not provide a package name, ask for it first (offer `com.example.spatialdemo` as the default quick-demo option; the user can reply `default` to choose it)
-
-- If the provided package name is invalid, ask for a valid one before replacing identifiers
+- If the user already provided a valid package name, use it unchanged. Explicit
+  user values under `com.pico.*` or `com.picoxr.*` are allowed, but warn that
+  PICO system account behavior may apply.
+- When called by `spatial-design-to-app`, use the application ID from its
+  feature/scaffold contract unchanged. Never derive a second package name.
+- For an existing project, preserve its current `applicationId`; do not ask for
+  a replacement merely because the user omitted a package name.
+- For a new featureless quick demo without a package name, derive a safe
+  `applicationId` once and continue without blocking. Normalize the project name
+  to a lowercase Java-identifier app slug.
+  For example: `OrbitDemo` becomes `com.example.orbitdemo`.
+  Append the uniqueness suffix to generate
+  `com.example.<app-slug>.p<8-lowercase-hex-characters>`. Persist that value in
+  the generated Gradle project and reuse it for every retry or later run.
+  Disclose it in the command and final handoff as a temporary demo identity.
+  A later change creates a different installed application identity and can
+  break the upgrade chain and continuity of app-local data. Deep links,
+  provider authorities, and other package-keyed integrations can also break.
+  Agent-generated package names must never use `com.pico.*` or `com.picoxr.*`.
+- Ask for a package name only when identity must be resolved before proceeding:
+  a formal release or migration, an explicit fixed-identity requirement, a
+  detected package conflict on the target/device, or a deep link, provider
+  authority, app-link, or integration contract that depends on it.
+- If the user provides an invalid package name as a required identity, explain
+  the validation problem and ask for a valid replacement.
 
 Keep the first version stable, short, and understandable.
 Do not over-split code for hypothetical future extensibility.
@@ -298,5 +319,11 @@ When ending:
 
 1. Ask whether the user is satisfied with the onboarding result
 2. Remind them that future development should continue with the project's `AGENTS.md`
+3. Route any immediate follow-up by ownership:
+   - stay in onboarding only for scaffold repair or completion of the first build/install/launch loop
+   - activate `spatial-design-to-app` for UI or panel changes that require interpreting a design,
+     PRD, visual reference, layout, window model, or panel hierarchy
+   - activate `spatial-app-dev-workflow` to implement an already-defined follow-up increment that
+     does not need the design workflow to resolve those decisions
 
-If the user still wants changes, continue iterating inside the current project.
+Do not reclaim follow-up work merely because the user wants more changes in the same project.

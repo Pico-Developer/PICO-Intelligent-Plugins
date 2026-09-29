@@ -18,7 +18,7 @@ when the installed CLI exposes it. The root doctor should route to more specific
 module doctors or fallback checks; it should not replace repair commands such as
 `setup` or `plugin update`.
 
-Use the repository command definitions as the source of truth for names and flags when editing this plugin.
+Use the installed CLI's help to verify command names and flags.
 
 ## Setup and Plugin Commands
 
@@ -27,7 +27,6 @@ Use the repository command definitions as the source of truth for names and flag
 | Broad CLI environment diagnostics       | `pico-cli doctor`           | Read-only top-level summary; route repair details to `pico-env-doctor` when setup, plugin, or MCP is weak.                        |
 | Install/configure host integration      | `pico-cli setup`            | Use for Claude Code, Cursor, Codex, GitHub Copilot, or Trae CLI plugin-host setup. Route environment repair to `pico-env-doctor`. |
 | Update plugin metadata/content          | `pico-cli plugin update`    | Host/plugin maintenance flow. Route stale plugin or missing skills to `pico-env-doctor`.                                          |
-| Create local setup support bundle       | `pico-cli plugin audit`     | Metadata-only support evidence for plugin/MCP visibility issues; transcript mode requires explicit review.                        |
 | Serve PICO development knowledge as MCP | `pico-cli knowledge:server` | MCP launch entry used by the public plugin `.mcp.json`; hosts load it after setup/restart.                                        |
 
 ## Project Creation
@@ -38,14 +37,14 @@ Use the repository command definitions as the source of truth for names and flag
 
 ## Emulator Lifecycle
 
-| Goal                                    | Command family                                      | Notes                                                                       |
-| --------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
-| Check emulator prerequisites            | `pico-cli emulator doctor`                          | Use before setup/start when environment readiness is unknown.               |
-| Prepare emulator prerequisites          | `pico-cli emulator setup`                           | Use when doctor reports missing dependencies and the user wants setup help. |
-| List AVDs                               | `pico-cli emulator list`                            | `--managed-only` focuses on CLI-created PICO AVDs.                          |
-| Create/start/status/stop/delete AVDs    | `pico-cli emulator create/start/status/stop/delete` | Route execution workflows to `spatial-emulator-usage`.                      |
-| Collect emulator logs                   | `pico-cli emulator dump-logs`                       | Use for emulator crash/debug evidence.                                      |
-| Delete downloaded emulator bundle/cache | `pico-cli emulator delete-image`                    | Destructive; use only when explicitly requested.                            |
+| Goal                                    | Command family                                      | Notes                                                                                                                 |
+| --------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Check emulator prerequisites            | `pico-cli emulator doctor`                          | Use before setup/start when environment readiness is unknown.                                                         |
+| Diagnose emulator prerequisites         | `pico-cli emulator setup`                           | Read-only diagnostic guidance; route repair to `doctor --fix`, `emulator install`, or `emulator create` as suggested. |
+| List AVDs                               | `pico-cli emulator list`                            | `--managed-only` focuses on CLI-created PICO AVDs.                                                                    |
+| Create/start/status/stop/delete AVDs    | `pico-cli emulator create/start/status/stop/delete` | Route execution workflows to `spatial-emulator-usage`.                                                                |
+| Collect emulator logs                   | `pico-cli emulator dump-logs`                       | Use for emulator crash/debug evidence.                                                                                |
+| Delete downloaded emulator bundle/cache | `pico-cli emulator delete-image`                    | Destructive; use only when explicitly requested.                                                                      |
 
 ## Device Inspection and Shell
 
@@ -94,15 +93,15 @@ Route setup, diagnosis, validation, app integration, and Pipeline Zoo package wo
 loading, and verification. Load `spatialml-commands.md` when the user needs exact syntax, flags, output
 handling, or pySpatialML installation and delegation details.
 
-| Goal                              | Command family                               | Notes                                                                                       |
-| --------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Assess project onboarding         | `pico-cli spatialml onboard`                 | Read-only; detects Native OpenXR, Unity, or Kotlin and routes missing parent SDK setup.     |
-| Configure SpatialML               | `pico-cli spatialml setup`                   | Run after parent SDK setup; may modify Kotlin project files or return an SDK-owned handoff. |
-| Diagnose SpatialML readiness      | `pico-cli spatialml doctor`                  | Read-only checks with SDK-specific next actions.                                            |
-| Search Pipeline Zoo               | `pico-cli spatialml pipeline search`         | Network read; compare model-card descriptions and supported modes.                          |
-| Install a Pipeline Zoo package    | `pico-cli spatialml pipeline install`        | Network and host write; Unity completion requires the SDK-owned importer.                   |
-| Verify a Pipeline Zoo package     | `pico-cli spatialml pipeline verify`         | Delegates package validation to installed pySpatialML 0.5.0 or newer.                        |
-| Inspect or visualize LiteRT model | `pico-cli spatialml model inspect/visualize` | Delegates model metadata and visualization to installed pySpatialML 0.5.0 or newer.          |
+| Goal                              | Command family                               | Notes                                                                               |
+| --------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Assess project onboarding         | `pico-cli spatialml onboard`                 | Read-only for Kotlin; Unity workflow belongs to PICO Unity Agentic Tools.           |
+| Configure SpatialML               | `pico-cli spatialml setup`                   | Run after Kotlin SDK setup; may modify Kotlin project files or return a handoff.    |
+| Diagnose SpatialML readiness      | `pico-cli spatialml doctor`                  | Read-only checks with Kotlin-specific next actions.                                 |
+| Search Pipeline Zoo               | `pico-cli spatialml pipeline search`         | Network read; compare model-card descriptions and supported modes.                  |
+| Install a Pipeline Zoo package    | `pico-cli spatialml pipeline install`        | Network and host write; this plugin documents Kotlin placement.                     |
+| Verify a Pipeline Zoo package     | `pico-cli spatialml pipeline verify`         | Delegates package validation to installed pySpatialML 0.5.0 or newer.               |
+| Inspect or visualize LiteRT model | `pico-cli spatialml model inspect/visualize` | Delegates model metadata and visualization to installed pySpatialML 0.5.0 or newer. |
 
 ## Raw ADB Escape Hatch
 

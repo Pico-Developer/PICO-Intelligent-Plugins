@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill when preparing a Unity scene for `Spatial Adapter`, `PICO Spatial`, or `Unity Spatial`. The first setup check is whether the active scene already contains a `SpatialCamera` component. If one exists anywhere in the scene, leave it alone. If none exists, create an empty GameObject named `SpatialCamera`, add the `SpatialCamera` component to it, and set its `Dimensions` field to `(1.5, 1.5, 1.5)`.
 
+## Compatibility and Scope
+
+Confirm Spatial mode from `.pico-cli/config.json` when available, installed packages, and scene evidence; ask before changing anything if they conflict. Verify that the installed package exposes `ByteDance.PICO.SpatialAdapter.SpatialCamera`. A validation-only request reports whether the component is missing and does not create it. Before scene editing, verify the running Editor and `Unity_RunCommand` availability and schema. If unavailable, report the missing capability and provide the manual Editor steps below without claiming a scene change.
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -32,7 +36,7 @@ Use this skill when preparing a Unity scene for `Spatial Adapter`, `PICO Spatial
 
 - Inspect the active Unity scene for any existing `SpatialCamera` component.
 - If at least one `SpatialCamera` exists, do not create another one.
-- If none exists:
+- If none exists and the user authorized scene setup:
   - Create an empty GameObject named `SpatialCamera`.
   - Add the `SpatialCamera` component.
   - Set `SpatialCamera.Dimensions = new Vector3(1.5f, 1.5f, 1.5f)`.
@@ -41,7 +45,7 @@ Use this skill when preparing a Unity scene for `Spatial Adapter`, `PICO Spatial
 
 ## Unity MCP Pattern
 
-Use `Unity_RunCommand` and wrap the logic in `internal class CommandScript : IRunCommand`.
+After tool discovery confirms `Unity_RunCommand` and its `IRunCommand` contract, wrap the creation logic in `internal class CommandScript : IRunCommand`. Run this write example only for an authorized setup request, not for read-only validation.
 
 ```csharp
 using UnityEngine;
@@ -91,6 +95,20 @@ internal class CommandScript : IRunCommand
     }
 }
 ```
+
+## Manual Editor Steps
+
+1. Inspect the active scene hierarchy, including inactive objects, for a `SpatialCamera` component.
+2. For validation-only requests, report the result and stop without creating anything.
+3. For authorized setup, leave any existing SpatialCamera unchanged. Otherwise create an empty GameObject named `SpatialCamera`, add the component, and set Dimensions to `(1.5, 1.5, 1.5)`.
+4. Save the intended scene. For an unsaved scene, ask for the asset path rather than choosing one silently.
+
+## Verification
+
+- Re-read the active scene and confirm the component exists and no duplicate was created.
+- Confirm a newly created camera has Dimensions `(1.5, 1.5, 1.5)` and an existing camera's configuration was preserved.
+- Before runtime testing, verify a usable explicit or default configuration with [camera and window APIs](../spatialadapter-camera-window-api/SKILL.md).
+- Save the intended scene after changes and report the save result. Marking a scene dirty is not the same as saving it.
 
 ## Quick Reference
 

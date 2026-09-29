@@ -1,0 +1,66 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ]
+  }
+}

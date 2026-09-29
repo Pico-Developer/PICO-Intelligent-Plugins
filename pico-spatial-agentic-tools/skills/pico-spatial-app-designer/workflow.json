@@ -1,18 +1,67 @@
 {
-  "$comment": "Lightweight orchestration for pico-spatial-app-designer. The host LLM is the orchestrator; there is no Python gate, no execution-trace receipts, no status state machine. Reasoning is carried in design-doc.md (copied from references/design-doc-template.md). Phases run in order; the critique-again phase drives a bounded patch loop.",
+  "$comment": "Lightweight orchestration for pico-spatial-app-designer. The host LLM is the orchestrator; the only local Python gate is the linear design-spec surface and native-color discipline check, with no execution-trace receipts or status state machine. Reasoning is carried in design-doc.md; executable design facts are carried in design-spec.json and rendered into preview.html. Phases run in order; the critique-again phase drives a bounded JSON-first patch loop. It may run standalone for design-only work or as the mandatory design subworkflow of spatial-design-to-app.",
   "orchestrator": "host_llm",
   "model": "agnostic",
-  "reasoning_transport": "design-doc.md (from references/design-doc-template.md)",
+  "reasoning_transport": "design-doc.md (rationale) + design-spec.json (executable design facts)",
+  "source_of_truth": "design-spec.json",
   "max_patch_rounds": 3,
-  "output_boundary": {
-    "allowed": ["design-doc.md", "preview.html"],
-    "forbidden": [
-      "design-spec.json",
-      "android project",
-      "pico runtime code",
-      "device evidence",
-      "downstream app-generation handoff"
+  "icon_resolution": {
+    "when": "after component semantics are fixed and an explicit icon slot, icon-only action, or app-authored directional/status cue remains",
+    "source_priority": [
+      "user or Figma supplied asset",
+      "existing approved app asset",
+      "SDK-owned semantic icon",
+      "exact bundled ICON 7.0 catalog match",
+      "new ICON 7.0-style custom drawing"
     ],
+    "catalog": {
+      "reference": "references/icon-selection.md",
+      "script": "scripts/icon-catalog.mjs"
+    },
+    "custom_drawing": {
+      "reference": "../spatial-design-to-app/references/icon-drawing.md",
+      "output": "design-assets/icons/<resource-name>.svg",
+      "when": "no higher-priority source accurately matches the required subject, state, direction, and treatment"
+    }
+  },
+  "invocation_contract": {
+    "standalone": "design, review, or repair a PICO Spatial app design package",
+    "parent_workflow": "spatial-design-to-app",
+    "parent_trigger": "the user supplied neither a visual asset nor an executable design package, including every one-line feature request",
+    "parent_inputs": [
+      "user request",
+      "known product constraints",
+      "target context",
+      "non-empty .scratch/intent-brief.md for intent_only"
+    ],
+    "return_to_parent_when": [
+      "design-doc.md is complete",
+      "design-spec.json is schema-valid",
+      "design-spec.json passes scripts/check_design_surface_discipline.py",
+      "every icon asset resolves and every sui-icon node has an assetId",
+      "every declared custom icon SVG exists and passed 24 dp drawing review",
+      "preview.html is complete",
+      "preview.html is rendered from an exact embedded design-spec.json snapshot",
+      "rendered visual quality passes at default and minimum surface sizes",
+      "post-build critique verdict is pass"
+    ],
+    "returns": [
+      "design-doc.md",
+      "design-spec.json",
+      "preview.html",
+      "design-assets/icons/*.svg when custom icons are required",
+      "post-build critique verdict"
+    ],
+    "on_failure": "return a blocking result; the parent must not generate app code"
+  },
+  "output_boundary": {
+    "allowed": [
+      "design-doc.md",
+      "design-spec.json",
+      "preview.html",
+      "design-assets/icons/*.svg when declared by design-spec.json"
+    ],
+    "forbidden": ["android project", "pico runtime code", "device evidence"],
     "preview_scope": "web_design_validation_only"
   },
   "phases": [
@@ -55,13 +104,17 @@
       "id": "plan",
       "title": "Plan",
       "kind": "reasoning",
-      "does": "Compact named system: a complete 16-role ColorScheme plus brand tokens, type pairing, SpatialUI glass/material choices, signature element, final per-surface default/min/max dimensions, layout with ASCII wireframes, state graph, components with data source + task, and a SpatialUI Web map for every standard control/system surface. Scene-tier, clear-FOV, and sizing-chain calculations remain internal and are not copied into the deliverable.",
+      "does": "Plan a compact named system and settle component semantics first. Keep every layout and domain_visual region transparent, allow at most one bounded content fill on each root-to-content path, and declare no app-authored content borders or material fields. When a domain_visual has repeated or independently styled internal regions, declare optional node-local parts with base and state appearances; omit parts when no internal appearance boundary exists. Preserve every native SpatialUI ColorScheme role unchanged as its same-name Vibrant role; put custom colors only in app-owned brandColors. For each remaining explicit icon need, preserve user/Figma, app, or SDK assets; otherwise search the bundled ICON 7.0 catalog. Use an exact semantic match when available, and declare a design-assets/icons SVG drawing requirement when no candidate accurately matches. Then write and validate design-spec.json before any HTML, including scripts/check_design_surface_discipline.py. The JSON encodes the immutable 16-role ColorScheme references plus brand tokens, typography, signature, surfaces and dimensions, nodes and hierarchy, component props, initial state, state graph, transitions, local actions, normal/fallback/error data, assets, and responsive rules. The system window background remains runtime context and is not encoded as rootMaterial or appearance.material. design-doc.md retains rationale and summaries; design-spec.json owns executable values.",
       "inputs": ["chosen direction"],
-      "output": "Complete theme contract + final surface dimensions + layout + state graph + components + SpatialUI Web component map",
+      "output": "design-spec.json + rationale summary in design-doc.md",
       "reads": [
+        "references/design-spec-contract.md",
+        "assets/design-spec.schema.json",
         "references/window-sizing.md",
         "references/spatial-design-rules.md",
         "references/spatialui-web-guide.md",
+        "references/icon-selection.md",
+        "../spatial-design-to-app/references/icon-drawing.md",
         "assets/spatialui-web/COMPONENT_PARITY.md",
         "assets/spatialui-web/js/*.js"
       ]
@@ -80,20 +133,29 @@
         "surface_size_not_internally_validated",
         "attachment_added_without_justification",
         "domain_swap_leaves_design_unchanged",
-        "incomplete_color_scheme",
-        "standard_control_without_spatialui_mapping"
+        "modified_native_color_scheme",
+        "standard_control_without_spatialui_mapping",
+        "icon_source_priority_bypassed",
+        "unresolved_icon_asset_or_glyph_placeholder",
+        "invalid_or_incomplete_design_spec",
+        "structural_region_fill_or_nested_app_surface",
+        "app_authored_content_border",
+        "app_authored_material_field"
       ]
     },
     {
       "id": "build",
       "title": "Build",
       "kind": "reasoning",
-      "does": "Fill the product coverage manifest from the plan, then build a single self-contained preview.html: inline the vendored SpatialUI Web bundle, preserve its vibrant scheme and Material.Regular glass root, install all 16 ColorScheme roles through PicoTheme, render mapped sui-* controls wired through public events, and implement a triggerable state machine with real/fallback/error data, SpatialUI high-risk dialogs, and natural CSS reflow. Do not expose viewport presets or other design/debug controls in the product UI.",
+      "does": "Draw every declared custom icon as a reviewed 24 x 24 currentColor SVG under design-assets/icons, then build a single self-contained preview.html from design-spec.json. Resolve bundled icon70 assets to bundled SVG and custom icon assets to their exact generated SVG, embedding either as slotted content. Embed an exact JSON snapshot, inline the vendored SpatialUI Web bundle, parse the spec at runtime, keep its native Vibrant ColorScheme unchanged, expose custom brandColors separately, render its node graph and mapped sui-* controls, and drive state, transitions, confirmation, data cases, assets, and responsive behavior from the spec. Layout and domain_visual nodes remain transparent. App-authored CSS may apply fill only through the canonical [data-design-surface] rule backed by --pico-design-surface-fill; the renderer sets that attribute from the node ID and creates each filled node once. It must not infer backgrounds, radii, or borders from node names or layout modes, and must reject rootMaterial or appearance.material. Set the page body to the fixed light neutral #DAD6D3 preview environment with no background image; this renderer-owned context is not a design-spec.json value or app-owned color. Product markup is only a mount point; renderer code must not introduce independent design facts.",
       "inputs": ["revised plan"],
-      "output": "preview.html + coverage manifest",
+      "output": "preview.html rendered from design-spec.json + coverage manifest",
       "reads": [
+        "references/design-spec-contract.md",
         "references/preview-guide.md",
         "references/spatialui-web-guide.md",
+        "references/icon-selection.md",
+        "../spatial-design-to-app/references/icon-drawing.md",
         "assets/spatialui-web/spatialui.bundle.js"
       ],
       "must_not_produce": ["pico-runtime", "device-evidence", "parity-report"]
@@ -102,13 +164,20 @@
       "id": "critique_post_build",
       "title": "Critique again",
       "kind": "critique",
-      "does": "Independently rebuild the coverage list from design-doc.md; verify each product state/transition/component/data binding is implemented and testable; audit SpatialUI bundle embedding, Material.Regular glass, complete theme installation, tag registration, public-event wiring, native-control duplicates, natural viewport reflow, and absence of design/debug-only controls; check against the quality bar; drive the bounded patch loop.",
-      "inputs": ["preview.html", "design-doc.md"],
+      "does": "Independently rebuild coverage from design-spec.json; verify schema validity, surface-discipline check success, exact external/embedded JSON parity, absence of HTML-only design facts, and implementation of every state, transition, component, binding, asset, and responsive rule. Audit source-priority evidence for every icon, bundled icon70 URI resolution, custom SVG existence and 24 dp drawing quality, inline currentColor SVG rendering, absence of glyph placeholders, SpatialUI bundle embedding, system-provided window glass, unchanged native ColorScheme roles, separate custom brandColors, tag registration, public-event wiring, native-control duplicates, structural region fills, renderer-invented CSS backgrounds, duplicate data-design-surface ownership, app-authored material fields, app-authored content borders, and design/debug-only controls. Verify getComputedStyle(document.body).backgroundColor is rgb(218, 214, 211) and backgroundImage is none. Inspect rendered visual quality at default and minimum sizes; drive the bounded JSON-first patch loop.",
+      "inputs": ["design-spec.json", "preview.html", "design-doc.md"],
       "output": "Post-build critique verdict + patch goals",
       "reads": ["references/preview-guide.md", "references/review-guide.md"],
       "loop": {
         "bound_by": "max_patch_rounds",
         "each_patch_names": ["problem", "target", "expected_improvement"],
+        "patch_order": [
+          "edit design-spec.json",
+          "increment metadata.revision",
+          "regenerate preview.html",
+          "rerun critique_post_build"
+        ],
+        "renderer_patch_exception": "generic renderer defect or declared domain_visual only",
         "on_design_fact_change_rerun": ["build", "critique_post_build"],
         "exit_condition": "quality_bar_met",
         "on_exhaustion": "report_unmet_plainly_do_not_relax_bar"

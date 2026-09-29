@@ -95,11 +95,16 @@ Modifier.vibrantEffect(Vibrant.UltraDark).background(Color(0xff28ad00))
 
 ---
 
-## 6. System Material
+## 6. System-Owned Window Surfaces
 
-Regions annotated as `Material` inside dialogs, menus, sheets, or subwindows should normally use the material semantics already owned by those window components. For window-level boundaries, see `spatial-windows-guide.md`; for content-level material APIs, see `spatial-ui-design-style/references/spatial-capabilities.md`.
+Regions that appear translucent inside dialogs, menus, sheets, or subwindows
+use the surface treatment already owned by those SpatialUI components. Do not
+translate that appearance into an app-authored `backgroundMaterial` modifier or
+an explicit material tier.
 
-For `WindowContainer` shell material, use `enableMaterialBackground = true`.
+For window-level boundaries, see `spatial-windows-guide.md`. Keep the
+`WindowContainer` system background at its default rather than restating it as
+a design fact.
 
 ---
 
@@ -141,42 +146,30 @@ For `WindowContainer` shell material, use `enableMaterialBackground = true`.
 
 ---
 
-## 7.2 Single design-color source (`ui/theme/<App>Colors`) + `res/color`
+## 7.2 Single app-owned color source (`ui/theme/<App>Colors`)
 
-The design package restores its exact color values into **one Kotlin color
-source**, and every screen/component reads colors from that source instead of
-re-typing literals or falling back to raw system defaults. This is what keeps a
-generated app's background / surface / text on the _design's_ palette rather
-than drifting to the environment's default look.
+The design package preserves SpatialUI's native `ColorScheme` unchanged and
+restores custom design colors into **one Kotlin app-owned color source**.
 
 **Where each color family lives (this split is mandatory — it tracks the
 `spatial-ui-design-style` R1b gate, which only reads `.kt`):**
 
-| Color family (from the design's `visual_tokens`)                                                                                                      | Home                                                                                                                                                                   | Why                                                                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `theme_overrides[]` + `semantic_colors[]` → the 16 `ColorScheme` roles (`interaction`/`alert`/`passable`/`error`/`dividerLine`/`labelPrimaryLight` …) | **Kotlin `object <App>Colors`** as `val X = Color(0x…) // design-style: fixed-figma-color <token>`                                                                     | R1b requires these exact values to resolve to a `Color(0x…)` literal in Kotlin and be injected via `PicoTheme(colorScheme = …)`. A `colorResource(...)` indirection is **not** accepted for these slots and will fail the gate. |
-| `brand_tokens[]` (decorative colors with no `ColorScheme` role), plus surface / text / panel grays used directly by components                        | **`res/color/*.xml`**, referenced through the same `<App>Colors` object via `colorResource(R.color.…)` (or `Color(0x…)` literals if you prefer to keep them in Kotlin) | These never enter `ColorScheme`, so R1b/R5 don't require Kotlin literals. `res/color` is allowed here and gives designers one XML place to tweak non-semantic palette values.                                                   |
+| Color family                                      | Home                                                   | Why                                                        |
+| ------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| Native `fill*`, `label*`, state, and semantic roles | `PicoTheme.colorScheme.<role>`                          | Preserves the SDK-defined adaptive palette unchanged       |
+| Custom design colors                              | Kotlin `object <App>Colors` as annotated `Color(0x…)`  | Preserves product identity without mutating framework roles |
 
 **Rules for the generated app:**
 
-1. Create exactly one design-color source object under `ui/theme/`, e.g.
-   `object LearningColors`. All UI code references colors through it — no ad-hoc
-   `Color(0x…)` scattered across components, and no silently relying on
-   `systemColorScheme(...)` defaults for background / surface / text.
-2. Define the complete 16-role scheme. Store
-   `val system = systemColorScheme(LocalContext.current)`, then name every
-   public role in `system.copy(...)`. Exact design values use `<App>Colors`
-   tokens; deliberately adaptive values use `role = system.role`. A partial
-   `.copy(...)` is not a complete theme definition.
-3. The semantic `ColorScheme` roles the design pins **must** be Kotlin
-   `Color(0x…)` values in that object and wired into `PicoTheme(colorScheme = …)`
-   (see `spatial-ui-components.md` theme setup). Referencing the _object's_ token
-   from the `colorScheme = system.copy(interaction = <App>Colors.X)` assignment is
-   accepted by R1b's token-mapping branch.
-4. Non-semantic colors (background/panel/text grays, brand accents) **may** live
-   in `res/color/*.xml`; expose them through the same object with
-   `colorResource(R.color.…)` so callers still have a single import surface.
-5. Surfaces still obey R4: the window root keeps system glass; these tokens fill
+1. Create exactly one custom-color source object under `ui/theme/`, e.g.
+   `object LearningColors`. Do not use native role names for its properties.
+2. Use plain `PicoTheme { ... }` and consume native roles through
+   `PicoTheme.colorScheme`; do not construct `ColorScheme` or call
+   `systemColorScheme(...).copy(...)`.
+3. Custom colors may be Kotlin literals with
+   `// design-style: fixed-figma-color <token>` evidence. Do not assign them to
+   native theme roles.
+4. Surfaces still obey R4: the window root keeps system glass; custom tokens fill
    **inner** cards/panels/text, never the window root as a solid color.
 
 > This mirrors the design package's SpatialUI Web premise: the design was judged
@@ -189,7 +182,9 @@ than drifting to the environment's default look.
 
 When there are no Figma tokens and only screenshots are available, infer code from visual structure.
 
-> For subwindow and floating-layer rules, see `spatial-windows-guide.md`. For tooltip and glass-material boundaries, see `spatial-ui-design-style/references/spatial-capabilities.md`.
+> For subwindow and floating-layer rules, see `spatial-windows-guide.md`. For
+> tooltip and system-owned window-surface boundaries, see
+> `spatial-ui-design-style/references/spatial-capabilities.md`.
 
 ### 8.1 Shape Cues
 
@@ -235,20 +230,27 @@ When there are no Figma tokens and only screenshots are available, infer code fr
 
 ### 8.5 Transparency / Glass Cues
 
-| Visual Feature             | Code                                                                 |
-| -------------------------- | -------------------------------------------------------------------- |
-| translucent blurred shell  | `enableMaterialBackground = true` or `Modifier.backgroundMaterial()` |
-| color adapts to background | Vibrant color system                                                 |
-| translucent mixed overlay  | `Color.Xxx.withVibrant(Vibrant.Yyy)`                                 |
+| Visual Feature             | Code                                                        |
+| -------------------------- | ----------------------------------------------------------- |
+| translucent window shell   | use the owning SpatialUI window/component default           |
+| color adapts to background | Vibrant color system                                        |
+| translucent mixed overlay  | `Color.Xxx.withVibrant(Vibrant.Yyy)`                        |
 
 ### 8.6 Icons and Placeholder Images
 
 | XML / screenshot evidence                              | Required implementation                                                                                                                             |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<Icon download-url>`                                  | Download through `d2c_download_icons` (external `codin-d2c-figma-to-code` MCP — see `../SKILL.md` stage 1b); use the generated drawable / vector resource at the same size as XML |
+| `<Icon download-url>`                                  | Download through `d2c_download_icons` (external `codin-d2c-figma-to-code` MCP — see `../SKILL.md` stage 1b); use the generated drawable / vector resource at the same size as XML. Do not redraw it through the ICON 7.0 fallback. |
 | `<Image src>` app thumbnail / avatar / placeholder art | Download the bitmap to `drawable-nodpi`; render with `Image(painterResource(...), contentScale = ContentScale.Crop)` and the XML size / clip radius |
 | Missing / failed image asset                           | State the URL and the failure explicitly in your handoff; use a visibly marked fallback only for that failed asset                                  |
 | Generic generated gradients / initials                 | Forbidden when Figma provides an image source                                                                                                       |
+
+When no authoritative icon asset exists, search the bundled ICON 7.0 catalog
+according to
+[`../../pico-spatial-app-designer/references/icon-selection.md`](../../pico-spatial-app-designer/references/icon-selection.md).
+If no candidate accurately matches and a new production icon is actually
+required, follow [`icon-drawing.md`](./icon-drawing.md). A failed download is
+not permission to silently redraw an approximation; disclose the failure first.
 
 ---
 
@@ -314,7 +316,6 @@ Design element
 │  └─ lightweight link text -> Link
 └─ I. Spatial ability rather than component?
    ├─ hover feedback -> spatialHoverEffect
-   ├─ material background -> backgroundMaterial
    ├─ 3D container -> Box3D
    ├─ tooltip -> Tooltip
    └─ Z layering -> zOffset
@@ -324,8 +325,9 @@ Decision rules:
 
 - First classify structure level, then interaction semantics, then visual style.
 - If it is window-level, do not force it into a `Row` / `Column` page layout.
-- Hover, material, 3D, and depth are abilities; they enhance components but do
-  not replace the component's semantic choice.
+- Hover, 3D, and depth are abilities; they enhance components but do not
+  replace the component's semantic choice. Material-looking component shells
+  remain owned by the selected SpatialUI component.
 
 ### 9.2 Visual quick lookup
 
@@ -349,7 +351,7 @@ Decision rules:
 | carousel dots                 | page indicator             | `PageControl`                                           |
 | loading spinner / bar         | status feedback            | `CircularProgressIndicator` / `LinearProgressIndicator` |
 | hover hint                    | auxiliary hint             | `Tooltip`                                               |
-| glass / material surface      | spatial material ability   | `backgroundMaterial`                                    |
+| translucent window surface    | window/component ownership | use the selected SpatialUI component's default          |
 | custom card hover highlight   | hover ability              | `spatialHoverEffect`                                    |
 | detached popup / side surface | window-level structure     | `Subwindow` / `Sheet` / `SpatialPopup` / `AlertDialog`  |
 

@@ -1,0 +1,976 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:pico:spatial-design-spec:1.0",
+  "title": "PICO Spatial Design Spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "metadata",
+    "experience",
+    "theme",
+    "surfaces",
+    "initialStateId",
+    "states",
+    "transitions",
+    "actions",
+    "dataCases",
+    "nodes",
+    "responsiveRules",
+    "assets"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectName", "sourceMode", "revision"],
+      "properties": {
+        "projectName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceMode": {
+          "enum": ["intent_only", "product_doc", "visual_design", "visual_reference", "hybrid"]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "user", "context", "singleJob", "space", "form", "signature"],
+      "properties": {
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "user": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1
+        },
+        "singleJob": {
+          "type": "string",
+          "minLength": 1
+        },
+        "space": {
+          "enum": ["shared", "full"]
+        },
+        "form": {
+          "enum": [
+            "planar",
+            "augment",
+            "volumetric",
+            "stage_mixed",
+            "stage_progressive",
+            "stage_full"
+          ]
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "theme": {
+      "$ref": "#/$defs/theme"
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/surface"
+      }
+    },
+    "initialStateId": {
+      "$ref": "#/$defs/id"
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/state"
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transition"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "dataCases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normal", "fallback", "error"],
+      "properties": {
+        "normal": {
+          "type": "object"
+        },
+        "fallback": {
+          "type": "object"
+        },
+        "error": {
+          "type": "object"
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "responsiveRules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/responsiveRule"
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "unit"],
+      "properties": {
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "depth": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "unit": {
+          "enum": ["dp", "m"]
+        }
+      }
+    },
+    "colorValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "role"],
+      "properties": {
+        "source": {
+          "const": "vibrant"
+        },
+        "role": {
+          "$ref": "#/$defs/colorRole"
+        }
+      }
+    },
+    "colorRole": {
+      "enum": [
+        "fillPrimary",
+        "fillSecondary",
+        "fillTertiary",
+        "fillLight",
+        "labelPrimaryLight",
+        "labelPrimary",
+        "labelSecondary",
+        "labelTertiary",
+        "labelQuaternary",
+        "lightenHover",
+        "lightenPressed",
+        "error",
+        "alert",
+        "passable",
+        "interaction",
+        "dividerLine"
+      ]
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "colorScheme", "brandColors", "typography", "spacing"],
+      "properties": {
+        "scheme": {
+          "const": "vibrant"
+        },
+        "colorScheme": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fillPrimary",
+            "fillSecondary",
+            "fillTertiary",
+            "fillLight",
+            "labelPrimaryLight",
+            "labelPrimary",
+            "labelSecondary",
+            "labelTertiary",
+            "labelQuaternary",
+            "lightenHover",
+            "lightenPressed",
+            "error",
+            "alert",
+            "passable",
+            "interaction",
+            "dividerLine"
+          ],
+          "properties": {
+            "fillPrimary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "fillPrimary" } }
+            },
+            "fillSecondary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "fillSecondary" } }
+            },
+            "fillTertiary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "fillTertiary" } }
+            },
+            "fillLight": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "fillLight" } }
+            },
+            "labelPrimaryLight": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "labelPrimaryLight" } }
+            },
+            "labelPrimary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "labelPrimary" } }
+            },
+            "labelSecondary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "labelSecondary" } }
+            },
+            "labelTertiary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "labelTertiary" } }
+            },
+            "labelQuaternary": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "labelQuaternary" } }
+            },
+            "lightenHover": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "lightenHover" } }
+            },
+            "lightenPressed": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "lightenPressed" } }
+            },
+            "error": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "error" } }
+            },
+            "alert": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "alert" } }
+            },
+            "passable": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "passable" } }
+            },
+            "interaction": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "interaction" } }
+            },
+            "dividerLine": {
+              "type": "object",
+              "$ref": "#/$defs/colorValue",
+              "properties": { "role": { "const": "dividerLine" } }
+            }
+          }
+        },
+        "brandColors": {
+          "type": "object",
+          "propertyNames": {
+            "allOf": [
+              {
+                "pattern": "^[a-z][A-Za-z0-9]*$"
+              },
+              {
+                "not": {
+                  "$ref": "#/$defs/colorRole"
+                }
+              }
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?$"
+          }
+        },
+        "typography": {
+          "type": "object",
+          "minProperties": 3,
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/typeStyle"
+          }
+        },
+        "spacing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["small", "regular", "medium", "large"],
+          "properties": {
+            "small": {
+              "const": 8
+            },
+            "regular": {
+              "const": 16
+            },
+            "medium": {
+              "const": 24
+            },
+            "large": {
+              "const": 32
+            }
+          }
+        }
+      }
+    },
+    "typeStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "sizeDp", "lineHeightDp", "weight"],
+      "properties": {
+        "family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sizeDp": {
+          "type": "number",
+          "minimum": 12
+        },
+        "lineHeightDp": {
+          "type": "number",
+          "minimum": 12
+        },
+        "weight": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 900,
+          "multipleOf": 100
+        }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "defaultSize", "minSize", "maxSize", "rootNodeId"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "planar",
+            "augment",
+            "volumetric",
+            "stage_mixed",
+            "stage_progressive",
+            "stage_full"
+          ]
+        },
+        "defaultSize": {
+          "$ref": "#/$defs/dimension"
+        },
+        "minSize": {
+          "$ref": "#/$defs/dimension"
+        },
+        "maxSize": {
+          "$ref": "#/$defs/dimension"
+        },
+        "rootNodeId": {
+          "$ref": "#/$defs/id"
+        },
+        "placement": {
+          "type": "object"
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "surfaceRoots"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "surfaceRoots": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "entryAction": {
+          "type": "string"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "trigger"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "trigger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nodeId", "event"],
+          "properties": {
+            "nodeId": {
+              "$ref": "#/$defs/id"
+            },
+            "event": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "confirmation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "body", "confirmLabel", "cancelLabel"],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "body": {
+              "type": "string",
+              "minLength": 1
+            },
+            "confirmLabel": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cancelLabel": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "purpose"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": ["transition", "set", "toggle", "increment", "submit", "dismiss", "custom"]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transitionId": {
+          "$ref": "#/$defs/id"
+        },
+        "binding": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {},
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "enum": ["row", "column", "grid", "stack", "overlay", "scroll"]
+        },
+        "widthDp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "heightDp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minWidthDp": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxWidthDp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minHeightDp": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxHeightDp": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "paddingDp": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["top", "right", "bottom", "left"],
+              "properties": {
+                "top": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "right": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "bottom": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "left": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "gapDp": {
+          "type": "number",
+          "minimum": 0
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "align": {
+          "enum": ["start", "center", "end", "stretch", "baseline"]
+        },
+        "justify": {
+          "enum": ["start", "center", "end", "space-between", "space-around"]
+        },
+        "grow": {
+          "type": "number",
+          "minimum": 0
+        },
+        "aspectRatio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "overflow": {
+          "enum": ["visible", "hidden", "scroll"]
+        }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fill": {
+          "type": "string",
+          "minLength": 1
+        },
+        "foreground": {
+          "type": "string",
+          "minLength": 1
+        },
+        "radiusDp": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "depthDp": {
+          "type": "number",
+          "minimum": -640,
+          "maximum": 640
+        }
+      }
+    },
+    "visualPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["appearance"],
+      "properties": {
+        "appearance": {
+          "$ref": "#/$defs/appearance"
+        },
+        "states": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][A-Za-z0-9]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/appearance"
+          }
+        }
+      }
+    },
+    "textStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["typography", "color"],
+      "properties": {
+        "typography": {
+          "$ref": "#/$defs/id"
+        },
+        "color": {
+          "type": "string",
+          "minLength": 1
+        },
+        "align": {
+          "enum": ["start", "center", "end"]
+        },
+        "maxLines": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": ["layout", "spatialui", "text", "media", "domain_visual"]
+        },
+        "component": {
+          "type": "string",
+          "pattern": "^sui-[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "rendererKey": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "assetId": {
+          "$ref": "#/$defs/id"
+        },
+        "props": {
+          "type": "object"
+        },
+        "parts": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][A-Za-z0-9]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/visualPart"
+          }
+        },
+        "bindings": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "events": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "layout": {
+          "$ref": "#/$defs/layout"
+        },
+        "appearance": {
+          "$ref": "#/$defs/appearance"
+        },
+        "textStyle": {
+          "$ref": "#/$defs/textStyle"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "visibleInStates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "accessibilityLabel": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "spatialui"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "component": true
+            },
+            "required": ["component"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "spatialui"
+              },
+              "component": {
+                "const": "sui-icon"
+              }
+            },
+            "required": ["kind", "component"]
+          },
+          "then": {
+            "properties": {
+              "assetId": true
+            },
+            "required": ["assetId"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "text"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "content": true,
+              "textStyle": true
+            },
+            "required": ["content", "textStyle"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "media"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "assetId": true
+            },
+            "required": ["assetId"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "domain_visual"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "rendererKey": true,
+              "purpose": true,
+              "props": true,
+              "parts": true
+            },
+            "required": ["rendererKey", "purpose", "props"]
+          },
+          "else": {
+            "not": {
+              "required": ["parts"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": ["layout", "domain_visual"]
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "appearance": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/appearance"
+                  },
+                  {
+                    "not": {
+                      "type": "object",
+                      "required": ["fill"]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "responsiveRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "surfaceId", "when", "overrides"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "surfaceId": {
+          "$ref": "#/$defs/id"
+        },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxWidthDp": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "minWidthDp": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "minProperties": 1
+        },
+        "overrides": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeId"],
+            "properties": {
+              "nodeId": {
+                "$ref": "#/$defs/id"
+              },
+              "layout": {
+                "$ref": "#/$defs/layout"
+              },
+              "hidden": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "src", "purpose"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": ["image", "video", "model", "icon", "audio"]
+        },
+        "src": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alt": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

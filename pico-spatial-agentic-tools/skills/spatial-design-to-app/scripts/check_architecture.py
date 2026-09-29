@@ -327,8 +327,6 @@ def check_no_repository_in_composables(module_root: Path, report: Report) -> Non
         return
     pattern = re.compile(r"\b(\w*Repository)\b")
     for path in ui_dir.rglob("*.kt"):
-        if path.name.endswith("Screen.kt"):
-            continue  # Screen may inject Repository as default param
         if path.name.endswith("ViewModel.kt") or path.name.endswith("UiState.kt"):
             continue
         src = _read(path)

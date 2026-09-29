@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill when the user asks to focus the Spatial Adapter view on a target object, or when a target should remain inside the `SpatialCamera` bounds while moving. Prefer the project `SpatialCameraBoundsFollower` script when it exists.
 
+## Compatibility and Scope
+
+Confirm Spatial mode from the saved `mode`, installed package, and scene evidence; ask if they conflict. Verify the installed SpatialCamera API before using the template. Inspect existing scripts and components without overwriting them. Before scene changes, verify the running Editor and an available scene-editing tool; if unavailable, report the blocker and provide manual steps. After creating a script, wait for successful Unity compilation before attaching it. Reuse an existing follower, preserve Undo, and save the intended scene after authorized changes.
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -28,11 +32,11 @@ Use this skill when the user asks to focus the Spatial Adapter view on a target 
 ## Setup
 
 1. Inspect the active scene for an existing `SpatialCamera` component.
-2. If no `SpatialCamera` exists, follow the `spatialadapter-scene-setup` skill first to create one.
+2. If no `SpatialCamera` exists, follow [spatialadapter-scene-setup](../spatialadapter-scene-setup/SKILL.md) first to create one.
 3. Find the requested target object in the scene.
 4. Check whether `SpatialCameraBoundsFollower` exists in the Unity project.
 5. If `SpatialCameraBoundsFollower` is missing, create it from the fallback script template in this skill before attaching it.
-6. Add `SpatialCameraBoundsFollower` to the same GameObject that has the `SpatialCamera` component.
+6. Reuse a `SpatialCameraBoundsFollower` already on the camera; otherwise add it to the same GameObject as `SpatialCamera` after compilation succeeds.
 7. Assign the requested target object to the follower `target` field or `Target` property.
 8. Configure the follower:
    - `fallbackDimensions`: match the intended `SpatialCamera.Dimensions` if direct reflection cannot read dimensions.
@@ -49,7 +53,7 @@ Use this skill when the user asks to focus the Spatial Adapter view on a target 
 
 ## Fallback Script Template
 
-If the user project does not already contain `SpatialCameraBoundsFollower`, create `Assets/Scripts/SpatialCameraBoundsFollower.cs` with this implementation:
+If the user project does not already contain `SpatialCameraBoundsFollower`, create `Assets/Scripts/SpatialCameraBoundsFollower.cs` with this implementation after verifying the camera uses world-aligned axes and unit world scale. This minimal template follows the target pivot, not its full renderer bounds; adapt the coordinate conversion for rotated or scaled cameras rather than applying world-axis bounds unchanged. Positive `followSpeed` eases toward the corrected position and may leave the target outside the margin temporarily; use `followSpeed <= 0` when immediate pivot containment is required.
 
 ```csharp
 using System;

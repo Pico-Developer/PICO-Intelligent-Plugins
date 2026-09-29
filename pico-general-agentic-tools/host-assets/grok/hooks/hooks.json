@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(Skill|Read|(?:mcp__)?pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${GROK_PLUGIN_ROOT}/hooks/ingest.mjs\" pico-general-agentic-tools",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "^(?:mcp__)?pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${GROK_PLUGIN_ROOT}/hooks/ingest.mjs\" pico-general-agentic-tools",
+            "timeout": 65
+          }
+        ]
+      }
+    ]
+  }
+}

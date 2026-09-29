@@ -60,8 +60,12 @@ Box(
 Custom animation curves:
 
 ```kotlin
+import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
+import com.pico.spatial.ui.foundation.hover.spring
+import com.pico.spatial.ui.foundation.hover.tween
+
 Modifier.spatialHoverEffect {
-    animation(tween(durationMillis = 250, easing = FastOutSlowInEasing)) {
+    animation(tween(durationMillis = 250)) {
         scale(if (it.isActive) 1.05f else 1f)
     }
     animation(spring(stiffness = 700f)) {
@@ -69,6 +73,10 @@ Modifier.spatialHoverEffect {
     }
 }
 ```
+
+The `tween` and `spring` builders in a Spatial Hover `animation` block must use
+the imports above. The same-named `androidx.compose.animation.core` builders
+produce incompatible Compose animation specs.
 
 > Important: keep the active and inactive branches **shape-identical**
 > (same set of builders called) so the animation can interpolate between
@@ -107,6 +115,7 @@ Row {
 `com.pico.spatial.ui.foundation.hover.*`
 
 - `Modifier.spatialHoverEffect`
+- `tween` / `spring` for Spatial Hover animation blocks
 - `SpatialHoverStyle` (presets: `Default`, `Highlight`, ...)
 - `SpatialHoverEffectGroup` + `Modifier.spatialHoverEffectGroup`
 - `Modifier.disableSpatialHoverEffect` (opt-out for descendants)

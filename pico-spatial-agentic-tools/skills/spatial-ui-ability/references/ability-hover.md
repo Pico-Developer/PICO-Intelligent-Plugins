@@ -34,8 +34,12 @@ Box(
 ## Custom Animation Curves
 
 ```kotlin
+import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
+import com.pico.spatial.ui.foundation.hover.spring
+import com.pico.spatial.ui.foundation.hover.tween
+
 Modifier.spatialHoverEffect {
-    animation(tween(durationMillis = 250, easing = FastOutSlowInEasing)) {
+    animation(tween(durationMillis = 250)) {
         scale(if (it.isActive) 1.05f else 1f)
     }
     animation(spring(stiffness = 700f)) {
@@ -43,6 +47,10 @@ Modifier.spatialHoverEffect {
     }
 }
 ```
+
+The `tween` and `spring` builders used by this DSL must come from
+`com.pico.spatial.ui.foundation.hover`. Do not import the same-named
+`androidx.compose.animation.core` builders here; they return incompatible Compose animation specs.
 
 ## Cross-View Coordination (Hover Group)
 
@@ -106,8 +114,10 @@ Box(
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
 import com.pico.spatial.ui.graphics.SpatialHoverStyle
 import com.pico.spatial.ui.foundation.hover.SpatialHoverEffectGroup
-import com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup
 import com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect
+import com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup
+import com.pico.spatial.ui.foundation.hover.spring
+import com.pico.spatial.ui.foundation.hover.tween
 ```
 
 ---

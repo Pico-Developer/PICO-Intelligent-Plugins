@@ -1,0 +1,27 @@
+{
+  "$schema": "https://cursor.com/schemas/cursor-plugin/plugin.json",
+  "name": "pico-general-agentic-tools",
+  "description": "Cross-platform agentic tools shared by PICO Spatial and Unity development workflows. Provides platform-agnostic skills such as knowledge-graph querying and PICO CLI utilities.",
+  "version": "0.1.0",
+  "author": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "skills": "skills/",
+  "homepage": "https://developer.picoxr.com/",
+  "keywords": [
+    "pico",
+    "pico-xr",
+    "pico-general-agentic-tools",
+    "common",
+    "agentic",
+    "knowledge-query",
+    "pico-cli"
+  ],
+  "displayName": "PICO General Agentic Tools",
+  "license": "Apache-2.0",
+  "category": "developer-tools",
+  "tags": [
+    "general"
+  ],
+  "publisher": "PICO Immersive Pte. Ltd."
+}

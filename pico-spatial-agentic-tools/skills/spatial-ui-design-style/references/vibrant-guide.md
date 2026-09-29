@@ -154,22 +154,18 @@ Box(modifier = Modifier.vibrantEffect(Vibrant.None)) {
 
 ## 6. Figma Color Decision Tree (when annotations exist)
 
-The goal is to restore the final design product. First lift the design's
-**coordinated theme** — primary/accent color plus the semantic palette matched
-to it — into a custom `ColorScheme` injected via `PicoTheme(colorScheme = …)`
-(see `tokens.md §7`). Then resolve each individual color:
+Preserve the native SpatialUI `ColorScheme` and classify each design color
+without modifying an existing role (see `tokens.md §7`):
 
 ```text
 Figma token name
-├── Part of the coordinated theme (primary/accent or a matched semantic role)?
-│   └── Yes -> override the matching role in the custom ColorScheme with the exact value
 ├── Has a `(Vibrant)` suffix?
 │   └── Yes -> `Color.Vibrant.withVibrant(Vibrant.Xxx)`
 ├── Is it a semantic role?
-│   └── Yes -> `PicoTheme.colorScheme.xxx` (override its value with the design's)
+│   └── Yes -> `PicoTheme.colorScheme.xxx` unchanged
 ├── Is it a semantic fixed color?
 │   └── Yes -> `PicoTheme.colorScheme.xxx`
-└── A custom color with no matching role (brand / decorative)?
+└── Is it a custom color (brand / decorative / product-specific state)?
     └── Keep it verbatim: named brand token, or
         `Color(0xFFxxxxxx) // design-style: fixed-figma-color <source>`
 ```
@@ -182,13 +178,10 @@ Figma token name
 
 ## 7. Screenshot Color Inference Chain (when Figma annotations do not exist)
 
-Even without annotations, first identify the design's coordinated theme from the
-screenshot — its dominant primary/accent hue and any color-matched status colors
-— and build a custom `ColorScheme` from those sampled values so the app restores
-the design's palette rather than the default PICO look. Custom colors sampled
-from the screenshot are allowed; keep them verbatim (named brand token or
-annotated fixed literal) when they have no matching PICO role. Use the chain
-below to classify the remaining adaptive hierarchy.
+Even without annotations, preserve native SpatialUI roles. Custom colors sampled
+from the screenshot are allowed; keep them verbatim as named app-owned tokens
+or annotated fixed literals and use them directly. Use the chain below to
+classify the remaining adaptive hierarchy.
 
 ### Step 1: identify the element role
 
@@ -259,9 +252,9 @@ What is the icon behavior?
 
 | API                                                            | Purpose                                                                                                           |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `PicoTheme(colorScheme = designColors)`                        | inject the design's coordinated theme                                                                             |
-| `systemColorScheme(ctx)` + complete `.copy(...)`               | assign all 16 roles explicitly; override design roles exactly and forward inherited roles as `role = system.role` |
-| `val BrandX = Color(0x…) // design-style: fixed-figma-color …` | custom color with no matching role                                                                                |
+| `PicoTheme { ... }`                                            | use the unchanged native SpatialUI color scheme                                                                   |
+| `PicoTheme.colorScheme.<role>`                                 | consume an existing native semantic role                                                                          |
+| `val BrandX = Color(0x…) // design-style: fixed-figma-color …` | define an app-owned custom color without replacing a native role                                                   |
 | `Color.Vibrant.withVibrant(Vibrant.Xxx)`                       | recommended shorthand                                                                                             |
 | `Color.Red.withVibrant(Vibrant.None)`                          | preserve a fixed literal color                                                                                    |
 | `Color.Unspecified`                                            | preserve the original icon colors                                                                                 |

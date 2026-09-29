@@ -1,6 +1,6 @@
 # PICO Spatial Surface Sizing
 
-The single biggest way a spatial surface fails is size — whether it's a room-scale wall, a compact utility panel, a HUD/Augment widget, or a volumetric model. Too large and the user turns their head to read core content or the surface occludes the room; too small and it's unreadable or unhittable. On PICO you don't set a size as a dp constant — you decide **how much field of view it should occupy, at what distance, for what content**, then land that onto PICO's dp specs. The system dynamically scales a Planar window with distance so field-of-view occupancy stays roughly constant; occupancy is what you actually control. (Volumetric surfaces size in meters at real-world scale; Stage 2D controls are placed via `AttachmentPanel`.)
+The single biggest way a spatial surface fails is size — whether it's a room-scale wall, a compact utility panel, a HUD/Augment widget, or a volumetric model. Too large and the user turns their head to read core content or the surface occludes the room; too small and it's unreadable or unhittable. On PICO you don't set a size as a context-free constant — you decide **how much field of view it should occupy, at what distance, for what content**, then choose an explicit unit. The system dynamically scales a Planar window with distance so field-of-view occupancy stays roughly constant; occupancy is what you actually control. Volumetric surfaces can use dp or meters; Stage 2D controls are placed via `AttachmentPanel`.
 
 ## The chain — run it for every window
 
@@ -11,7 +11,14 @@ The single biggest way a spatial surface fails is size — whether it's a room-s
 | Content subject | Window type | Unit | Size basis |
 |---|---|---|---|
 | 2D interface/task (board, list, table, media surface, dashboard) | **Planar** | **dp** (system converts to dmm) | **default 1280×720 dp (landscape large-screen baseline)**, legal range 320×180 ~ 2700×1800 dp |
-| 3D subject (model, scene, product) | **Volumetric** | **meters** | real-world size; scales proportionally when resized |
+| 3D subject (model, scene, product) | **Volumetric** | **dp or meters** | choose and preserve an explicit unit; use `PhysicalLengthConverter` for dp ↔ meters |
+
+> **Volumetric knowledge boundary.** Never use a fixed dp-to-meter ratio; runtime conversion goes
+> through `PhysicalLengthConverter`, and `worldScale` can affect the observed physical result. The
+> `320 x 320 x 320` to `2700 x 2700 x 2700` cube is design guidance / an Editor-supported authoring
+> range, not a runtime hard limit. PICO OS 6.1 sources conflict between
+> `960 x 960 x 960` and `1280 x 1280 x 1280` as the default. Report both and request a target
+> runtime/Editor check or SDK owner ruling; never choose one silently.
 
 > **Critical: large-screen baseline, not phone size.** PICO spatial windows are viewed at ~1.75m distance on a head-mounted display — this is a **large-screen** context, not a phone. Never use phone-portrait dimensions (e.g. 360×640, 480×800) as defaults. The 1280×720 dp baseline matches a comfortable ~65° horizontal FOV at mid-distance; content density should be sized for reading across the room, not held in hand. Portrait orientation is acceptable only for deliberately narrow/tall content like a scroll or document reader, and must be justified in the sizing chain.
 
@@ -23,7 +30,7 @@ Most windowed apps are **Planar**. Even Planar windows support Z-axis depth laye
 |---|---|---|---|
 | Productivity / main content | boards, tables, control panels, ops consoles | Planar from 1280×720 dp default; multiple windows side by side, 56 dp gap | mid, ~1.75 m, core content locked to the 65° sweet spot |
 | Media / immersion | video wall, panorama, theater, big data-viz canvas | large Planar or wraparound, actively enlarged toward 2700×1800 dp for immersion | far; wrap deliberately but guard the edges against motion sickness |
-| Spatial-anchored / 3D | 3D models, product preview embedded in the wall | Volumetric at real size, depth ≤ 640 dp | depends on content; keep depth near the planar plane to avoid refocusing |
+| Spatial-anchored / 3D | 3D models, product preview embedded in the wall | Volumetric in explicit dp or meter dimensions | depends on content; keep the primary subject comfortable to inspect |
 
 A Planar window launches ~1.75 m in front of the wearer and scales dynamically as distance changes.
 
@@ -40,7 +47,7 @@ Core content must fall inside the **horizontal 65° / vertical 40°** clear-FOV 
 
 ### 5 · Set default + range, not a fixed number
 
-PICO windows are user-movable and resizable by design. Your job is a sensible **default inside 320×180 ~ 2700×1800 dp** plus a min/max, not a single locked size. New windows appear in front of the user with a 56 dp gap from the source, ordered left-to-right, top-to-bottom.
+PICO windows are user-movable and resizable by design. For Planar, choose a sensible **default inside 320×180 ~ 2700×1800 dp** plus a min/max, not a single locked size. For Volumetric, follow the knowledge boundary above and do not turn an Editor/design range into a runtime limit. New windows appear in front of the user with a 56 dp gap from the source, ordered left-to-right, top-to-bottom.
 
 ## Padding tokens — spacing inside containers
 
@@ -68,6 +75,9 @@ Window size sets the outer frame; padding sets the breathing room inside it. On 
 |---|---|
 | Planar default size | 1280×720 dp |
 | Planar legal range | 320×180 ~ 2700×1800 dp |
+| Volumetric units | dp or meters; convert through `PhysicalLengthConverter` |
+| Volumetric design / Editor range | 320×320×320 ~ 2700×2700×2700; not a runtime hard limit |
+| Volumetric default | unresolved 960³ vs 1280³ source conflict; verify or ask the SDK owner |
 | Planar launch distance | ~1.75 m in front |
 | 3D depth inside a Planar window | ≤ 640 dp |
 | Multi-window gap | 56 dp |
@@ -82,11 +92,11 @@ Window size sets the outer frame; padding sets the breathing room inside it. On 
 
 ## Sizing checklist (answer in order)
 
-1. Is the subject 2D or 3D? → Planar (dp) or Volumetric (meters).
+1. Is the subject 2D or 3D? → Planar (dp) or Volumetric (explicit dp or meter dimensions).
 2. Which scene tier? → baseline + default distance.
 3. Does core content fall inside 65°×40°? If not, it's too big.
 4. Framework overhead subtracted from the content area?
 5. Hit target ≥56 dp, body ≥12 dp, line ≤~50 CJK chars met? → minimum width.
 6. Depth hierarchy right — nearest is most important, 3D within 640 dp?
-7. Default inside 320×180 ~ 2700×1800 dp, with a resize range?
+7. For Planar, default inside 320×180 ~ 2700×1800 dp, with a resize range? For Volumetric, did you preserve the unit and avoid claiming the design/Editor range or disputed default as a runtime contract?
 8. Will moving/animating a large window cause sickness?

@@ -123,6 +123,16 @@ class ScanImplementationTest(unittest.TestCase):
                 msg=f"{tag} maps to {component}, which is absent from the whitelist",
             )
 
+    def test_clickable_list_item_mapping_preserves_list_item_root(self) -> None:
+        mapping_text = WEB_TO_COMPOSE_PATH.read_text(encoding="utf-8")
+
+        self.assertRegex(
+            mapping_text,
+            r"(?s)ListItem\(\s+modifier = Modifier.*?\.clickable\(",
+        )
+        self.assertIn("Do not convert it to `Button { ListItem(...) }`", mapping_text)
+        self.assertIn("SpatialUI 6.1.9 `ListItem` already", mapping_text)
+
     def test_empty_vocabulary_fails_instead_of_passing_silently(self) -> None:
         scanner = load_scanner_module()
         scanner.load_component_vocabulary = lambda: (set(), set())

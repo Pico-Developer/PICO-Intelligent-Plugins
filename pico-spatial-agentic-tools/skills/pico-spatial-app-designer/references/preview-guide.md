@@ -1,42 +1,118 @@
 # Preview Guide — the Web validation prototype
 
-`preview.html` proves the design's _logic and layout_ work before anyone writes runtime code. Its scope is fixed: **`web_design_validation_only`**. It never validates real-device comfort, occlusion, physical size, or performance — and it never contains Android/PICO runtime code, device evidence, or parity claims.
+`preview.html` proves that `design-spec.json` can render into a coherent product
+experience before anyone writes runtime code. Its scope is fixed:
+**`web_design_validation_only`**. It never validates real-device comfort,
+occlusion, physical size, or performance — and it never contains Android/PICO
+runtime code, device evidence, or parity claims.
 
-The prototype's value comes entirely from being **triggerable**, not pretty. A static mock proves nothing. A reviewer must be able to click through every state, see fallback and error data, and hit the confirmation dialogs.
+The prototype must be both **triggerable and visually resolved**. A static mock
+proves no behavior; a mechanically complete but weak layout is not ready for app
+generation. A reviewer must be able to click through every state, inspect
+fallback and error data, reach confirmation dialogs, and judge the composition
+at the declared default and minimum sizes.
 
-## Step 1 — coverage manifest (before writing HTML)
+## Step 1 — validate the JSON source
 
-List, from `design-doc.md`, every design fact the prototype must implement. This is the denominator you'll check against in the second critique. A name appearing in the doc is not the same as being implemented — the manifest makes the gap visible.
+Write `design-spec.json` before any HTML and validate it against
+`../assets/design-spec.schema.json`. Follow `design-spec-contract.md` for
+cross-reference checks that JSON Schema cannot prove: unique IDs; resolvable
+initial state, surface roots, children, assets, states, action/transition
+targets; acyclic node ownership; and registered `sui-*` component names.
+Then run `python3 scripts/check_design_surface_discipline.py
+<path-to-design-spec.json>`. Do not build the Preview while that check reports
+a structural region fill, app-authored content border, or nested surfaces.
 
-Enumerate:
+Build the coverage manifest directly from the JSON:
 
-- **States** — each state from the state graph.
-- **Transitions** — each transition, its trigger, and whether it needs explicit confirmation.
-- **Components** — each core component and its variants.
-- **SpatialUI mappings** — each planned control/system surface, its `sui-*` tag, public event/state, and any justified custom fallback.
-- **Data bindings** — each binding, with a normal value, a fallback (missing/stale), and an error sample.
-- **Responsive behavior** — the natural CSS reflow between the recorded min/default/max window bounds, plus reduced-motion behavior. This is implementation behavior, not a visible product mode.
+- **Surfaces** — each surface, its root, and min/default/max dimensions.
+- **States** — each state and its per-surface roots.
+- **Transitions** — each trigger and confirmation contract.
+- **Actions** — each event target and its state mutation or transition.
+- **Nodes** — every layout, SpatialUI component, text, media, and domain visual.
+- **Bindings** — every path against normal, fallback, and error data.
+- **Responsive rules** — every bounded override.
+- **Assets** — every referenced asset and its purpose.
 
 ## Step 2 — build against the manifest
 
-Single self-contained file (inline CSS/JS, no external deps or runtime file reads). Start by reading [`spatialui-web-guide.md`](./spatialui-web-guide.md), then inline the complete `../assets/spatialui-web/spatialui.bundle.js` in a `<script>` before the app script. Requirements:
+Single self-contained file (inline CSS/JS, no external deps or runtime file
+reads). Start by reading
+[`design-spec-contract.md`](./design-spec-contract.md) and
+[`spatialui-web-guide.md`](./spatialui-web-guide.md). When the spec contains
+icon assets, also read [`icon-selection.md`](./icon-selection.md). Then inline the complete
+`../assets/spatialui-web/spatialui.bundle.js` in a `<script>` before the app
+script.
 
-- **A real state machine** — states are actual switchable views, transitions are wired to triggers, back/exit paths work.
-- **SpatialUI controls** — use the mapped `sui-*` components and their public `CustomEvent`s. Native controls or hand-rolled dialogs are allowed only when the catalog has no equivalent and the manifest records why.
-- **Theme installation** — keep the bundle's default `vibrant` scheme and call `PicoTheme.install({ scheme: "vibrant", colorScheme: { ... } })` with the design's complete 16-role contract after the bundle loads. Explicitly forward every inherited role from `PicoTheme.vibrantColorScheme()` and replace only roles with exact design values.
-- **Sample data in three modes** — normal, fallback (missing/stale), and error — reachable so a reviewer can see each.
+Required skeleton:
+
+```html
+<style>
+  body {
+    background-color: #dad6d3;
+    background-image: none;
+  }
+</style>
+<main id="app" data-design-spec-revision="1"></main>
+<script id="pico-design-spec" type="application/json">
+  { "...exact contents of design-spec.json..." }
+</script>
+<script>
+  const designSpec = JSON.parse(document.querySelector('#pico-design-spec').textContent);
+  renderDesign(designSpec, document.querySelector('#app'));
+</script>
+```
+
+The embedded object must be semantically identical to `design-spec.json`.
+Whitespace is irrelevant; parsed values are not. Requirements:
+
+- **A spec-driven node renderer** — resolve the active state's surface roots and
+  recursively render node IDs. Product markup is not hand-authored beside it.
+- **Transparent structural regions** — `layout` and `domain_visual` nodes only
+  arrange or render content and never own `appearance.fill`. Do not infer a
+  fill, radius, or border from an id, name, purpose, layout mode, or words such
+  as `panel`, `section`, `card`, `row`, `column`, or `grid`. Reject
+  `rootMaterial` and `appearance.material`; neither is part of the design
+  contract.
+- **One canonical fill path** — app-authored CSS does not declare arbitrary
+  backgrounds. Use only
+  `[data-design-surface] { background:
+  var(--pico-design-surface-fill); }`; set the attribute and custom property
+  from a node's declared fill, and render each filled node once.
+- **A real state machine** — the initial state, actions, transitions, and
+  targets come from the JSON; local mutations plus back/exit paths work.
+- **SpatialUI controls** — instantiate each declared `sui-*` component and wire
+  its declared public `CustomEvent`. Native controls or hand-rolled dialogs are
+  allowed only when the catalog has no equivalent and the spec records why.
+- **Real icon geometry** — resolve every `icon70://7.0/<name>` to its bundled
+  SVG and every `design-assets/icons/*.svg` source to the exact custom SVG drawn
+  during Build. Inline the SVG in its declared slot so `currentColor` supplies
+  tint. Do not render emoji, Unicode glyphs, icon-font characters, filename
+  text, runtime file reads, or absolute paths.
+- **Theme installation** — use SpatialUI Web's unchanged Vibrant
+  `ColorScheme`. Treat `theme.colorScheme` as same-name role references only;
+  expose custom `brandColors` separately and never overwrite native roles.
+- **Sample data in three cases** — normal, fallback (missing/stale), and error
+  come from `dataCases` and render through the same node graph.
 - **High-risk actions gated by a dialog** — destructive or irreversible actions show explicit confirmation.
-- **Natural responsive reflow** — CSS responds to the available window width between min/default/max; honor `prefers-reduced-motion`. Do not add a visible layout-tier or viewport-preset switch.
+- **Natural responsive reflow** — apply `responsiveRules` between each surface's
+  min/default/max bounds and honor `prefers-reduced-motion`. Do not add a
+  visible layout-tier or viewport-preset switch.
 - **Windows at default size**, with the sizing intent legible (a room-scale surface should _look_ room-scale, not phone-scale, in the mock; a small widget should read as glanceable).
 - **Stable selectors** — give state containers and key elements stable ids/classes so the critique can assert against them.
+- **No HTML-only facts** — user-facing text, assets, design colors, dimensions,
+  component ordering, states, and transition targets do not originate in HTML,
+  CSS, or renderer constants.
 
 Represent the PICO context with the library itself: keep SpatialUI Web's default
 `vibrant` theme and render the app root with its `Material.Regular` glass
 background variable/style. Do not substitute a fixed gray panel, custom
-`backdrop-filter`, or opaque app root for that material. A room image or neutral
-page color may sit behind the glass only to reveal translucency; it is not an
-app-owned token. Keep the 32 dp window radius and make the spatial intent
-readable without pretending the surface is a phone screen.
+`backdrop-filter`, or opaque app root for that material. Set the page `body`
+background to the fixed light neutral preview environment `#DAD6D3`, with no
+background image. This renderer-owned context reveals glass translucency and is
+not an app-owned token or a `design-spec.json` value. Keep the 32 dp window
+radius and make the spatial intent readable without pretending the surface is a
+phone screen.
 
 The preview is the product surface, not a design inspector. Do not render
 viewport-mode selectors, data-source simulators, coverage status, token
@@ -45,10 +121,39 @@ explicitly makes one of them a user-facing feature. Exercise
 fallback/error states through test hooks in script or temporary review tooling,
 not persistent controls in the delivered UI.
 
-## Step 3 — generation-side mapping
+## Step 3 — generation-side mapping and visual pass
 
-Right after building, record how each manifest row maps into the prototype: state → view, transition → trigger, component → DOM, SpatialUI mapping → registered tag + selector + public event, and data binding → normal/fallback/error. Responsive behavior is reviewed from CSS and viewport resizing, not represented as a manifest row or product control. If you can't point to where a manifest row lives in the HTML, it isn't implemented — go back and add it.
+Right after building, record how each manifest row maps into the prototype:
+surface/state → rendered root, transition → trigger, node → DOM, SpatialUI
+mapping → registered tag + selector + public event, binding →
+normal/fallback/error, responsive rule → applied layout change, and asset →
+rendered element. If you cannot trace a rendered element back to a JSON ID, it
+is an HTML-only design fact and must be removed.
+
+Inspect the rendered page, not just its source:
+
+1. open every state at each surface's default size;
+2. resize to the declared minimum and confirm intentional reflow;
+3. exercise normal, fallback, error, and confirmation paths;
+4. check hierarchy, spacing rhythm, text fit, contrast, asset quality, and the
+   signature element;
+5. verify `getComputedStyle(document.body).backgroundColor` is
+   `rgb(218, 214, 211)` and `backgroundImage` is `none`;
+6. fix design problems in `design-spec.json`, increment its revision, and
+   regenerate the preview.
+
+Renderer changes are reserved for generic mapping defects and declared
+`domain_visual` implementations.
 
 ## What "done" looks like
 
-Every manifest row is implemented and triggerable; mapped controls are registered `sui-*` elements wired through public events; normal/fallback/error data are testable; high-risk transitions are blocked by a SpatialUI dialog; natural responsive reflow and reduced-motion are respected. The root uses SpatialUI Web glass and the delivered UI contains no design/debug-only controls. Any available SpatialUI control replaced by a native or hand-rolled equivalent without a documented reason is a `block`. A percentage or an overall impression does not offset a missing core fact.
+`design-spec.json` is valid and exactly embedded; every manifest row is rendered
+and triggerable; mapped controls are registered `sui-*` elements wired through
+public events; normal/fallback/error data are testable; high-risk transitions
+are blocked by a SpatialUI dialog; natural responsive reflow and reduced-motion
+are respected. The root uses SpatialUI Web glass, the delivered UI contains no
+design/debug-only controls, and visual review passes at default and minimum
+sizes. Any stale JSON snapshot, HTML-only design fact, or available SpatialUI
+control replaced by a native equivalent without a documented reason is a
+`block`. Any renderer-authored layout background, radius, or border absent from
+the corresponding JSON node is also a `block`.

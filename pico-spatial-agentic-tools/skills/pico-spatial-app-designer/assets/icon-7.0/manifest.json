@@ -1,0 +1,2308 @@
+{
+  "schemaVersion": "1.0",
+  "iconSet": "ICON 7.0",
+  "version": "7.0",
+  "algorithm": "sha256",
+  "iconCount": 209,
+  "files": [
+    {
+      "name": "ic_arrow_up_circle",
+      "svg": {
+        "path": "svg/ic_arrow_up_circle.svg",
+        "sha256": "93d7e09b024e7f0480658fbc5516e5aa4db8e2c26ebc072a542f4044d683a3ec"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_up_circle.xml",
+        "sha256": "59737710843fbf699a7353b5bbddfe5804dfa1408a8a45dfc83809c301a3a549"
+      }
+    },
+    {
+      "name": "ic_arrow_outside_up",
+      "svg": {
+        "path": "svg/ic_arrow_outside_up.svg",
+        "sha256": "45dfcd2f791f4485e1892370aeddd23fe1d6095f0292835ba7192e838f2becd7"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_outside_up.xml",
+        "sha256": "acb1d2b2a4a83016ec03bd3f2458fc5b945383ae209258d997526a378fe81260"
+      }
+    },
+    {
+      "name": "ic_arrow_outside_right",
+      "svg": {
+        "path": "svg/ic_arrow_outside_right.svg",
+        "sha256": "f4d5a4290b78e8ee20f8bea0c70f30e779e8321035713ae09d6ff2fa0f374941"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_outside_right.xml",
+        "sha256": "cf38668a49acc77e74426d6be9afe07a48a061eee4a1ecd46969c1a283aacbe3"
+      }
+    },
+    {
+      "name": "ic_share",
+      "svg": {
+        "path": "svg/ic_share.svg",
+        "sha256": "007d5d8c798cf520905f4b50073031d2c85fff7ed814b30887953e99909e6f44"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_share.xml",
+        "sha256": "5fdc6dbe9d2d81b3fa6d6cecad87f84e9497e96f63667eb64be822b469934017"
+      }
+    },
+    {
+      "name": "ic_arrow_down",
+      "svg": {
+        "path": "svg/ic_arrow_down.svg",
+        "sha256": "bd96d5c46b6623092f276b278d0b00b560b020315719825794517f2971ee6fb2"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_down.xml",
+        "sha256": "cda7bfd0f214b0a7f19d2432a80a0ad4097f47b8d7aeaa16b3dc5af051299d04"
+      }
+    },
+    {
+      "name": "ic_arrow_up",
+      "svg": {
+        "path": "svg/ic_arrow_up.svg",
+        "sha256": "db9deb6627ecd1fee3316521eb0e87b8d1e958879a5e525d4277005e230fbab5"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_up.xml",
+        "sha256": "c5281e4f7a3606a8e356c36e4dd6a2271fe9ef6c62e32d3c590a5cf97991cb71"
+      }
+    },
+    {
+      "name": "ic_arrow_right",
+      "svg": {
+        "path": "svg/ic_arrow_right.svg",
+        "sha256": "420748d1e83fff5cf0ae74edb94f099185dc175214078b126535d8cb7d8110cf"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_right.xml",
+        "sha256": "27f84856de08453a163a55f9353d290e76c56827fdbb2bf6f772cf051e666800"
+      }
+    },
+    {
+      "name": "ic_arrow_left",
+      "svg": {
+        "path": "svg/ic_arrow_left.svg",
+        "sha256": "dd1d90c85a6f23f771c03abbfc7335c21ea85e1d56c56771beb369175ec71204"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_left.xml",
+        "sha256": "1c2f9b61519d7413d5eb3f419421388aa095c78eceff23aa9d7f60462a2ed68f"
+      }
+    },
+    {
+      "name": "ic_arrow_long_left",
+      "svg": {
+        "path": "svg/ic_arrow_long_left.svg",
+        "sha256": "cde4c58125f1040624ddcdf3e329ce09e50e41e20a9bd1c5cb03b164cf88068c"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_long_left.xml",
+        "sha256": "4989632fdaef6a991959ecdf24160566406499f6074d2f08202f2a936b876368"
+      }
+    },
+    {
+      "name": "ic_arrow_long_down",
+      "svg": {
+        "path": "svg/ic_arrow_long_down.svg",
+        "sha256": "160f136df7321c350b0caeff278b595c041196841d4b93cd0c2e9903b57fe9a4"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_long_down.xml",
+        "sha256": "6fe0f0db76c7f1dc7606268ea7663c49b0644bc48bf415bf2abd6069e5d322b4"
+      }
+    },
+    {
+      "name": "ic_arrow_long_up",
+      "svg": {
+        "path": "svg/ic_arrow_long_up.svg",
+        "sha256": "ea95d3ceaae1c1c327fb4a72d59911200e45d337a5c2c6a727bd664c3fc496e1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_long_up.xml",
+        "sha256": "3ad68364aed025ae66aae1c3123adadc277cebf3632caf6fc1b001b4418b5ce5"
+      }
+    },
+    {
+      "name": "ic_arrow_long_right",
+      "svg": {
+        "path": "svg/ic_arrow_long_right.svg",
+        "sha256": "aa8c54657820c1639c599755b8a67cf77e6be5ddf0d1efb98092877e7233979f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_long_right.xml",
+        "sha256": "f0002e0f8f4aa9bb2fb23036980c9433e69d0f299cc01f4ac22550fc56518a8b"
+      }
+    },
+    {
+      "name": "ic_arrow_relative",
+      "svg": {
+        "path": "svg/ic_arrow_relative.svg",
+        "sha256": "f566a3208ac8b5c0743d32a2cfb25f3d700e920678277a57b2954c750a022f29"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_relative.xml",
+        "sha256": "a935f1c0bfa561c66af5d59b14abcee4964bfb6de0fa23687eb46ae3ce039067"
+      }
+    },
+    {
+      "name": "ic_undo",
+      "svg": {
+        "path": "svg/ic_undo.svg",
+        "sha256": "0f0f9c0c33f2e0d004d20f5f4743631fc97c12a194f6c2b2212f10878e363335"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_undo.xml",
+        "sha256": "4fb57eae85194683c779d053c7b6d0e4d644e1901722474c0e9ea9b3d4545e10"
+      }
+    },
+    {
+      "name": "ic_arrow_circle_right",
+      "svg": {
+        "path": "svg/ic_arrow_circle_right.svg",
+        "sha256": "99e2e90f91ade63fbcf79d31a1b8087cecd561dc6d23bff18c212b94dd3547ad"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_circle_right.xml",
+        "sha256": "92c5d6e72bf1876994f19cd420b886a7e0fd8de7d6bc3c40f369c1033a13b39c"
+      }
+    },
+    {
+      "name": "ic_expand",
+      "svg": {
+        "path": "svg/ic_expand.svg",
+        "sha256": "3ddf2ba52868666bfe28df02f3057e30101b563832a041d710128a352608ae8d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_expand.xml",
+        "sha256": "e34025a4a5c0808d5468a98297469650ce1964dd8b451528e3ee8f3680d23e83"
+      }
+    },
+    {
+      "name": "ic_collapse",
+      "svg": {
+        "path": "svg/ic_collapse.svg",
+        "sha256": "0606e05ee21671d4039eeea888c6ceb2efd7aa14b0aab41f357741c431824d44"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_collapse.xml",
+        "sha256": "6865da6682e750b64a0465342509d5d705d483de5b6701ce48a65863ddfd6aeb"
+      }
+    },
+    {
+      "name": "ic_report_fill",
+      "svg": {
+        "path": "svg/ic_report_fill.svg",
+        "sha256": "d98bc787f21b22040941a858aa5de516bcb2cfcace971b504779d866d4f27b48"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_report_fill.xml",
+        "sha256": "464e03ea602ac4b448b7ef78a955ff029b69a6532b3ce93187a1763a198f780b"
+      }
+    },
+    {
+      "name": "ic_mask_group",
+      "svg": {
+        "path": "svg/ic_mask_group.svg",
+        "sha256": "09329f639a7dd9e57c7fd8ce8c11f8ccf31dbb45292d32395827c4072f9ad7d3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_mask_group.xml",
+        "sha256": "e1344bdb14fe0b667251d9dab1f5ae72e4b8fb0c5f5c7378036173b40bbaa26d"
+      }
+    },
+    {
+      "name": "ic_history",
+      "svg": {
+        "path": "svg/ic_history.svg",
+        "sha256": "29abe9754f8f879b9a5aa0e466f52835182a6c32c882864ef2b31b29d71cf6a3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_history.xml",
+        "sha256": "a46d2fa90f0d742ef95efbaa8bbaf72dcc3f0d72e19dd2665b867d046cbc1933"
+      }
+    },
+    {
+      "name": "ic_reopen",
+      "svg": {
+        "path": "svg/ic_reopen.svg",
+        "sha256": "ec55095b42785b06721499fd7bb10f6f46404e3d971d2798f5ca1b5cdaebb0fe"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_reopen.xml",
+        "sha256": "a91f580c3cbe20c2570608bb52c3bf23ed6271f5018aa64eb19383be171c9791"
+      }
+    },
+    {
+      "name": "ic_rotate",
+      "svg": {
+        "path": "svg/ic_rotate.svg",
+        "sha256": "3a0c8942493fdcf26bd4a65c974b12ad329c5aa1de21f653f8c077e52800f7e8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_rotate.xml",
+        "sha256": "a8625b974890e2c1ac9639d68405d11eaf4caa24ed805117e38189856417251a"
+      }
+    },
+    {
+      "name": "ic_arrow_double_down",
+      "svg": {
+        "path": "svg/ic_arrow_double_down.svg",
+        "sha256": "9ea48241065753f232323c732b825b113b0ece7c89de93a5d0dda0ae3a922d45"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_double_down.xml",
+        "sha256": "39839ce90b17480d02f5fd3980ba138d9c333b0e4a898e59492d589a6fef65e7"
+      }
+    },
+    {
+      "name": "ic_people_circle",
+      "svg": {
+        "path": "svg/ic_people_circle.svg",
+        "sha256": "bd0e743f8985cffe8ebf7f348dfd66a0481f1bbe1f0b4eb18d654aeb6c96251b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_people_circle.xml",
+        "sha256": "126620e63bf904e26ca645af35c7e9e554935a440867311ab7f3ff27a3795eff"
+      }
+    },
+    {
+      "name": "ic_panoramic",
+      "svg": {
+        "path": "svg/ic_panoramic.svg",
+        "sha256": "cb8f8c53538b2c3fc814f13946d3cd3e3fdd1ee8c26a253eaaedd9550c96e0d4"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_panoramic.xml",
+        "sha256": "95c815ade13d983e862adb070a62775fdffbf185bb65d79745df5e7251de499c"
+      }
+    },
+    {
+      "name": "ic_person_badge_plus_fill",
+      "svg": {
+        "path": "svg/ic_person_badge_plus_fill.svg",
+        "sha256": "6e66ba9a241f59840ac4b6acdd1c8fdf4c8878200358c553135c43ba406eff3f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_badge_plus_fill.xml",
+        "sha256": "7fc92e47480c4b08417071f12d2f202506b9c6bb5f4df3345e8bbb8dfbd9b0b0"
+      }
+    },
+    {
+      "name": "ic_person_badge_minus_fill",
+      "svg": {
+        "path": "svg/ic_person_badge_minus_fill.svg",
+        "sha256": "c9af723a720ed17eb9bdb4159aeb4d832d9ca79069ba44e77c6beb16c85f3a8f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_badge_minus_fill.xml",
+        "sha256": "c04d04792c889e1406430c8901c03eba492439e47a216296635e5d38a0cbbad6"
+      }
+    },
+    {
+      "name": "ic_person_fill",
+      "svg": {
+        "path": "svg/ic_person_fill.svg",
+        "sha256": "93fe281f40200ece0c6fb2aea39eebc5600937048e7098dab414da5da968a24f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_fill.xml",
+        "sha256": "0f0a1f9fefe9d4956dfa39bff4f240528043b6345201bebb60077c7faf39bb15"
+      }
+    },
+    {
+      "name": "ic_person_slash_fill",
+      "svg": {
+        "path": "svg/ic_person_slash_fill.svg",
+        "sha256": "e04fa39c6288b20f4f01e30067b951e1d0bd787ac649944de32bed5e52a750ca"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_slash_fill.xml",
+        "sha256": "20fa0d4bf51fa6e09271e409b192de9da54935527fbe6035a6278e01001826da"
+      }
+    },
+    {
+      "name": "ic_person_2_fill",
+      "svg": {
+        "path": "svg/ic_person_2_fill.svg",
+        "sha256": "28985e321064affcf5925070ed112598b73d686ec8b1bf7c8f1ce224d8a703b1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_2_fill.xml",
+        "sha256": "92d0d86f257a7f8b5a5ffd5f8cf43b08deefd70235dc5a6792ea94638755c5ca"
+      }
+    },
+    {
+      "name": "ic_person_plus_fill",
+      "svg": {
+        "path": "svg/ic_person_plus_fill.svg",
+        "sha256": "713b1b30a595efa8a3e7d725ed274f3a881a10fd3e53cd8a76b99347794b0c75"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_person_plus_fill.xml",
+        "sha256": "06c79de8457ae9bc851dbd9782d0f51809c680cb511d6277ef3064e3de081b96"
+      }
+    },
+    {
+      "name": "ic_body",
+      "svg": {
+        "path": "svg/ic_body.svg",
+        "sha256": "2f8f2aa81712fcb6948d6b22ef44afceb1cfdbf4631d1b64bfdbf2e4cbb8e091"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_body.xml",
+        "sha256": "e185e93285c242c23ac9508a1116840443cb9500335cf24f29b817b44695a567"
+      }
+    },
+    {
+      "name": "ic_travel",
+      "svg": {
+        "path": "svg/ic_travel.svg",
+        "sha256": "1848ddd74dabae5a20f51e7891573afd3d29b1b2217722efe9e95b1e32beeaad"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_travel.xml",
+        "sha256": "f9b638a6fa6fa0c27b4c32cca61c6abd7b945f7e54027d1d554026ef344960f5"
+      }
+    },
+    {
+      "name": "ic_male",
+      "svg": {
+        "path": "svg/ic_male.svg",
+        "sha256": "a09bf05762c27263294f32ff89ab58031e5c27b40237e21216be5bcb524ae36a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_male.xml",
+        "sha256": "d518e28beb3410754006c6dd0649cb5927c19ad987bb43545e9bcc356e547f29"
+      }
+    },
+    {
+      "name": "ic_female",
+      "svg": {
+        "path": "svg/ic_female.svg",
+        "sha256": "e1460f45db095879792bf173012a625cb9ec6d5dec8ae9c0dbc7d0988eb08a71"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_female.xml",
+        "sha256": "94e8b4774edcc787d7931604318f437ac8e1fb0486f28add8252370cd687d512"
+      }
+    },
+    {
+      "name": "ic_pen",
+      "svg": {
+        "path": "svg/ic_pen.svg",
+        "sha256": "48cb16ce56954ce296cb6f3cc27c7c91ae79f96746a2e93ce2ab67208e1cc786"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_pen.xml",
+        "sha256": "e886a3275cd0ec0a19db945f3d09dc6625bf5ea7b4e149e88bd3fd32c62aa849"
+      }
+    },
+    {
+      "name": "ic_edit",
+      "svg": {
+        "path": "svg/ic_edit.svg",
+        "sha256": "cc154d8782c9dbb30afd10032b8eadf34fe3fb747374b291a1aa02eca6006b2f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_edit.xml",
+        "sha256": "cc033ab5996dba2b3d07982e9f26c699341489c91e99417e4432d8d6c7b97211"
+      }
+    },
+    {
+      "name": "ic_crop",
+      "svg": {
+        "path": "svg/ic_crop.svg",
+        "sha256": "f330b4b3ca6b764a2a129394cf1d01270ef55f4c332866a294ed46d17621ea64"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_crop.xml",
+        "sha256": "7cbb6a23c66f10b3de626de06fe21c662f6efaddc66031b20486e90ba0ce25b8"
+      }
+    },
+    {
+      "name": "ic_scissors",
+      "svg": {
+        "path": "svg/ic_scissors.svg",
+        "sha256": "6b911e4dd5a1ec2bebb3d741e0d6b21468d0027a61a8beeec137f5d1ac46b88b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_scissors.xml",
+        "sha256": "37b91a0945aefc92c548e0ed80751dfa6d98ade89805a0a836409e759fab37d7"
+      }
+    },
+    {
+      "name": "ic_stack",
+      "svg": {
+        "path": "svg/ic_stack.svg",
+        "sha256": "b70b8bfa0676237c02ffdf9057e2048efcd907ae1618caa5e82793041ca27d2d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_stack.xml",
+        "sha256": "63340d39441ca36f1c0806effb5732cedaa3756376268a44d5e54aeffffa460f"
+      }
+    },
+    {
+      "name": "ic_delete",
+      "svg": {
+        "path": "svg/ic_delete.svg",
+        "sha256": "1edb1a9e56492cc54b465f3bbad7719366f3ae11f71f1d4dfb9a6d7979b2fc22"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_delete.xml",
+        "sha256": "ab819d7311b034ccc7a590800da5a30d0b99ac056141d44cbcce1fbaa70cb39c"
+      }
+    },
+    {
+      "name": "ic_plus",
+      "svg": {
+        "path": "svg/ic_plus.svg",
+        "sha256": "e84c6e3ae1789879e1c4acf610a64e756a49416aff4e4584db908134c6b32072"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_plus.xml",
+        "sha256": "ee9cef098e7d2ece9089848bd9d10a4144eab0c4489a44e1be05befea77eea77"
+      }
+    },
+    {
+      "name": "ic_minus",
+      "svg": {
+        "path": "svg/ic_minus.svg",
+        "sha256": "5f118705a8aeb1165e462dc7d095b6dcadfe35afe21824787f68cc1fd5062d4f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_minus.xml",
+        "sha256": "24b17553fcb6d114efca17cc01f1eda15ec7192c80dc657226225957870b76d3"
+      }
+    },
+    {
+      "name": "ic_check",
+      "svg": {
+        "path": "svg/ic_check.svg",
+        "sha256": "dbbe6a2498fb3f4a99154561540dc18982bdf4e3d83312246ac2a6fcccbc40ac"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_check.xml",
+        "sha256": "fb1c4d9252925af07b24968d4aeb0d160b2dc0383340134eebca55d96c256401"
+      }
+    },
+    {
+      "name": "ic_cross",
+      "svg": {
+        "path": "svg/ic_cross.svg",
+        "sha256": "ca3a6e8a453c916f614f97f5c44b21c0c601bc3f81aec238b2494c42277445b7"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_cross.xml",
+        "sha256": "2d60566a7b345f6dbf090f1e34ae7229cd6a812cfba9e2de3bd4eca83ed086f7"
+      }
+    },
+    {
+      "name": "ic_check_circle",
+      "svg": {
+        "path": "svg/ic_check_circle.svg",
+        "sha256": "0315f3cd61992700d9fa3209a2508d2a2ea7aec608503d52621e56b59c2d452b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_check_circle.xml",
+        "sha256": "c011248cd9c3c057d0a115368eb3f2641aa228a9cd1fd05e31345513a65155a5"
+      }
+    },
+    {
+      "name": "ic_check_circle_fill",
+      "svg": {
+        "path": "svg/ic_check_circle_fill.svg",
+        "sha256": "173c89bf3dc4c3414e76c7e45dfab6b31ada02b5d9363d43714d5f786f0109b1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_check_circle_fill.xml",
+        "sha256": "d2cf7e1858be78bdb62ddfbefa598f5b95e9c77b9e0c0ab1751e737b7331edf2"
+      }
+    },
+    {
+      "name": "ic_plus_circle",
+      "svg": {
+        "path": "svg/ic_plus_circle.svg",
+        "sha256": "db31760e38b77df92a5d0655d556219b6e13f06db66d76ea02f18f28f962091b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_plus_circle.xml",
+        "sha256": "a1c0c215422e88c6e8329c7ca956584e6f9d3fd49eecd321a5048ad6aad5d25e"
+      }
+    },
+    {
+      "name": "ic_plus_circle_fill",
+      "svg": {
+        "path": "svg/ic_plus_circle_fill.svg",
+        "sha256": "f00ceeeaf0e415fecdba143a0df9e0265d1e557c043fc757523ee793d6e29e9d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_plus_circle_fill.xml",
+        "sha256": "ba7e4a20517b4a08ea632ec2c50c9ebba6b36512874797a4f4b11cb2f4ba051c"
+      }
+    },
+    {
+      "name": "ic_minus_circle",
+      "svg": {
+        "path": "svg/ic_minus_circle.svg",
+        "sha256": "72529f3a47f0ec7dbd76d63aef6864cbb4d51ac649acd626c8cc0f68dc682ce6"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_minus_circle.xml",
+        "sha256": "dd743703bf5b83abe1f70af56928372594a720aa7f32bed9bab3bf8b1fac06eb"
+      }
+    },
+    {
+      "name": "ic_minus_circle_fill",
+      "svg": {
+        "path": "svg/ic_minus_circle_fill.svg",
+        "sha256": "728d0c802b8035f6c35e7d15bab2f3ee6caf11e29714fe7506528d37a0085dfa"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_minus_circle_fill.xml",
+        "sha256": "535bccab801f5a1cdbb2ccf5571271dd2c702d774d4ac4b2e6c811c960624c2c"
+      }
+    },
+    {
+      "name": "ic_lock",
+      "svg": {
+        "path": "svg/ic_lock.svg",
+        "sha256": "abbf523376e22e759fc8f99a5dfeb48b5aaf720c26b0b532522dce7bbd10de0c"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_lock.xml",
+        "sha256": "0d19fc77ac19a97e3bd4087367caa47128cd991ec52bde5dc0410d422b4fe407"
+      }
+    },
+    {
+      "name": "ic_lock_fill",
+      "svg": {
+        "path": "svg/ic_lock_fill.svg",
+        "sha256": "719955a55e5ea4a9ba1aa47ae55e7865a8d1ed4fb34622ba6921841e3ed947d0"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_lock_fill.xml",
+        "sha256": "b0c3e52f9677248f4befe2a725fc4cd02c5cd6b31f11f41b5052ce4b1a7a38ee"
+      }
+    },
+    {
+      "name": "ic_cross_circle_fill",
+      "svg": {
+        "path": "svg/ic_cross_circle_fill.svg",
+        "sha256": "4fae522dc12ec243013426fde2689b819dc80650f35345a2415c83540fedf70f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_cross_circle_fill.xml",
+        "sha256": "5e0e2d30d559bfd64efca8ebe59f6cf2bc20000368b5a21dd486bc1c8eaf4649"
+      }
+    },
+    {
+      "name": "ic_question_fill",
+      "svg": {
+        "path": "svg/ic_question_fill.svg",
+        "sha256": "8549be22dafc15b3aff78b2472f262caa8755c3a317927537643837fac587ba1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_question_fill.xml",
+        "sha256": "ea499f5d8c7d92959d7d236152a97441ceef1d448efee3a79eb85511cfc16ac8"
+      }
+    },
+    {
+      "name": "ic_volume_none",
+      "svg": {
+        "path": "svg/ic_volume_none.svg",
+        "sha256": "0cb0f36e3dccc0df0e6b76441983f71951af20e33b8a323d342239cb178e6974"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_none.xml",
+        "sha256": "9f8f12cefccd1b868c25b3978bf83dbdc3e643be16ad6f3c9a8cf18f5003a815"
+      }
+    },
+    {
+      "name": "ic_volume_slash",
+      "svg": {
+        "path": "svg/ic_volume_slash.svg",
+        "sha256": "fd248c12c74951a42defe6d1680e3e64b11ccfe52a68537231636b62d7d50316"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_slash.xml",
+        "sha256": "89cde114d87e5fb3270cdb79d22439dba5575c358625961e75ba3687a962997c"
+      }
+    },
+    {
+      "name": "ic_volume_mute",
+      "svg": {
+        "path": "svg/ic_volume_mute.svg",
+        "sha256": "534845319096d9a6b24aef7d54a27f72cde910fb62ecb6523d051ebed6265263"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_mute.xml",
+        "sha256": "95d1dcfcf44992cb772b159214d3797fdb30e5b1a885e113a986f578e0530e95"
+      }
+    },
+    {
+      "name": "ic_volume_min",
+      "svg": {
+        "path": "svg/ic_volume_min.svg",
+        "sha256": "a2c766ca8ab1029f96e027753bcfa1d035df955b4822624e8bb97974f0204436"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_min.xml",
+        "sha256": "b1ed91d87db65ece7fdd3e4dda5faf18e2b55f2ea4e8799ed822bdee27e41575"
+      }
+    },
+    {
+      "name": "ic_volume_loud",
+      "svg": {
+        "path": "svg/ic_volume_loud.svg",
+        "sha256": "d18db74c9c1189145bacf8941c92b75364561adbf6c8c27748d9797f1c10e2ec"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_loud.xml",
+        "sha256": "b53e7cd5ad5b61c044825fa1944875b0077abc6b82f910ec3d468f9dd30d9d0f"
+      }
+    },
+    {
+      "name": "ic_volume_loudest",
+      "svg": {
+        "path": "svg/ic_volume_loudest.svg",
+        "sha256": "a5e80ccc5cde3128d027dee5e8e9196ef802628b76c80a96c4d5c0ebd2bebd99"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_volume_loudest.xml",
+        "sha256": "b54c61f0fa970bf8ccb07a9ce44fbdd168a548d8fe672602f12aded7be5298d4"
+      }
+    },
+    {
+      "name": "ic_player_2d_fill",
+      "svg": {
+        "path": "svg/ic_player_2d_fill.svg",
+        "sha256": "8f251f6c0d147fc6a75b23b650a34d349725a0cec684fd5088ed138dab9741a2"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_2d_fill.xml",
+        "sha256": "85a47139d99f94422e44919239a5dc2dc124cb7bfe5470d5e5b931222ddb4a83"
+      }
+    },
+    {
+      "name": "ic_fisheye_fill",
+      "svg": {
+        "path": "svg/ic_fisheye_fill.svg",
+        "sha256": "118a3199fb9be0f2e54c7c431edc31456f8798fa5a7f45d691b8ba9b1c39c9e8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_fisheye_fill.xml",
+        "sha256": "ce37b6ecdd3d040d189a0d9296edf940025e184b317bf5bf1af00f31ef8a9c5c"
+      }
+    },
+    {
+      "name": "ic_rectangle_split_2x1_fill",
+      "svg": {
+        "path": "svg/ic_rectangle_split_2x1_fill.svg",
+        "sha256": "cf06f331dc54bcbc7027f995611b42ebedb6bbb7a6ba921b44d168485be1b271"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_rectangle_split_2x1_fill.xml",
+        "sha256": "dd636d725a7129fc95cd12deb65225f27f380e3ebe039e5769bda35b5182b604"
+      }
+    },
+    {
+      "name": "ic_rectangle_fill",
+      "svg": {
+        "path": "svg/ic_rectangle_fill.svg",
+        "sha256": "007baf391acc16b0c345c3d24349b47770eb1f266885ee9b7c148eab2627ebf8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_rectangle_fill.xml",
+        "sha256": "1d45280669ac70e9b5fc95374de7b328784fc6bd4838baeb844c59e184219845"
+      }
+    },
+    {
+      "name": "ic_rectangle_split_1x2_fill",
+      "svg": {
+        "path": "svg/ic_rectangle_split_1x2_fill.svg",
+        "sha256": "f35f44ac8c6856ee582cb3102812661b2b640509c9154c289dc4b5bb6b173b23"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_rectangle_split_1x2_fill.xml",
+        "sha256": "352b74466198864646e3858def9679d2ee0fdfe23ebf251fab0f65c57d719053"
+      }
+    },
+    {
+      "name": "ic_microphone_fill",
+      "svg": {
+        "path": "svg/ic_microphone_fill.svg",
+        "sha256": "46ec9bb5d7c9dc83b48d7d4ecb2a700955050422cdd7bdb6e5c4c3be9bb1d588"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_microphone_fill.xml",
+        "sha256": "39e3cc77de312fd79bc32c0319f3fbb8f1673fee6d17c534153e209cac16371b"
+      }
+    },
+    {
+      "name": "ic_microphone_slash_fill",
+      "svg": {
+        "path": "svg/ic_microphone_slash_fill.svg",
+        "sha256": "8f1c9fafb2e5cfe1066443634c6181774a391c22130184fbba4124e3d580cdd0"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_microphone_slash_fill.xml",
+        "sha256": "8f562a9c9c0b3e6b0d83fdca41a63747fc5c09b2cd9bca4af8afa17e9a4b209a"
+      }
+    },
+    {
+      "name": "ic_microphone_a_fill",
+      "svg": {
+        "path": "svg/ic_microphone_a_fill.svg",
+        "sha256": "21bfa60b214d133c0a093b285632ac16214dc4939a64dc2f3a7426060b888d2f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_microphone_a_fill.xml",
+        "sha256": "8ac7ce0b15bf4f4f520b85e39106b24917a8f56d214c92e8bde963c4995eb406"
+      }
+    },
+    {
+      "name": "ic_player_contrastratio",
+      "svg": {
+        "path": "svg/ic_player_contrastratio.svg",
+        "sha256": "0e9bbe3deadf1ed07034403518804b55538edb683e80defd7e57af92b070a579"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_contrastratio.xml",
+        "sha256": "a3d2ae1cedf626731a9e5fdb5b6c44ac17ee56059ae290671fbf28b9e5b81b99"
+      }
+    },
+    {
+      "name": "ic_vr_180",
+      "svg": {
+        "path": "svg/ic_vr_180.svg",
+        "sha256": "168e08c56531099c0f428b2591402a1babb873135d61f2d17ce4e4caf68e77f1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_vr_180.xml",
+        "sha256": "12c6053db046cb523c9f633a9023669f48b69b5fe05f7160aa0b4b75089f1da1"
+      }
+    },
+    {
+      "name": "ic_vr_360",
+      "svg": {
+        "path": "svg/ic_vr_360.svg",
+        "sha256": "c85bd8e224d95b04269338794028dbb275d4c115b372b81b5a7c2203940ca95a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_vr_360.xml",
+        "sha256": "a46358f3e433719c70c1c2b76d08deab47d81702e3eeb3e72ddbb3242dc76b4d"
+      }
+    },
+    {
+      "name": "ic_player_play",
+      "svg": {
+        "path": "svg/ic_player_play.svg",
+        "sha256": "a7b20d5ef513af5461d046b0fb077ba4b89e1e44c9e4db95a7c353fcee9b7d74"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_play.xml",
+        "sha256": "42ebd84a4651bbef640c659706b2cd5c5867ccded0239bb88cc5730e4ea071ec"
+      }
+    },
+    {
+      "name": "ic_player_previous",
+      "svg": {
+        "path": "svg/ic_player_previous.svg",
+        "sha256": "1e471937c1f920c8e8e989a8137123932fbe0695ab529557221fa4fa11ed9554"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_previous.xml",
+        "sha256": "70f49b498f9323e60350a99841cc5298c9872e05d1466852ae80c729f7422ae5"
+      }
+    },
+    {
+      "name": "ic_player_next",
+      "svg": {
+        "path": "svg/ic_player_next.svg",
+        "sha256": "a27f0f658556230f655ecc2d4ce1671626361ff316fbff8cb43f987ace2f7153"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_next.xml",
+        "sha256": "00d1ca46efbd621f87292c5482dfeadbd9db4087d88babafbcf13026de945430"
+      }
+    },
+    {
+      "name": "ic_player_pause",
+      "svg": {
+        "path": "svg/ic_player_pause.svg",
+        "sha256": "d8c7d89d41b80bc443154deb0395c35c743c6706dd64b5c08454727110435499"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_pause.xml",
+        "sha256": "00d58be7f816d930b6136ec875abeeab00a0a96e19e588e23da50477cf4aa7b6"
+      }
+    },
+    {
+      "name": "ic_recording",
+      "svg": {
+        "path": "svg/ic_recording.svg",
+        "sha256": "13459142cd0d1c11bb3717ff8839c4892718aa496461028e2844f6ef739ed5bf"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_recording.xml",
+        "sha256": "d2622d1d57a27c62dde28c3028f7d83c57ed1fa3c8a3e14a676a840c25b22fe9"
+      }
+    },
+    {
+      "name": "ic_original",
+      "svg": {
+        "path": "svg/ic_original.svg",
+        "sha256": "93913efb75c82616d859cbe9096c5da142b37adc212138c448fef65e08dbc11d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_original.xml",
+        "sha256": "d0a5ffb1c526f09fc79c81a55ce3b262e26b1b403b101c8a80e256fd7c4f0cc5"
+      }
+    },
+    {
+      "name": "ic_camera_3d",
+      "svg": {
+        "path": "svg/ic_camera_3d.svg",
+        "sha256": "529ac003abfc841c8478a177a606662815e1bb57343cd19859b9bb49f61d91d5"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_camera_3d.xml",
+        "sha256": "a56f123683cd0796c0104c7fcb3923adbfc7dd1ff54ec19ae3aa4ec3dd42db5b"
+      }
+    },
+    {
+      "name": "ic_share_screen",
+      "svg": {
+        "path": "svg/ic_share_screen.svg",
+        "sha256": "3b8bcee249a9998b44c9fe461b8409e45ff06479d3063a9f0124ab0eb0ab8e6e"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_share_screen.xml",
+        "sha256": "83ac646efc4ed73f161d898508ae0cb81eb0536ac0e129204d843a2074ac2b4d"
+      }
+    },
+    {
+      "name": "ic_tv",
+      "svg": {
+        "path": "svg/ic_tv.svg",
+        "sha256": "c120f2fc61625530e391d7b0c00ce78da48c48e4f11a8f36b58bb392594e9324"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_tv.xml",
+        "sha256": "5feab07d9630713555a09f917e4bfa7ad65f958049699e13c39dcfd3e87b4ef9"
+      }
+    },
+    {
+      "name": "ic_share_stop",
+      "svg": {
+        "path": "svg/ic_share_stop.svg",
+        "sha256": "176efb881108161d686a37361497c82bb567360b5bbd173ccbb63ead6e4f3336"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_share_stop.xml",
+        "sha256": "4bf1b283e347e69a4d57fb2c89e06cdaadaa86df900478b28ee36142c3ca954c"
+      }
+    },
+    {
+      "name": "ic_video",
+      "svg": {
+        "path": "svg/ic_video.svg",
+        "sha256": "1fb99c89b3d7506175b1fe5f9c5e8f27f71a095532eca1accea560f9b6da3845"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_video.xml",
+        "sha256": "73cafe25951e44ce3e9d13e1e073fa19843871ffa4656bd04d0600dfaa430463"
+      }
+    },
+    {
+      "name": "ic_parameter",
+      "svg": {
+        "path": "svg/ic_parameter.svg",
+        "sha256": "fb3b6bd4996ee01450e007c246b043b52f2f71249a269141b524e3df5bbb2007"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_parameter.xml",
+        "sha256": "efa30ec60aeb248b26cdb5097fb1141889cd4890356bfb19bf86c5b117c45686"
+      }
+    },
+    {
+      "name": "ic_picture",
+      "svg": {
+        "path": "svg/ic_picture.svg",
+        "sha256": "e36a36af3d0cd5a20bbd2281a26c7879306882ca03a242b61fbf6c8b204eee04"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_picture.xml",
+        "sha256": "f33c4a4a452fdbc7bd9297f415bf886a224a54e4ed5c6400901bd4efc2f3bd12"
+      }
+    },
+    {
+      "name": "ic_mountain",
+      "svg": {
+        "path": "svg/ic_mountain.svg",
+        "sha256": "22e7b81ee01d6a168b7cb0b41c1460c987499425d60a93232743bf379869cd93"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_mountain.xml",
+        "sha256": "d9bb8ae696ab33b1a0adebeaace57afd87bf792f0142c1988a548e62b292c380"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse",
+      "svg": {
+        "path": "svg/ic_arrow_ellipse.svg",
+        "sha256": "5596801d1f52880e3473859cac93bca44b25af990f8bdedc8f01c4f88d303bf1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_ellipse.xml",
+        "sha256": "3366e9fcfe003f0e19915bc32dc4bf588a0cf4941dfb773c80bed07fcedf1226"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse_1",
+      "svg": {
+        "path": "svg/ic_arrow_ellipse_1.svg",
+        "sha256": "5dd1d8fc1a19c536983990ff7eb23f4e75a2110250ddca2406067d1c96b75633"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_ellipse_1.xml",
+        "sha256": "105aedc965000f147db10049533b942a7c54ffd706cda1b0d54ae3f1aea8a634"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse_slash",
+      "svg": {
+        "path": "svg/ic_arrow_ellipse_slash.svg",
+        "sha256": "44f04dc36056848ce77638170719ac785bd05a2ff4fd2f84063cd1c06875ccca"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_ellipse_slash.xml",
+        "sha256": "6c2134195970be20a8839d04f0177d6787c65fe14ea40f1e8a5e6fb384c4aa95"
+      }
+    },
+    {
+      "name": "ic_camera_fill",
+      "svg": {
+        "path": "svg/ic_camera_fill.svg",
+        "sha256": "df83593dc06ab66db2a37248d0c8874d87b0e21d95e586638c1498582445fc57"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_camera_fill.xml",
+        "sha256": "62cedbcc5205c35bef7a1fb6be7406e31c72393bed87937b2cf0bf36c6814b99"
+      }
+    },
+    {
+      "name": "ic_headphone",
+      "svg": {
+        "path": "svg/ic_headphone.svg",
+        "sha256": "44662fd86db8640d8ff95ee2da0ebc5215c75c39ad924aead9b4d16d857c4489"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_headphone.xml",
+        "sha256": "90b24f3953e9a743f3abc8b3d115836a119587d85212a737bd1fbdbaac119ae8"
+      }
+    },
+    {
+      "name": "ic_set",
+      "svg": {
+        "path": "svg/ic_set.svg",
+        "sha256": "6b4d27e8d1a2a982931e6465dfbc23d10695bb3a1d96c55659e826d8f406ad1d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_set.xml",
+        "sha256": "cb4b653bea2ff588a3734702a6969f86b1371142a0059ce02e714f08c40b7a9f"
+      }
+    },
+    {
+      "name": "ic_video_type",
+      "svg": {
+        "path": "svg/ic_video_type.svg",
+        "sha256": "22eb191775f75db2007d49dd2393e3c21977b026071559be524be57335635add"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_video_type.xml",
+        "sha256": "e39aad20c38cfa567f08c38d38a08fd71a85cd287ea938bd352c199a6f062771"
+      }
+    },
+    {
+      "name": "ic_article",
+      "svg": {
+        "path": "svg/ic_article.svg",
+        "sha256": "ac899586d045306e615f766837bdc4e05d00b3d28fcba47785e9e29fcb64f03d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_article.xml",
+        "sha256": "21d5dc8e2afe00a09613e59e32ba1d320a74cbec8420f2bb8942084c783270da"
+      }
+    },
+    {
+      "name": "ic_phone",
+      "svg": {
+        "path": "svg/ic_phone.svg",
+        "sha256": "0582512addf56e3e919ef9b7260915113958b84c9b07c0d70b3d6d1eef0214c6"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_phone.xml",
+        "sha256": "e2e1155d2caba65702a944cc9f0ad5250db6de9aaed9c97ca4b9197834b81ce3"
+      }
+    },
+    {
+      "name": "ic_article_2",
+      "svg": {
+        "path": "svg/ic_article_2.svg",
+        "sha256": "a8e6abf70d6b17a08a9796e41850ec6e3b86eba9db04b0b1c51b6fdf8e89258d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_article_2.xml",
+        "sha256": "b0bdb24c5d8c34fddc34228a0fbd42adb8258fc71eb2691861517063ea9bae7e"
+      }
+    },
+    {
+      "name": "ic_rectangle_list",
+      "svg": {
+        "path": "svg/ic_rectangle_list.svg",
+        "sha256": "b4a53d7f5187ea1bc7256394124b7bd6e9dd257c99e53c461d74e6af7adfcfc9"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_rectangle_list.xml",
+        "sha256": "21577548a901506911ae65459b9011fee96f30a27142696e81beb62ef3d9809b"
+      }
+    },
+    {
+      "name": "ic_arrow_list",
+      "svg": {
+        "path": "svg/ic_arrow_list.svg",
+        "sha256": "1b3d1120b954e710a703b15039ab8a54e1a8b5ecf34fa0480dd806fcaefdf74e"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_list.xml",
+        "sha256": "3ef1527ffcd8220c41cde10bda441dc91c082c4a72317390336dd4c87f3f4aa2"
+      }
+    },
+    {
+      "name": "ic_list_sort_down",
+      "svg": {
+        "path": "svg/ic_list_sort_down.svg",
+        "sha256": "6d113333a163fc70df7d685559f5e3010f3802e94c701956bb3f207e6616ef84"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_list_sort_down.xml",
+        "sha256": "ab1d6939c3037e1a4d80aa7d8b20cfd6056507ddfc22fbd92d049efa1d08d171"
+      }
+    },
+    {
+      "name": "ic_list",
+      "svg": {
+        "path": "svg/ic_list.svg",
+        "sha256": "a1064ca75de4e0e491be2306ae3b7b007338108b01cbd7974f9f997ed40e4459"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_list.xml",
+        "sha256": "a28765cf21cb82dab95f736eae5adbded2440c49031e60a492c747732308feff"
+      }
+    },
+    {
+      "name": "ic_live",
+      "svg": {
+        "path": "svg/ic_live.svg",
+        "sha256": "fea9933033e218fa09b27adc26ac4902920a9ad62ef2a3db41d56728951e5444"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_live.xml",
+        "sha256": "988406a7f09cda76d8a00382daa827041ff496661bb469c56611cfbbb86af48b"
+      }
+    },
+    {
+      "name": "ic_picture_double",
+      "svg": {
+        "path": "svg/ic_picture_double.svg",
+        "sha256": "832c863e86159127091e4f5ab06bf2703399bf3d58572b74a9b13217cc73b2db"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_picture_double.xml",
+        "sha256": "89b72f6f0f1cc4539e10cda04c46b16e9ce72451bc1ee36955a467378e714215"
+      }
+    },
+    {
+      "name": "ic_folder_arrow_down",
+      "svg": {
+        "path": "svg/ic_folder_arrow_down.svg",
+        "sha256": "09988e9bf33b7ce95f46af58b5af707253262bbb9b1ab243462022c3277be490"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_folder_arrow_down.xml",
+        "sha256": "c6ba22962d2eee030ac7db83ebaf44b10f9cd31b946ffac02d8b81a8e22b6d6a"
+      }
+    },
+    {
+      "name": "ic_folder_lock",
+      "svg": {
+        "path": "svg/ic_folder_lock.svg",
+        "sha256": "caf5b0ec379fcc8384432de1dccec9df913c802ba396c304318504379fe1b52d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_folder_lock.xml",
+        "sha256": "f5acc5d95fa12da97659e5645c2c2fce4c95e1a8c202476e8794eeb080fb229c"
+      }
+    },
+    {
+      "name": "ic_folder",
+      "svg": {
+        "path": "svg/ic_folder.svg",
+        "sha256": "61c3f8e7f5ec7c9fce88e6ff79c392c1711943581ea68307aa3435b0c2354ab1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_folder.xml",
+        "sha256": "1e830db0a6329d39280f8bf29fcb4c35f37b2099ebbb711ea2c7fe3e9016fa4b"
+      }
+    },
+    {
+      "name": "ic_folder_plus",
+      "svg": {
+        "path": "svg/ic_folder_plus.svg",
+        "sha256": "bfd6f2df37fb8ded0e073fadde1496c2daa90c69a5cadce993c5cd1dc6e4f9b0"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_folder_plus.xml",
+        "sha256": "e8bb13925f7f0e6454067913027325d9de4fb57d0d318a7764b42c85418f2f02"
+      }
+    },
+    {
+      "name": "ic_folder2",
+      "svg": {
+        "path": "svg/ic_folder2.svg",
+        "sha256": "e79b1f1be16477a0892c67ef9eaa2a32ddc5f536a83670de7e94e63ad5873dbf"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_folder2.xml",
+        "sha256": "662c01888e27b1366be727f10d85476504058bc692fd7561999f4438159df45f"
+      }
+    },
+    {
+      "name": "ic_download",
+      "svg": {
+        "path": "svg/ic_download.svg",
+        "sha256": "00629f9b7c071d8c640a4ef1eff5786e967841e244c789ac1ed7760e07a60ced"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_download.xml",
+        "sha256": "3a7849f7971f4dd8d74d9311005440c7c3800d8c23897ca45c09ef2239c545c7"
+      }
+    },
+    {
+      "name": "ic_download_fill",
+      "svg": {
+        "path": "svg/ic_download_fill.svg",
+        "sha256": "ccc4d854b442ea9d6cc60014cc268d46353d9baa31c9cd439b8bb8b83af083a3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_download_fill.xml",
+        "sha256": "29ebcd295a163a339a4e7ea62edd18365a62e30448f32c7801c60948a67c53ed"
+      }
+    },
+    {
+      "name": "ic_grid",
+      "svg": {
+        "path": "svg/ic_grid.svg",
+        "sha256": "82d6ac2c1bb0c90c07350934374d1e429a47fc7027058c8bbf0cc6e54bdd583e"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_grid.xml",
+        "sha256": "8e48f69bf63a7326579f73ad4a3b70f82c5b75594031e9380707bd39dcdcac90"
+      }
+    },
+    {
+      "name": "ic_grid_fill",
+      "svg": {
+        "path": "svg/ic_grid_fill.svg",
+        "sha256": "e4e798c95ab0101645344d057afd7e65bf04628f0c019095fea754ba2a4e0ae7"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_grid_fill.xml",
+        "sha256": "63fd6c62d097ab5760f1415c82ac02ec6b71d75934b2e95cee77adf0485b8f86"
+      }
+    },
+    {
+      "name": "ic_mask",
+      "svg": {
+        "path": "svg/ic_mask.svg",
+        "sha256": "8c9f67c3c8e228f3fa5437e335d7acc2e7dc5f1393d7987bc5dd16768da3f6f5"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_mask.xml",
+        "sha256": "5f29576bdd94b49d1b0a256349756d4382c880c673bef2d8a613298c4a3025af"
+      }
+    },
+    {
+      "name": "ic_list_search",
+      "svg": {
+        "path": "svg/ic_list_search.svg",
+        "sha256": "bb114ea804275e9bb2768353cf6c6ebc36231681af5a472dbd93164779a3a38b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_list_search.xml",
+        "sha256": "c8bdba1dde0cd1a308c41035450544587e64f35e21b2182032247b812b1b0f9b"
+      }
+    },
+    {
+      "name": "ic_scan",
+      "svg": {
+        "path": "svg/ic_scan.svg",
+        "sha256": "4086367daf641cba3744845bab6c22f6cd25e2ebad450e1ba9578db834e08abe"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_scan.xml",
+        "sha256": "339852a610aca105df6c4e53da3d23c6035e3f3d878a857cee008746a9897250"
+      }
+    },
+    {
+      "name": "ic_scan_close",
+      "svg": {
+        "path": "svg/ic_scan_close.svg",
+        "sha256": "f38708240f2c39265c9f922ca499ab2c1f47222d2464de85c54824e619441086"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_scan_close.xml",
+        "sha256": "8b8f0e87ae747f1429d3823fe1451543823d1a5933fc3d7ca277a5debb6bf11a"
+      }
+    },
+    {
+      "name": "ic_close_other",
+      "svg": {
+        "path": "svg/ic_close_other.svg",
+        "sha256": "4d005265c8a98406af322909ae3a2c24b76d360a0b81f66e72faeafc732f50a9"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_close_other.xml",
+        "sha256": "644a6c3eb4675d995246d2e2ab09214d3821116f60e870c8227ff3efd7cd507e"
+      }
+    },
+    {
+      "name": "ic_private",
+      "svg": {
+        "path": "svg/ic_private.svg",
+        "sha256": "49f070cda711a4b3267c43eac56a3e30d51adbe61a42645bbb5813496a5091f4"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_private.xml",
+        "sha256": "5ef64d9b7a5323b2bfe647a37da91ca04e2e225efe38e249cd5da5c8ee7481b4"
+      }
+    },
+    {
+      "name": "ic_copy_link",
+      "svg": {
+        "path": "svg/ic_copy_link.svg",
+        "sha256": "b8291d32c71263a74457a7d3dec2b68bc7267d4ddd0bd532cd50a33bb5d7f392"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_copy_link.xml",
+        "sha256": "29d3ebd0a55f401c9640cafaa9fa5d78ff9efe11f1265edcde7564aacb572eb7"
+      }
+    },
+    {
+      "name": "ic_pin",
+      "svg": {
+        "path": "svg/ic_pin.svg",
+        "sha256": "b9914878bb646118e0035c4704c1335546a14f79e4fe2a745dbe0e92b94e2216"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_pin.xml",
+        "sha256": "dd21d7fb3028e71877c3f91620321aaed4338f58fdbd990db152cc610d9c267b"
+      }
+    },
+    {
+      "name": "ic_add_tab",
+      "svg": {
+        "path": "svg/ic_add_tab.svg",
+        "sha256": "477d8feb9ddf09110426317c04b3aa968592047b3fa657a4046a1ecab4cb93e9"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_add_tab.xml",
+        "sha256": "201ecb699077176e5cdf947a252f2aeb87b6b3864749477ba0e4219212e1f20a"
+      }
+    },
+    {
+      "name": "ic_close_tab",
+      "svg": {
+        "path": "svg/ic_close_tab.svg",
+        "sha256": "bf6d03077f81b9b97e668782c3c052035bcaab30988e0e506fb5f55785651649"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_close_tab.xml",
+        "sha256": "6fe66fdc474961890ee84f1f1756dfd6873cf21f2c1f49f71e84728b4a69857f"
+      }
+    },
+    {
+      "name": "ic_close_right",
+      "svg": {
+        "path": "svg/ic_close_right.svg",
+        "sha256": "490d4d0809f3815f5eeb3ba5e906238da14e432e2890bff8772f5a392c17e0af"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_close_right.xml",
+        "sha256": "d9b5be3efdac861c05860917ea0df88b61f855dcabac1068a0704c5f384be0e7"
+      }
+    },
+    {
+      "name": "ic_vr_top_and_bottom_fill",
+      "svg": {
+        "path": "svg/ic_vr_top_and_bottom_fill.svg",
+        "sha256": "33ffe1ddd1849fb4a567974eae81978d42729a2389b0d9ec723dd9c85b114212"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_vr_top_and_bottom_fill.xml",
+        "sha256": "07d6aeae98c274bbd2f275dea455784424923899289128c1094dd2977c12022e"
+      }
+    },
+    {
+      "name": "ic_player_left",
+      "svg": {
+        "path": "svg/ic_player_left.svg",
+        "sha256": "8ac317049196bb6d22bdf1965163b324cf9eb8aa6f1cbcd14724749f75a32994"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_left.xml",
+        "sha256": "bab93d8ec923d8bbcd7e76e029c3a19beac09acd2913e984af76bc10f1d4153f"
+      }
+    },
+    {
+      "name": "ic_player_right",
+      "svg": {
+        "path": "svg/ic_player_right.svg",
+        "sha256": "7b16275089b893bbaadc8337a3573dac57786311e94c35266f191c4cd0f33264"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_right.xml",
+        "sha256": "dd57b8acb29b944edab9a9a88a819ee8be257892ad9508dfe5c569080137b14c"
+      }
+    },
+    {
+      "name": "ic_player_stop",
+      "svg": {
+        "path": "svg/ic_player_stop.svg",
+        "sha256": "351b2df12817ea4352964ed422342a64e8bdb3061b6d63cbbbc7a38cc5b6d602"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_stop.xml",
+        "sha256": "47070d0686148277e0c0dfaaf787f23326113438230dbd9a408e6563afeee758"
+      }
+    },
+    {
+      "name": "ic_player_up",
+      "svg": {
+        "path": "svg/ic_player_up.svg",
+        "sha256": "a9f368ebca76cca282018fa9690c2eaa0a930ae06fb98ce11ca437d1ed132264"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_up.xml",
+        "sha256": "fca8355eb3cab4c896c4aefd497a19e951ae83fc55f49683de262486727fadd0"
+      }
+    },
+    {
+      "name": "ic_player_down",
+      "svg": {
+        "path": "svg/ic_player_down.svg",
+        "sha256": "3fa5cfceb9c45a0f3f9e6f7d916d2faefd1d31d72b79c5f939fa06a7ce832a79"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_player_down.xml",
+        "sha256": "8c6e40c780edd356e1545da98879e2db51e76da11e4ffa0b6a2cd3813fe2794f"
+      }
+    },
+    {
+      "name": "ic_panoramic_new",
+      "svg": {
+        "path": "svg/ic_panoramic_new.svg",
+        "sha256": "9dcfa563eac4a74f2d95c084778e56e8070df609e6f0a74d29926e106cbd35f0"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_panoramic_new.xml",
+        "sha256": "25eb4cb5baff69e3d1c9b685c3864b632bab09932556518ccea135e21ad2ec5b"
+      }
+    },
+    {
+      "name": "ic_vr_left_and_right_fill",
+      "svg": {
+        "path": "svg/ic_vr_left_and_right_fill.svg",
+        "sha256": "81a5889a82532c571adca5014d155d4e1ee8cd53eb2fec1395835814010215f2"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_vr_left_and_right_fill.xml",
+        "sha256": "38e789f6acf53854e663efa4a45f3bed436bd0379fbe6767c1f9e9fce5cf6976"
+      }
+    },
+    {
+      "name": "ic_music_note",
+      "svg": {
+        "path": "svg/ic_music_note.svg",
+        "sha256": "1c449136bb646a5203df21052efbb5c6da74a146d7975333ae09ac971b429edc"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_music_note.xml",
+        "sha256": "005dea4dd0d47235eb88c233542cfda5ba79dcff783ce7237be2ece679952c00"
+      }
+    },
+    {
+      "name": "ic_music_note_slash",
+      "svg": {
+        "path": "svg/ic_music_note_slash.svg",
+        "sha256": "97f9235175584f5e3ee4274f1f8daf707ac0dda610cf55cf9646141866b08f7d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_music_note_slash.xml",
+        "sha256": "a6ce7ad7ce38840805fa86d029be4ce1776a7fa0e43e3f7229c30016cc4644f6"
+      }
+    },
+    {
+      "name": "ic_power",
+      "svg": {
+        "path": "svg/ic_power.svg",
+        "sha256": "cf5ebff67c624cb4d7a8a7e855ed500981f6e98a86a1322f77a352336dc0e5a1"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_power.xml",
+        "sha256": "061af0ae97a9b0ef0d8368d15f3b5ba454cbb2b041565d994197cfbaf2acef5f"
+      }
+    },
+    {
+      "name": "ic_play_circle",
+      "svg": {
+        "path": "svg/ic_play_circle.svg",
+        "sha256": "b659b69b271295614cd66d9724e0d074faa0001dc4bcad52eed6215264d5783d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_play_circle.xml",
+        "sha256": "78e5c1922fde1538f622f9036f7573562a301c3429a2ba930cc6caccc134e141"
+      }
+    },
+    {
+      "name": "ic_display_resolution",
+      "svg": {
+        "path": "svg/ic_display_resolution.svg",
+        "sha256": "01916da70f8a0202144bd3b327a4ff0194fcfbf91fdf1d078cbdf3f804bffa8b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_display_resolution.xml",
+        "sha256": "5b7e7a820c7e5c64ce8aa5acc313316dae001ee8e270cae3cd4228f6f27bd1f9"
+      }
+    },
+    {
+      "name": "ic_sunny",
+      "svg": {
+        "path": "svg/ic_sunny.svg",
+        "sha256": "6a656234c5c908c1303f65a7cdb28a5a0f0efd7bdf9703698ae3e2241474ece8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_sunny.xml",
+        "sha256": "d0e61ea05c8c63b7ebef83907e6d66df63f2608b0e86a486a131951339208379"
+      }
+    },
+    {
+      "name": "ic_battery_2",
+      "svg": {
+        "path": "svg/ic_battery_2.svg",
+        "sha256": "2aae67d98de037259da3c15cd6e37ced725b4f8871aa47b531a438d5d037aa6f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_battery_2.xml",
+        "sha256": "df537c1611bbd0ba7aaeeeb753a5d95d7025636c5348d687f306f1e4a87ffc4c"
+      }
+    },
+    {
+      "name": "ic_sight",
+      "svg": {
+        "path": "svg/ic_sight.svg",
+        "sha256": "475a68e32647d71e8e998e5aeafedcc5758d7e808181d8d321ce6b14a9141f11"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_sight.xml",
+        "sha256": "8600e36e8359922d4ad28c6a9cf0f15db0f164a51a8f9eab76c92f9cba43cce1"
+      }
+    },
+    {
+      "name": "ic_search",
+      "svg": {
+        "path": "svg/ic_search.svg",
+        "sha256": "26e10d37094c391b0fa7c2e90354b164cc4d58fe6fc0766d8730a9e4b2d74ed3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_search.xml",
+        "sha256": "b284126bffbb8156be665f65145bc11b0bfd211d73ba49dda63289d275d922e6"
+      }
+    },
+    {
+      "name": "ic_grid_4",
+      "svg": {
+        "path": "svg/ic_grid_4.svg",
+        "sha256": "5dbc79fcb65fb6fa7ffe2659ef091e924cf46e2ae91ec49b81dd4d9bddc4ac31"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_grid_4.xml",
+        "sha256": "1e79832249fb68ec698c89e8797e5b1ab715af1ec61fd700868f54f22d79e549"
+      }
+    },
+    {
+      "name": "ic_search_minus",
+      "svg": {
+        "path": "svg/ic_search_minus.svg",
+        "sha256": "540fefaa3f9f6c09fce6d638d73f98d96fbd2b4b0e100f17481c83f370a8e2da"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_search_minus.xml",
+        "sha256": "4d7d585546dccd3bbfa0fad7853149b1be143cc7744efaffd4108af7a9cf2509"
+      }
+    },
+    {
+      "name": "ic_tick_circle",
+      "svg": {
+        "path": "svg/ic_tick_circle.svg",
+        "sha256": "cf42d9efd2dfc581b52a8c7a5ab4708d6d69d61e804becdadd016be1bc63e055"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_tick_circle.xml",
+        "sha256": "a5fcf172d1d3001a52af5b20fdb06be9447a5d04fd52f7c0099efbce09b7f543"
+      }
+    },
+    {
+      "name": "ic_exclamation_mark",
+      "svg": {
+        "path": "svg/ic_exclamation_mark.svg",
+        "sha256": "5446b65c0fd92b5bbefa3845a752558d8603f0659ea458895bdec794f48c9257"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_exclamation_mark.xml",
+        "sha256": "189e94876257a609f4a78382d8721c03e939311991fc8590292a54b96d8e841d"
+      }
+    },
+    {
+      "name": "ic_set_line",
+      "svg": {
+        "path": "svg/ic_set_line.svg",
+        "sha256": "31dd3481608c8f68f7fd09536487a94296473a8195aedc4f7d8a694eff800881"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_set_line.xml",
+        "sha256": "bd0a8ffc6dd527bdc2064e601683f8229dee136fd32cafde04d8a7114d4ef155"
+      }
+    },
+    {
+      "name": "ic_arrow_enter",
+      "svg": {
+        "path": "svg/ic_arrow_enter.svg",
+        "sha256": "0d5734e10d6c97a82f38e4cc3838b2e39b0096e3e9281017d329cbf9acd15844"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_arrow_enter.xml",
+        "sha256": "17447ee41d8db1f631352786e7f01a1120106e8dcce9f7044c8296ac0433233c"
+      }
+    },
+    {
+      "name": "ic_cube",
+      "svg": {
+        "path": "svg/ic_cube.svg",
+        "sha256": "ad7d286be9c1d17e23d0800be322af154a4997ab056744c43889884fe6140e2d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_cube.xml",
+        "sha256": "2b638475a4d5dea4cd026516724cd5fde246242fe092b743aaa1b782e50f8437"
+      }
+    },
+    {
+      "name": "ic_pico",
+      "svg": {
+        "path": "svg/ic_pico.svg",
+        "sha256": "f06ebef3b409a9be163bf81848cc0e3a629439d7897b7e9acb32e571026207ac"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_pico.xml",
+        "sha256": "3d9b3d0f5353488106e811dec99e415646dd4a78f0a768234ff29da29f4165f2"
+      }
+    },
+    {
+      "name": "ic_dashed_circle",
+      "svg": {
+        "path": "svg/ic_dashed_circle.svg",
+        "sha256": "902fe6825cfbd96f2100fd6765934b721b9e5bcee7a1a169a724ec7e04aa6f1f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_dashed_circle.xml",
+        "sha256": "9c349439117e4aec886f097a7e1314a526d2f034bb4a5bf7600f42c5e19fdb1e"
+      }
+    },
+    {
+      "name": "ic_browser_app",
+      "svg": {
+        "path": "svg/ic_browser_app.svg",
+        "sha256": "041d4e9cd7f0f5499afe15222be953bc17958d6789067c5855d6620a44deb1c2"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_browser_app.xml",
+        "sha256": "d029e53764b388e34b906379dd968adb5404a25957f976be9440ec58f70be061"
+      }
+    },
+    {
+      "name": "ic_wifi_6",
+      "svg": {
+        "path": "svg/ic_wifi_6.svg",
+        "sha256": "2227f483610aaffb3c6cb95ebfdba0f4ebe71dbc504e90b6779113f777f4086d"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_wifi_6.xml",
+        "sha256": "ef1f811be471cd000ecb1fae6717e8e044ec6884abbfa7b5e3013263e982007b"
+      }
+    },
+    {
+      "name": "ic_wifi",
+      "svg": {
+        "path": "svg/ic_wifi.svg",
+        "sha256": "6ba118ed22a21a785304329b4019fa6ab2e6ed80d5cf8a89e94992a8536ec3e4"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_wifi.xml",
+        "sha256": "5d82bd56159f0ead0ac26a592724eea6a52ef32de259ed068c231f76208a1ee5"
+      }
+    },
+    {
+      "name": "ic_bluetooth",
+      "svg": {
+        "path": "svg/ic_bluetooth.svg",
+        "sha256": "e79145adff418ac64ce4c6bf5dd575042a1b5686c7883be36744eeec053872fb"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_bluetooth.xml",
+        "sha256": "d38489521d27701e6ee962850892908522cf969aae18e0fc87de5507676f253c"
+      }
+    },
+    {
+      "name": "ic_link",
+      "svg": {
+        "path": "svg/ic_link.svg",
+        "sha256": "e14401392b451d434ed63289a99dc26a2f352373e89e3cd3003ed19519a12f70"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_link.xml",
+        "sha256": "698b240c42438673721d9207b28009c5cfc3e302c0de234b476e725fbb35859e"
+      }
+    },
+    {
+      "name": "ic_fireworks",
+      "svg": {
+        "path": "svg/ic_fireworks.svg",
+        "sha256": "38f4a2f5479bafe26361bab78554ee3ac962147576afa6b8b2a49285f9030660"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_fireworks.xml",
+        "sha256": "c5b629efb913a501abdfe92fe33b922e9b021086830ad321c5b88a05a92e46ab"
+      }
+    },
+    {
+      "name": "ic_message_slash",
+      "svg": {
+        "path": "svg/ic_message_slash.svg",
+        "sha256": "8003d783a8df83be8b691950d70e61f763e877732ca9226f1eab54f2d5cc84a3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_message_slash.xml",
+        "sha256": "0449ebbf955b541049fd209eb7b473ff915892d134fe744ff484a7e41ebf0335"
+      }
+    },
+    {
+      "name": "ic_message",
+      "svg": {
+        "path": "svg/ic_message.svg",
+        "sha256": "1d1f5b0fda3af0f3d2633994b1ac8d0832d629309ef4bf0077cac21e03b9e516"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_message.xml",
+        "sha256": "25f18e6ee8f39e9654ad52657d4eeb773b4810d41f10a9fd81dffb9dcf4651e8"
+      }
+    },
+    {
+      "name": "ic_message_fill",
+      "svg": {
+        "path": "svg/ic_message_fill.svg",
+        "sha256": "bb927a2ceaff5447f1fd0fd6e0811cad70ebee727a8fb35f3411a2a6166fe767"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_message_fill.xml",
+        "sha256": "b6a85f9b7ef69e0202fb4c2661a8c83c1e1e175ad45c7511fdd43e1a58d333c9"
+      }
+    },
+    {
+      "name": "ic_hmd",
+      "svg": {
+        "path": "svg/ic_hmd.svg",
+        "sha256": "dab54d7746a51f12115d7cbab14e72e07d38f07a73585ff5511f264ae3c5c82a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_hmd.xml",
+        "sha256": "bebfe1962c239700917ea75bc982b02550c356f0f20f057b29be7a57ea0840fe"
+      }
+    },
+    {
+      "name": "ic_hmd_dashed",
+      "svg": {
+        "path": "svg/ic_hmd_dashed.svg",
+        "sha256": "deca2559df36af8a7266ca4a4c21180d0f7daf6ecd429bd0f7a8045f80cc2c00"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_hmd_dashed.xml",
+        "sha256": "d98e687649d0b290950cfc58496b662541481f9b98a256a4a9a10fb444b6de2b"
+      }
+    },
+    {
+      "name": "ic_hmd_slash",
+      "svg": {
+        "path": "svg/ic_hmd_slash.svg",
+        "sha256": "8a2c675b64654173dba3a0ebffb002ac00cd6a2d6f24339607f52914bbea59d8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_hmd_slash.xml",
+        "sha256": "793dba4645a163a52d4bb939d5aa9bec6627acf58788d7f4af786a3a72464ad9"
+      }
+    },
+    {
+      "name": "ic_controller_right",
+      "svg": {
+        "path": "svg/ic_controller_right.svg",
+        "sha256": "40903c999cfa897b4c71772aae18c02dbcb2fa1ab9ccdfc406388c3b14f8a340"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_controller_right.xml",
+        "sha256": "8a45a2871baec7a83064187fb0599d7a012fb2405035f68a1ad337b7b7a7eb5a"
+      }
+    },
+    {
+      "name": "ic_controller_left",
+      "svg": {
+        "path": "svg/ic_controller_left.svg",
+        "sha256": "7bb964589329b8db406a974a24f824e289b060dd5991ee2995e1597eddb03e54"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_controller_left.xml",
+        "sha256": "e67df84f28b9eabf82fc300ddcdb86627563e806c267efeb8379026ce7e3e4ca"
+      }
+    },
+    {
+      "name": "ic_controller",
+      "svg": {
+        "path": "svg/ic_controller.svg",
+        "sha256": "359ffe6f9246074ae60f00546e00f940c904eef3a152734cb9e646cde926886f"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_controller.xml",
+        "sha256": "898c0e35daa089c18e7c2bf463c7800e7447516e85a507d8af4e59ba62eb85f2"
+      }
+    },
+    {
+      "name": "ic_swift",
+      "svg": {
+        "path": "svg/ic_swift.svg",
+        "sha256": "ece6aa7f0e992305a2ccee6d97e1d89ee570cf60155835c4458d95ce0ad2e4c7"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_swift.xml",
+        "sha256": "10b87887aa7c045b51ae5b0435103079fd16a226107fb5d58ca87ff82aac0f0c"
+      }
+    },
+    {
+      "name": "ic_keyboard",
+      "svg": {
+        "path": "svg/ic_keyboard.svg",
+        "sha256": "646e70e6e12fff1ae2758e68d314dbfd70b405db7248c5d0d276447234934a87"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_keyboard.xml",
+        "sha256": "e929abe6536f56a6704a7ba92ffe2e926861107e27d2e656aa6ae112c729a884"
+      }
+    },
+    {
+      "name": "ic_audio",
+      "svg": {
+        "path": "svg/ic_audio.svg",
+        "sha256": "180e52c5106ea2847157b67436610b778de76cbfe3739f4ccc48aff04c32ce99"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_audio.xml",
+        "sha256": "3b54f7084b33fdd82d00dfd76cae6e8dcf224af3403ee71c5451acb2a52587ed"
+      }
+    },
+    {
+      "name": "ic_mouse",
+      "svg": {
+        "path": "svg/ic_mouse.svg",
+        "sha256": "c2dce9d04c52cedcdee7068f735e8fe121e7878a0fbe08c9c6603842f2d30d08"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_mouse.xml",
+        "sha256": "0da716a5cb7527f97cac976a9350e60f48b88aa39235ddde0d894405f491bcad"
+      }
+    },
+    {
+      "name": "ic_usb",
+      "svg": {
+        "path": "svg/ic_usb.svg",
+        "sha256": "52a57dee68e5bfa012ed2b97e0dd4295ae4f24dd85da6051e0cdc134c3fb674b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_usb.xml",
+        "sha256": "41d7192d94748887c42515c8baed05fe9cf908a60a6cc108f4616d17f7fe73b6"
+      }
+    },
+    {
+      "name": "ic_computer",
+      "svg": {
+        "path": "svg/ic_computer.svg",
+        "sha256": "d8b8d0c311bc2576474821f505f0eea22ef1773988937628dc778c6adab650f3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_computer.xml",
+        "sha256": "e632014aa393957767be0d3ac1de5c73e332a8df523ec091f2a08938f217c5a0"
+      }
+    },
+    {
+      "name": "ic_telephone_1",
+      "svg": {
+        "path": "svg/ic_telephone_1.svg",
+        "sha256": "78a0a641a7e48f79064e002d02f1dc9ac3d90c8c2c7c36f5cd0bebdb5122bc92"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_telephone_1.xml",
+        "sha256": "546234995434e8cbb5017c80edc68c89c9d88f571c1a1a1a450008db033fa0e0"
+      }
+    },
+    {
+      "name": "ic_telephone_2",
+      "svg": {
+        "path": "svg/ic_telephone_2.svg",
+        "sha256": "896256ec7592177e1a7ad802cbfb3fea59286740e33e02c0bc7882f5cf8eb599"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_telephone_2.xml",
+        "sha256": "df66a55fd2fd3febd92118c1f0d4c8b81dab84937b3cd292af7fead6992da863"
+      }
+    },
+    {
+      "name": "ic_telephone_3",
+      "svg": {
+        "path": "svg/ic_telephone_3.svg",
+        "sha256": "e5605e2d634d5eb6e82ca7681c94eeae6d8a1a03509189585ac200c59ee3e130"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_telephone_3.xml",
+        "sha256": "c81613459b36d69521f11271cb36fa8eaa3d8a8dc8cfcec858882bb244e54593"
+      }
+    },
+    {
+      "name": "ic_battery_1",
+      "svg": {
+        "path": "svg/ic_battery_1.svg",
+        "sha256": "4df86fe440e7ce3412b461c5e71e7186d80eb84531706a93393807ea27bae07a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_battery_1.xml",
+        "sha256": "e02e6dcacb95718016f2638164a3a40eff81d3afab85fbad92970d7cd5a47c81"
+      }
+    },
+    {
+      "name": "ic_battery_3",
+      "svg": {
+        "path": "svg/ic_battery_3.svg",
+        "sha256": "d522cfc2dc5c712185222776b64604974e00dd285be6092028a9db8127501f5e"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_battery_3.xml",
+        "sha256": "080c53874e975e6e0c92675ee84b01e62c851581630a866b929a9ac944ffec72"
+      }
+    },
+    {
+      "name": "ic_battery_4",
+      "svg": {
+        "path": "svg/ic_battery_4.svg",
+        "sha256": "341ede16f67ef40e678bedbc9bc6ef505d4b6256390513ffe0bd48687b0634ca"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_battery_4.xml",
+        "sha256": "03fc875061d99a33d9625a52b7756c89741dc071e39ddb7e514a1e601881646f"
+      }
+    },
+    {
+      "name": "ic_battery_5",
+      "svg": {
+        "path": "svg/ic_battery_5.svg",
+        "sha256": "5de3992f777617c131e63450dd7e9416ad69a3a25fc17511f80f2431f5271080"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_battery_5.xml",
+        "sha256": "4be5a5a6e2d5f25a2bab56821f78dfd51018c218fb86648988b6f1d2eb96d7bd"
+      }
+    },
+    {
+      "name": "ic_exclamation_mark_fill",
+      "svg": {
+        "path": "svg/ic_exclamation_mark_fill.svg",
+        "sha256": "1f0e5f8994389a381eac49b6ec41e32d210bf269810c91d2a4eb36cd8af09b00"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_exclamation_mark_fill.xml",
+        "sha256": "5ad8920f204c7aa32780d00ebd1574fdeb665c1e2d61c186241e4aeab962df30"
+      }
+    },
+    {
+      "name": "ic_letter_a_circle",
+      "svg": {
+        "path": "svg/ic_letter_a_circle.svg",
+        "sha256": "8cdee020f4e283579e2b2ce79e36f2d34427bfd466e8905bf01ec41e72816c5b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_letter_a_circle.xml",
+        "sha256": "f54c1ff518946c5c6c2ca275b7bd4acbe099bb3eb9c0b39d37e83b76e92fea86"
+      }
+    },
+    {
+      "name": "ic_letter_a_circle_fill",
+      "svg": {
+        "path": "svg/ic_letter_a_circle_fill.svg",
+        "sha256": "0058d3e2973a4d1726310192ae0e020497cc7444bf7e791393fbb3c53aa10745"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_letter_a_circle_fill.xml",
+        "sha256": "88b32e99d2236f2b9155dba48696cf1d538d15f4d8bb61762708abae5861728f"
+      }
+    },
+    {
+      "name": "ic_letter_m_circle",
+      "svg": {
+        "path": "svg/ic_letter_m_circle.svg",
+        "sha256": "48e85dd9134342a161e6237ebb342973cde937e511464ac098c1343305cbea12"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_letter_m_circle.xml",
+        "sha256": "3c5aeaee299e8b0fc23af021b83f8a6665ef57777ba93760d8188f935f48b19f"
+      }
+    },
+    {
+      "name": "ic_letter_m_circle_fill",
+      "svg": {
+        "path": "svg/ic_letter_m_circle_fill.svg",
+        "sha256": "e210ef0ad630cb7954899b2bd40c3fd7ab911636973cd5c54f1a67e1b4aa8ea3"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_letter_m_circle_fill.xml",
+        "sha256": "f6f20734b63bf906b4f7854527607eb00be53d117560b4fc6b739e1129d2906a"
+      }
+    },
+    {
+      "name": "ic_info_circle",
+      "svg": {
+        "path": "svg/ic_info_circle.svg",
+        "sha256": "cad9a14a1dde2065fce89c9071a03169e42a06903abe383f0d177d2e7f3e11c2"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_info_circle.xml",
+        "sha256": "89bdf1db0896675446657b3999cd259fdeb2a3f21636d7d9902edf38da3ee899"
+      }
+    },
+    {
+      "name": "ic_info_circle_fill",
+      "svg": {
+        "path": "svg/ic_info_circle_fill.svg",
+        "sha256": "29f1e990121096c0dd7cb90063cec0ce9d6b15b5b687e115c7d8802ac1247e9e"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_info_circle_fill.xml",
+        "sha256": "6173bdd58ea43b9b97c554538640b83c7925bf819b24017919b7b7dfc4d07671"
+      }
+    },
+    {
+      "name": "ic_text",
+      "svg": {
+        "path": "svg/ic_text.svg",
+        "sha256": "4e1de9d784a1f2525d7263a4dd676586c8a0a252ecae53db202388b12eec78bd"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_text.xml",
+        "sha256": "51f3b479b00238be77c2bfe434835f79bc642849e7a55bdc65e4d19c10c0fdef"
+      }
+    },
+    {
+      "name": "ic_letter_a",
+      "svg": {
+        "path": "svg/ic_letter_a.svg",
+        "sha256": "dd79798b20a95787ccde3bfdaa86b3d29e2ff68470c58a7ceb6d36be4e71cfd9"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_letter_a.xml",
+        "sha256": "d87842d8280557f0f861d50468f6d398f4835e61f19f28572c8be06dcf45931d"
+      }
+    },
+    {
+      "name": "ic_thumb_up",
+      "svg": {
+        "path": "svg/ic_thumb_up.svg",
+        "sha256": "f80ea1d5277da50bc75d9d32606ea3352f3f342da37b9a31f6c1c47a85f5f2e0"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_thumb_up.xml",
+        "sha256": "fc2a7b5371d98db7cd57036a0db5f7c0e2140b553328d4e69943e3acab92172c"
+      }
+    },
+    {
+      "name": "ic_thumb_up_fill",
+      "svg": {
+        "path": "svg/ic_thumb_up_fill.svg",
+        "sha256": "d179775b84ad4194af9f69d9a7f8bcf59ab07f721150258b3cedb9f0cd7f5740"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_thumb_up_fill.xml",
+        "sha256": "d9950eb7c5c1cca4fcabd0cdff832df4fffc1a1b2a9bb43c5679a44bc9216bd4"
+      }
+    },
+    {
+      "name": "ic_thumb_down",
+      "svg": {
+        "path": "svg/ic_thumb_down.svg",
+        "sha256": "2d09511e2e0c17ab019e2da99e3a6adfed39883c56e3710267334c6e0f86934b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_thumb_down.xml",
+        "sha256": "032629805f5b7bd136a264999ca23777b4f6c963ee79b0deeed63ccbb9996640"
+      }
+    },
+    {
+      "name": "ic_hand",
+      "svg": {
+        "path": "svg/ic_hand.svg",
+        "sha256": "18bafeb52a675921b132718343db2c9f00518b33c1e70dada19a7d0f7761e582"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_hand.xml",
+        "sha256": "453b16b39a5924416d9cd4ea346963c8e56fdbdf48a0a864c2bbd0fadf081d71"
+      }
+    },
+    {
+      "name": "ic_scan_code",
+      "svg": {
+        "path": "svg/ic_scan_code.svg",
+        "sha256": "86bd1c948fc03e3819b2371548a62c3a6ef5ddc7e043b85dee763fdb025648ca"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_scan_code.xml",
+        "sha256": "75e1ff7bbc843882137abb40cca6a465618bcb94a6374ae6381f111ea037b522"
+      }
+    },
+    {
+      "name": "ic_scan_code_eye",
+      "svg": {
+        "path": "svg/ic_scan_code_eye.svg",
+        "sha256": "684a8a976c8243539e8f610e8f6b580a1ae5475eeaa38851fabf940c403b796a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_scan_code_eye.xml",
+        "sha256": "3733edc36f0c923a3c1b1353e51f36a717915567050b4e9abe0ef3ca66308ac9"
+      }
+    },
+    {
+      "name": "ic_tools",
+      "svg": {
+        "path": "svg/ic_tools.svg",
+        "sha256": "d152696ac4ee88b687cd9c245ad78936ab3be0d88821fab391d2c851b627ea86"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_tools.xml",
+        "sha256": "fec8eecafaa092b714f0081ae9796c48c51da0ab706616e9ab0dade0331156c0"
+      }
+    },
+    {
+      "name": "ic_settings",
+      "svg": {
+        "path": "svg/ic_settings.svg",
+        "sha256": "2bac607dd6d174a6b8ec667dbb2112e420283db722b0d69d361c9d1e48439bae"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_settings.xml",
+        "sha256": "e61d2535e0df935f3231f1811d5c37fd3e3ec918a490956c633bf4040a0184b1"
+      }
+    },
+    {
+      "name": "ic_sofa",
+      "svg": {
+        "path": "svg/ic_sofa.svg",
+        "sha256": "29c67c023955abaf439ead227c2b3ddb6d0415732283f9ee9fff44c0923f0c41"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_sofa.xml",
+        "sha256": "f2f02f590688578916e6f4527349e95c1d99d8a3401e93d458916dade447b4b4"
+      }
+    },
+    {
+      "name": "ic_game",
+      "svg": {
+        "path": "svg/ic_game.svg",
+        "sha256": "e467f3079cb877aa355de50d567ba7ed66e59a88d45bea1fac5da2061a255806"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_game.xml",
+        "sha256": "7e5e675895ab3c1109fa6da7ad0559e4d80b2784486b0bb2538bdd35fa463598"
+      }
+    },
+    {
+      "name": "ic_planet",
+      "svg": {
+        "path": "svg/ic_planet.svg",
+        "sha256": "7eb6f633b6e00740436fd1a5d624161ff6b34c9b5fa6e5001a73a5286784abdf"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_planet.xml",
+        "sha256": "1c09ff9e3500ac900cc0aa88110b7d9606999b75b40539339f43b212469e9fc8"
+      }
+    },
+    {
+      "name": "ic_home",
+      "svg": {
+        "path": "svg/ic_home.svg",
+        "sha256": "45dc1c35ea90e24fabd6ec28c7081e3ad908867496fedaa58697b8e7542b8783"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_home.xml",
+        "sha256": "69b21637e08ee5fa645b68d22f9f0ba16b6c44f9bd697ef89710805b251a8b1f"
+      }
+    },
+    {
+      "name": "ic_cloud",
+      "svg": {
+        "path": "svg/ic_cloud.svg",
+        "sha256": "ea372dbfdfb7e8d54698eb131fc16c8502d60fef5a4afb1402b40927a84a2c23"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_cloud.xml",
+        "sha256": "34398c6ba130e3996b1e1607b2d7828fc7592e503670519b24962c9cb44e8701"
+      }
+    },
+    {
+      "name": "ic_book",
+      "svg": {
+        "path": "svg/ic_book.svg",
+        "sha256": "eb998f764ff66395a10b188565eeb0237c14204f91650025329fefcaa10a3d78"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_book.xml",
+        "sha256": "aab27980d5c3671a18bd1ad2050e6996bbd670a81ad670152f635648abc60e10"
+      }
+    },
+    {
+      "name": "ic_bell",
+      "svg": {
+        "path": "svg/ic_bell.svg",
+        "sha256": "8945a1ace95510b4fcb63dea4ab345a5acda87849d2e1e88eb4986e5b33e861c"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_bell.xml",
+        "sha256": "2285498165a58aef22a4a97c3c06425ec88fafcc0bc1ebd39ddee52d5a0cc9f0"
+      }
+    },
+    {
+      "name": "ic_eye",
+      "svg": {
+        "path": "svg/ic_eye.svg",
+        "sha256": "197465525e666388f1fc433e163befcf0c93714be5c564045e448b1e991a59e8"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_eye.xml",
+        "sha256": "851696095efadbe618b64012dafc75b086ddfde36d496b2f3645673f17acc5e5"
+      }
+    },
+    {
+      "name": "ic_eye_slash",
+      "svg": {
+        "path": "svg/ic_eye_slash.svg",
+        "sha256": "29feac9b8a1f6f93bff31e0dfa64ecad2a07b02f42213c697932f39f3986abc6"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_eye_slash.xml",
+        "sha256": "ee209b23bb7eede6074ecafcaf7658219d7ae668c061ba0002326f6f79291e99"
+      }
+    },
+    {
+      "name": "ic_clock",
+      "svg": {
+        "path": "svg/ic_clock.svg",
+        "sha256": "3dbec97e95a4f31a727f6d792dca9c47e7892a5c4345d0873108d5a01b0dad5a"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_clock.xml",
+        "sha256": "73072bea5c5ca934376bf38a83ff5392f8c7da12960571b4c7faae362277cdb5"
+      }
+    },
+    {
+      "name": "ic_clock_fill",
+      "svg": {
+        "path": "svg/ic_clock_fill.svg",
+        "sha256": "2e0441d89fde7794383fc3d160de3f60cf09882bc4ae31ec7bd0a5a11c15a467"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_clock_fill.xml",
+        "sha256": "83dc7f6f8bbe06eca39b90dfe546dadb8593d2f31f4833fed28307b34e13eced"
+      }
+    },
+    {
+      "name": "ic_sun",
+      "svg": {
+        "path": "svg/ic_sun.svg",
+        "sha256": "9217deabe67b85668b654e473270435e5ae5e4d170c6720897df35b4130052dd"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_sun.xml",
+        "sha256": "b6dab7e56dad0f4411aaacfd87ea03b8aaf21f9628f22a62c1d5889396e79b46"
+      }
+    },
+    {
+      "name": "ic_bulb",
+      "svg": {
+        "path": "svg/ic_bulb.svg",
+        "sha256": "da76dd78c11b0ed8c08ae0088fdc33b825a269db1cc536c1040d589fd1f4763b"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_bulb.xml",
+        "sha256": "2aea1d59c22919fa9daadce0349acc19661d8a23d4b0dbcac379e19f9bbf04aa"
+      }
+    },
+    {
+      "name": "ic_image",
+      "svg": {
+        "path": "svg/ic_image.svg",
+        "sha256": "e05aef39bec9dd5a8f29e051ed6871701239e035f90ae2f09e2ec2b81b96f1ae"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_image.xml",
+        "sha256": "f1e7da8936ee74cf0fcbd313d7e7434b3218ba22b4c98459529687e8bd1f66b6"
+      }
+    },
+    {
+      "name": "ic_lightning",
+      "svg": {
+        "path": "svg/ic_lightning.svg",
+        "sha256": "c1528346725a01f2ca2d88b5fa7e256d29f59b4b7ea0e61b0b58547d156de4e9"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_lightning.xml",
+        "sha256": "3c01fa0a0ea14e390aefb3cc19fedad9bf3f41c88c2c83dcb5c000a09bf0ad48"
+      }
+    },
+    {
+      "name": "ic_text_format",
+      "svg": {
+        "path": "svg/ic_text_format.svg",
+        "sha256": "59143f43ae544851a0969670ddb22d0f80a70a8b9533b591612b4c6a2f36c217"
+      },
+      "androidVector": {
+        "path": "android-vector/ic_text_format.xml",
+        "sha256": "cdd7ffac8f241d131253c83a566b3a4f3783410f0b35523f1dfda085b37d9b70"
+      }
+    }
+  ]
+}

@@ -2,14 +2,15 @@
 # verify-design-style.sh
 # ----------------------------------------------------------------------------
 # Lint-as-skill verifier for the spatial-ui-design-style skill.
-# Enforces the four highest-priority rules (R1-R4), including design-driven
-# color-scheme injection (R1b), token-routing checks
-# (R5-R7), and migrated D2C checklist heuristics (R8). See
+# Enforces the highest-priority rules, including design-driven color-scheme
+# preservation (R1b), custom-token routing, and app-authored content-surface
+# discipline (R10). See
 # ../references/compliance-signals.md for the full spec.
 #
 # Usage:
 #   verify-design-style.sh <module-or-src-path> [<more paths> ...] \
-#       [--design-color <slot>=<#hex>]... | [--no-design-colors]
+#       [--design-color <token>=<#hex>]... | [--no-design-colors] \
+#       [--design-spec <path-to-design-spec.json>]
 #
 # Exit codes:
 #   0  no errors (warnings may exist)
@@ -32,11 +33,12 @@ set -euo pipefail
 PATHS=()
 DESIGN_COLORS=()
 NO_DESIGN_COLORS="false"
+DESIGN_SPEC=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --design-color)
       shift
-      [[ $# -gt 0 ]] || { echo "$0: --design-color needs <slot>=<#hex>" >&2; exit 2; }
+      [[ $# -gt 0 && "$1" != --* ]] || { echo "$0: --design-color needs <token>=<#hex>" >&2; exit 2; }
       DESIGN_COLORS+=("$1")
       ;;
     --design-color=*)
@@ -44,6 +46,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-design-colors)
       NO_DESIGN_COLORS="true"
+      ;;
+    --design-spec)
+      shift
+      [[ $# -gt 0 && "$1" != --* ]] || { echo "$0: --design-spec needs a path" >&2; exit 2; }
+      DESIGN_SPEC="$1"
+      ;;
+    --design-spec=*)
+      DESIGN_SPEC="${1#--design-spec=}"
       ;;
     --)
       shift
@@ -62,7 +72,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#PATHS[@]} -lt 1 ]]; then
-  echo "usage: $0 <module-or-src-path> [<more paths> ...] [--design-color <slot>=<#hex>]... | [--no-design-colors]" >&2
+  echo "usage: $0 <module-or-src-path> [<more paths> ...] [--design-color <token>=<#hex>]... | [--no-design-colors] [--design-spec <path>]" >&2
   exit 2
 fi
 
@@ -72,8 +82,18 @@ if [[ ${#DESIGN_COLORS[@]} -gt 0 && "$NO_DESIGN_COLORS" == "true" ]]; then
 fi
 
 for entry in ${DESIGN_COLORS+"${DESIGN_COLORS[@]}"}; do
-  if [[ ! "$entry" =~ ^[A-Za-z_][A-Za-z0-9_]*=#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$ ]]; then
-    echo "$0: invalid --design-color '$entry'; expected <slot>=<#RRGGBB|#AARRGGBB>" >&2
+  if [[ "$entry" != *=* ]]; then
+    echo "$0: invalid --design-color '$entry'; missing '=' separator; expected <token>=<#RRGGBB|#AARRGGBB>" >&2
+    exit 2
+  fi
+  token="${entry%%=*}"
+  color="${entry#*=}"
+  if [[ ! "$token" =~ ^[a-z][A-Za-z0-9]*$ ]]; then
+    echo "$0: invalid --design-color token name '$token'; expected lowerCamelCase, for example 'liftShadow'" >&2
+    exit 2
+  fi
+  if [[ ! "$color" =~ ^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$ ]]; then
+    echo "$0: invalid --design-color color value '$color' for token '$token'; expected #RRGGBB or #AARRGGBB (6 or 8 hex digits)" >&2
     exit 2
   fi
 done
@@ -102,7 +122,6 @@ EXCLUDES=(
 )
 
 MODIFIER_HOVERABLE_CALL='\.hoverable[ 	]*\('
-MODIFIER_CLICKABLE_CALL='\.clickable[ 	]*[\(\{]'
 MODIFIER_BACKGROUND_COLOR_CALL='\.background[ 	]*\([ 	]*Color\(0x'
 MODIFIER_ALPHA_DISABLED_CALL='\.alpha[ 	]*\([ 	]*0\.3f[ 	]*\)'
 
@@ -121,6 +140,110 @@ scan() {
         error) ERRORS=$((ERRORS+1));;
         warning) WARNINGS=$((WARNINGS+1));;
       esac
+    done <<<"$matches"
+  fi
+}
+
+# scan_multiline_error <pattern> <message> <paths...>
+# Kotlin-aware scan like scan(), but allows whitespace across line breaks and
+# masks comments and literals before matching. Keep one diagnostic per matching
+# source line, including its original location.
+scan_multiline_error() {
+  local pattern="$1"; shift
+  local message="$1"; shift
+  local matches
+  matches=$(python3 - "$pattern" "$@" <<'PY'
+import os
+import re
+import sys
+from pathlib import Path
+
+pattern = re.compile(sys.argv[1], re.M)
+excluded = {"build", "generated", ".gradle", ".idea", "test", "androidTest", "res"}
+seen = set()
+
+
+def mask_kotlin_non_code(source):
+    masked = list(source)
+    length = len(source)
+    index = 0
+
+    def blank(start, end):
+        for position in range(start, end):
+            if source[position] not in "\r\n":
+                masked[position] = " "
+
+    while index < length:
+        if source.startswith("//", index):
+            end = source.find("\n", index + 2)
+            end = length if end == -1 else end
+            blank(index, end)
+            index = end
+        elif source.startswith("/*", index):
+            start = index
+            depth = 1
+            index += 2
+            while index < length and depth:
+                if source.startswith("/*", index):
+                    depth += 1
+                    index += 2
+                elif source.startswith("*/", index):
+                    depth -= 1
+                    index += 2
+                else:
+                    index += 1
+            blank(start, index)
+        elif source.startswith('"""', index):
+            start = index
+            end = source.find('"""', index + 3)
+            index = length if end == -1 else end + 3
+            blank(start, index)
+        elif source[index] in {'"', "'"}:
+            start = index
+            quote = source[index]
+            index += 1
+            while index < length:
+                if source[index] == "\\":
+                    index = min(index + 2, length)
+                elif source[index] == quote:
+                    index += 1
+                    break
+                else:
+                    index += 1
+            blank(start, index)
+        else:
+            index += 1
+    return "".join(masked)
+
+
+for raw_path in sys.argv[2:]:
+    root = Path(raw_path)
+    is_file = root.is_file()
+    candidates = [root] if is_file else sorted(root.rglob("*.kt"))
+    for path in candidates:
+        # Match grep's root spelling (including a trailing slash); ancestors
+        # outside the requested tree must not affect scan scope.
+        directories = () if is_file else (
+            os.path.basename(raw_path), *path.relative_to(root).parts[:-1]
+        )
+        if path.suffix != ".kt" or excluded.intersection(directories) or path in seen:
+            continue
+        seen.add(path)
+        source = path.read_text(encoding="utf-8", errors="replace")
+        searchable = mask_kotlin_non_code(source)
+        lines = source.splitlines()
+        reported = set()
+        for match in pattern.finditer(searchable):
+            line = searchable.count("\n", 0, match.start()) + 1
+            if line not in reported:
+                print(f"{path}:{line}:{lines[line - 1]}")
+                reported.add(line)
+PY
+  )
+  if [[ -n "$matches" ]]; then
+    while IFS= read -r line; do
+      printf '[error] %s :: %s\n' "$message" "$line"
+      ERRORS=$((ERRORS+1))
     done <<<"$matches"
   fi
 }
@@ -165,36 +288,13 @@ require() {
   fi
 }
 
-# file_has_code_pattern <pattern> <file>
-# Grep-like per-file predicate that ignores Kotlin line/block comments. This
-# prevents commented-out imports or chained calls from satisfying mandatory
-# design-style requirements.
-file_has_code_pattern() {
-  local pattern="$1"
-  local file="$2"
-  python3 - "$pattern" "$file" <<'PY'
-import re
-import sys
-
-pattern, path = sys.argv[1], sys.argv[2]
-try:
-    text = open(path, encoding="utf-8").read()
-except OSError:
-    sys.exit(1)
-text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-text = re.sub(r"^\s*//.*$", "", text, flags=re.M)
-sys.exit(0 if re.search(pattern, text) else 1)
-PY
-}
-
-# design_color_scheme_violations <mode> <color-spec...> -- <paths...>
-# Emits one tab-separated violation per line when authoritative design colors
-# exist but app code does not inject those exact values through a custom
-# PicoTheme color scheme.
+# design_color_token_violations <mode> <color-spec...> -- <paths...>
+# Emits one tab-separated violation per line when an app-owned design color is
+# missing or attempts to replace a native SpatialUI ColorScheme role.
 #
 # <mode> is either `colors` (declarations come from --design-color flags) or
 # `legacy` (fall back to .scratch/evidence_packet.json).
-design_color_scheme_violations() {
+design_color_token_violations() {
   python3 - "$@" <<'PY'
 import json
 import re
@@ -207,7 +307,7 @@ separator = argv.index("--")
 color_specs = argv[1:separator]
 inputs = [Path(raw).resolve() for raw in argv[separator + 1 :]]
 
-# entries: [{"hex": "#RRGGBB", "slot": "labelPrimary", "origin": "..."}]
+# entries: [{"hex": "#RRGGBB", "slot": "brandAccent", "origin": "..."}]
 entries = []
 if mode == "colors":
     for spec in color_specs:
@@ -289,121 +389,124 @@ standard_slots = {
     "interaction",
     "dividerLine",
 }
-required_scheme_roles = [
-    "fillPrimary",
-    "fillSecondary",
-    "fillTertiary",
-    "fillLight",
-    "labelPrimaryLight",
-    "labelPrimary",
-    "labelSecondary",
-    "labelTertiary",
-    "labelQuaternary",
-    "lightenHover",
-    "lightenPressed",
-    "error",
-    "alert",
-    "passable",
-    "interaction",
-    "dividerLine",
-]
-
-origins = sorted({entry["origin"] for entry in entries})
-if not re.search(r"PicoTheme\s*\([^)]*\bcolorScheme\s*=", source, flags=re.S):
-    print(
-        "missing_custom_theme\t"
-        f"R1b design colors were declared ({', '.join(origins)}), but no "
-        "PicoTheme(colorScheme = ...) injection was found"
-    )
-
-def call_body(open_paren: int) -> str:
-    depth = 0
-    for index in range(open_paren, len(source)):
-        char = source[index]
-        if char == "(":
-            depth += 1
-        elif char == ")":
-            depth -= 1
-            if depth == 0:
-                return source[open_paren + 1:index]
-    return ""
-
-system_vars = re.findall(
-    r"\bval\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*systemColorScheme\s*\([^)]*\)",
-    source,
-)
-copy_patterns = [r"systemColorScheme\s*\([^)]*\)\s*\.copy\s*\("]
-copy_patterns.extend(rf"\b{re.escape(name)}\s*\.copy\s*\(" for name in system_vars)
-copy_bodies = []
-for pattern in copy_patterns:
-    for match in re.finditer(pattern, source):
-        copy_bodies.append(call_body(match.end() - 1))
-
-best_body = max(
-    copy_bodies,
-    key=lambda body: sum(
-        bool(re.search(rf"\b{re.escape(role)}\s*=", body))
-        for role in required_scheme_roles
-    ),
-    default="",
-)
-missing_roles = [
-    role
-    for role in required_scheme_roles
-    if not re.search(rf"\b{re.escape(role)}\s*=", best_body)
-]
-if not system_vars and not re.search(r"\bsystemColorScheme\s*\(", source):
-    missing_scheme_parts = ["systemColorScheme(...)"]
-else:
-    missing_scheme_parts = []
-if not copy_bodies:
-    missing_scheme_parts.append(".copy(...)")
-if missing_roles:
-    missing_scheme_parts.append("roles: " + ", ".join(missing_roles))
-if missing_scheme_parts:
-    print(
-        "incomplete_system_color_scheme\t"
-        "R1b design-driven themes must define all 16 ColorScheme roles "
-        "explicitly from systemColorScheme(...); missing "
-        + "; ".join(missing_scheme_parts)
-    )
-
 for entry in entries:
     raw = entry["hex"][1:].upper()
     literals = [f"0XFF{raw}"] if len(raw) == 6 else [f"0X{raw}", f"0X{raw[-2:]}{raw[:-2]}"]
     slot = entry["slot"]
-    literal_pattern = "(?:" + "|".join(re.escape(value) for value in literals) + ")"
     if slot in standard_slots:
-        direct_mapping = re.search(
-            rf"\b{re.escape(slot.upper())}\s*=\s*COLOR\s*\(\s*{literal_pattern}",
-            source_upper,
+        print(
+            "native_color_role_override\t"
+            f"R1b {slot} is a native SpatialUI ColorScheme role and cannot be "
+            "overridden; give the custom color an app-owned token name"
         )
-        token_mapping = False
-        assignment = re.search(
-            rf"\b{re.escape(slot)}\s*=\s*([A-Za-z_][A-Za-z0-9_.]*)",
-            source,
-        )
-        if assignment:
-            token_name = assignment.group(1).split(".")[-1]
-            token_mapping = bool(
-                re.search(
-                    rf"\b(?:const\s+)?val\s+{re.escape(token_name)}\s*=\s*"
-                    rf"COLOR\s*\(\s*{literal_pattern}",
-                    source_upper,
-                    flags=re.I,
-                )
-            )
-        if not direct_mapping and not token_mapping:
-            print(
-                "missing_role_value_mapping\t"
-                f"R1b design color {entry['hex']} must be mapped exactly to "
-                f"ColorScheme.{slot}"
-            )
     elif not any(literal in source_upper for literal in literals):
         print(
             "missing_design_color\t"
-            f"R1b design color {entry['hex']} ({slot}) is absent from app theme/token source"
+            f"R1b custom design color {entry['hex']} ({slot}) is absent from "
+            "the app-owned token source"
         )
+PY
+}
+
+native_color_scheme_override_violations() {
+  python3 - "$@" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+inputs = [Path(raw).resolve() for raw in sys.argv[1:]]
+
+
+def find_balanced_call_arguments(source: str, call_name: str):
+    pattern = re.compile(rf"(?<![\w.]){re.escape(call_name)}\s*\(")
+    for match in pattern.finditer(source):
+        open_index = source.find("(", match.start())
+        depth = 1
+        index = open_index + 1
+        quote = None
+        triple_quote = False
+        escaped = False
+        while index < len(source):
+            char = source[index]
+            if quote:
+                if triple_quote:
+                    if source.startswith(quote * 3, index):
+                        quote = None
+                        triple_quote = False
+                        index += 3
+                        continue
+                elif escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == quote:
+                    quote = None
+                index += 1
+                continue
+            if source.startswith('"""', index):
+                quote = '"'
+                triple_quote = True
+                index += 3
+                continue
+            if char in {'"', "'"}:
+                quote = char
+                index += 1
+                continue
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    yield match.start(), source[open_index + 1 : index]
+                    break
+            index += 1
+
+
+for input_path in inputs:
+    candidates = [input_path] if input_path.is_file() else input_path.rglob("*.kt")
+    for path in candidates:
+        if path.suffix != ".kt" or set(path.parts).intersection(
+            {"build", "generated", ".gradle", ".idea", "test", "androidTest"}
+        ):
+            continue
+        source = path.read_text(encoding="utf-8", errors="replace")
+        source = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+        source = re.sub(r"^\s*//.*$", "", source, flags=re.M)
+        system_vars = re.findall(
+            r"\bval\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*systemColorScheme\s*\([^)]*\)",
+            source,
+        )
+        pico_theme_override = next(
+            (
+                start
+                for start, arguments in find_balanced_call_arguments(source, "PicoTheme")
+                if re.search(r"\bcolorScheme\s*=", arguments)
+            ),
+            None,
+        )
+        if pico_theme_override is not None:
+            line = source.count("\n", 0, pico_theme_override) + 1
+            print(
+                "native_color_scheme_override\t"
+                f"R1b {path}:{line} modifies the native SpatialUI ColorScheme; "
+                "keep PicoTheme defaults and use app-owned color tokens directly"
+            )
+            continue
+        patterns = [
+            r"\bsystemColorScheme\s*\([^)]*\)\s*\.copy\s*\(",
+            r"(?<![\w.])ColorScheme\s*\(",
+        ]
+        patterns.extend(rf"\b{re.escape(name)}\s*\.copy\s*\(" for name in system_vars)
+        for pattern in patterns:
+            match = re.search(pattern, source)
+            if match:
+                line = source.count("\n", 0, match.start()) + 1
+                print(
+                    "native_color_scheme_override\t"
+                    f"R1b {path}:{line} modifies the native SpatialUI ColorScheme; "
+                    "keep PicoTheme defaults and use app-owned color tokens directly"
+                )
+                break
 PY
 }
 
@@ -477,25 +580,13 @@ for path in source_files:
 PY
 }
 
-# unresolved_text_color_violations <paths...>
-# Emits one violation for each SpatialUI Text call that neither supplies an
-# explicit color nor documents deliberate LocalContentColor inheritance.
-unresolved_text_color_violations() {
+content_border_violations() {
   python3 - "$@" <<'PY'
 import re
 import sys
 from pathlib import Path
 
 inputs = [Path(raw).resolve() for raw in sys.argv[1:]]
-source_files = []
-for path in inputs:
-    candidates = [path] if path.is_file() else path.rglob("*.kt")
-    for candidate in candidates:
-        parts = set(candidate.parts)
-        if candidate.suffix == ".kt" and not parts.intersection(
-            {"build", "generated", ".gradle", ".idea", "test", "androidTest"}
-        ):
-            source_files.append(candidate)
 
 def strip_comments_preserving_lines(text: str) -> str:
     def blank(match: re.Match[str]) -> str:
@@ -504,76 +595,154 @@ def strip_comments_preserving_lines(text: str) -> str:
     text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
     return re.sub(r"//[^\n]*", blank, text)
 
-def call_end(code: str, open_paren: int):
-    depth = 0
-    quote = None
-    index = open_paren
-    while index < len(code):
-        if quote == '"""':
-            if code.startswith('"""', index):
-                quote = None
-                index += 3
-                continue
-        elif quote:
-            if code[index] == "\\":
-                index += 2
-                continue
-            if code[index] == quote:
-                quote = None
-        elif code.startswith('"""', index):
-            quote = '"""'
-            index += 3
+for input_path in inputs:
+    candidates = [input_path] if input_path.is_file() else input_path.rglob("*.kt")
+    for path in candidates:
+        if path.suffix != ".kt" or set(path.parts).intersection(
+            {"build", "generated", ".gradle", ".idea", "test", "androidTest"}
+        ):
             continue
-        elif code[index] in {'"', "'"}:
-            quote = code[index]
-        elif code[index] == "(":
-            depth += 1
-        elif code[index] == ")":
-            depth -= 1
-            if depth == 0:
-                return index
-        index += 1
-    return None
-
-for path in source_files:
-    raw = path.read_text(encoding="utf-8", errors="replace")
-    if not re.search(
-        r"import\s+com\.pico\.spatial\.ui\.design\.(?:Text|\*)",
-        raw,
-    ):
-        continue
-
-    code = strip_comments_preserving_lines(raw)
-    raw_lines = raw.splitlines()
-    for match in re.finditer(r"\bText\s*\(", code):
-        prefix = code[max(0, match.start() - 12) : match.start()]
-        if re.search(r"\bfun\s+$", prefix):
-            continue
-        open_paren = code.find("(", match.start())
-        end = call_end(code, open_paren)
-        if end is None:
-            continue
-        body = code[open_paren + 1 : end]
-        if re.search(r"\bcolor\s*=", body):
-            continue
-
-        start_line = code.count("\n", 0, match.start())
-        end_line = code.count("\n", 0, end)
-        annotation_start = max(0, start_line - 1)
-        annotation = "\n".join(raw_lines[annotation_start : end_line + 1])
-        marker = re.search(
-            r"design-style:\s*inherited-content-color\s+([A-Za-z_][A-Za-z0-9_.]*)",
-            annotation,
+        code = strip_comments_preserving_lines(
+            path.read_text(encoding="utf-8", errors="replace")
         )
-        if marker:
-            continue
+        for pattern, label in (
+            (r"\.border\s*\(", "Modifier.border"),
+            (r"\bBorderStroke\s*\(", "BorderStroke"),
+        ):
+            for match in re.finditer(pattern, code):
+                line = code.count("\n", 0, match.start()) + 1
+                print(
+                    "content_border\t"
+                    f"R10 {path}:{line} {label} is an app-authored content border; "
+                    "use spacing, alignment, typography, or one surface owner"
+                )
+PY
+}
 
+design_surface_violations() {
+  python3 - "$@" <<'PY'
+import json
+import re
+import sys
+from pathlib import Path
+
+spec_path = Path(sys.argv[1]).resolve()
+inputs = [Path(raw).resolve() for raw in sys.argv[2:]]
+
+try:
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError) as exc:
+    print(f"invalid_design_spec\tR10 cannot read design spec {spec_path}: {exc}")
+    raise SystemExit(0)
+
+theme = spec.get("theme") if isinstance(spec, dict) else None
+if isinstance(theme, dict) and "rootMaterial" in theme:
+    print(
+        "invalid_design_material\t"
+        "R10 design spec declares rootMaterial, which is not part of the design contract"
+    )
+
+allowed = set()
+for node in spec.get("nodes", []) if isinstance(spec, dict) else []:
+    if not isinstance(node, dict) or not isinstance(node.get("id"), str):
+        continue
+    appearance = node.get("appearance")
+    if not isinstance(appearance, dict):
+        continue
+    if "material" in appearance:
         print(
-            "unresolved_text_color\t"
-            f"R9 {path}:{start_line + 1} Text has no explicit color and no "
-            "'design-style: inherited-content-color <provider>' marker; "
-            "PicoTheme does not provide LocalContentColor, so this can render "
-            "black on dark glass"
+            "invalid_design_material\t"
+            f"R10 design node {node['id']!r} declares material, which is not part "
+            "of the appearance contract"
+        )
+    fill = appearance.get("fill")
+    if isinstance(fill, str) and fill.strip():
+        if node.get("kind") in {"layout", "domain_visual"}:
+            print(
+                "structural_design_surface\t"
+                f"R10 design node {node['id']!r} ({node.get('kind')}) declares "
+                "fill; structural regions must remain transparent"
+            )
+        else:
+            allowed.add(node["id"])
+
+def strip_comments_preserving_lines(text: str) -> str:
+    def blank(match: re.Match[str]) -> str:
+        return re.sub(r"[^\n]", " ", match.group(0))
+
+    text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
+    return re.sub(r"//[^\n]*", blank, text)
+
+marker_pattern = re.compile(
+    r"design-style:\s*design-surface\s+([A-Za-z0-9][A-Za-z0-9._:-]*)"
+)
+surface_usages = {}
+
+for input_path in inputs:
+    candidates = [input_path] if input_path.is_file() else input_path.rglob("*.kt")
+    for path in candidates:
+        if path.suffix != ".kt" or set(path.parts).intersection(
+            {"build", "generated", ".gradle", ".idea", "test", "androidTest"}
+        ):
+            continue
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        code = strip_comments_preserving_lines(raw)
+        raw_lines = raw.splitlines()
+        for match in re.finditer(r"\.backgroundMaterial\s*\(", code):
+            line = code.count("\n", 0, match.start()) + 1
+            print(
+                "app_authored_material\t"
+                f"R10 {path}:{line} backgroundMaterial is not allowed when "
+                "restoring a design package"
+            )
+        has_spatial_card = bool(
+            re.search(
+                r"import\s+com\.pico\.spatial\.ui\.design\.(?:Card|\*)",
+                code,
+            )
+        )
+        patterns = [(r"\.background\s*\(", "background")]
+        if has_spatial_card:
+            patterns.append((r"\bCard\s*\(", "Card"))
+
+        matches = []
+        for pattern, label in patterns:
+            for match in re.finditer(pattern, code):
+                prefix = code[max(0, match.start() - 12) : match.start()]
+                if label == "Card" and re.search(r"\bfun\s+$", prefix):
+                    continue
+                matches.append((match.start(), label))
+
+        for offset, label in sorted(matches):
+            line_index = code.count("\n", 0, offset)
+            annotation = "\n".join(raw_lines[max(0, line_index - 3) : line_index + 1])
+            marker = marker_pattern.search(annotation)
+            if marker is None:
+                print(
+                    "unmapped_design_surface\t"
+                    f"R10 {path}:{line_index + 1} {label} has no nearby "
+                    "'design-style: design-surface <node-id>' marker"
+                )
+                continue
+            node_id = marker.group(1)
+            if node_id not in allowed:
+                print(
+                    "unknown_design_surface\t"
+                    f"R10 {path}:{line_index + 1} marker names {node_id!r}, "
+                    "but that design node declares no fill"
+                )
+                continue
+            surface_usages.setdefault(node_id, []).append(
+                f"{path}:{line_index + 1}"
+            )
+
+for node_id, locations in sorted(surface_usages.items()):
+    if len(locations) > 1:
+        print(
+            "duplicate_design_surface\t"
+            f"R10 design surface {node_id!r} is implemented by {len(locations)} "
+            f"background calls ({', '.join(locations)}); each fill node may own "
+            "at most one app-authored background implementation"
         )
 PY
 }
@@ -593,16 +762,25 @@ echo "-- R1 PicoTheme wrapping"
 # Accept both `PicoTheme(` (with explicit args) and `PicoTheme {` (trailing
 # lambda) — both are valid call sites for the wrapper.
 require 'PicoTheme[ \t]*[\({]' error 'R1 PicoTheme wrapping is required' "${PATHS[@]}"
-scan    'MaterialTheme\(' error 'R1 MaterialTheme leaked into app code; use PicoTheme' "${PATHS[@]}"
+scan_multiline_error '\bMaterialTheme\s*[({]' 'R1 MaterialTheme leaked into app code; use PicoTheme' "${PATHS[@]}"
 scan    'MaterialTheme\.(colorScheme|typography)' error 'R1 use PicoTheme.colorScheme / PicoTheme.typography' "${PATHS[@]}"
 
-echo "-- R1b design colors drive PicoTheme"
+echo "-- R1b native ColorScheme preservation and custom colors"
+native_color_scheme_errors=$(native_color_scheme_override_violations "${PATHS[@]}")
+if [[ -n "$native_color_scheme_errors" ]]; then
+  while IFS=$'\t' read -r _ message; do
+    [[ -z "$message" ]] && continue
+    printf '[error] %s\n' "$message"
+    ERRORS=$((ERRORS+1))
+  done <<<"$native_color_scheme_errors"
+fi
+
 # Resolution order: --design-color flags, else the legacy evidence packet.
 # Neither present and no explicit --no-design-colors => invocation error, so a
 # caller that simply forgot to forward its design colors cannot turn R1b into a
 # silent no-op.
 if [[ ${#DESIGN_COLORS[@]} -gt 0 ]]; then
-  design_color_errors=$(design_color_scheme_violations colors "${DESIGN_COLORS[@]}" -- "${PATHS[@]}")
+  design_color_errors=$(design_color_token_violations colors "${DESIGN_COLORS[@]}" -- "${PATHS[@]}")
 elif [[ "$NO_DESIGN_COLORS" == "true" ]]; then
   design_color_errors=""
   echo "[info] R1b skipped: caller declared no authoritative design colors"
@@ -617,11 +795,10 @@ else
     fi
   done
   if [[ "$legacy_found" == "true" ]]; then
-    design_color_errors=$(design_color_scheme_violations legacy -- "${PATHS[@]}")
+    design_color_errors=$(design_color_token_violations legacy -- "${PATHS[@]}")
   else
-    echo "[error] R1b design colors were neither passed via --design-color nor found in .scratch/evidence_packet.json; pass --no-design-colors to assert there are none" >&2
-    ERRORS=$((ERRORS+1))
-    design_color_errors=""
+    echo "$0: R1b design colors were neither passed via --design-color nor found in .scratch/evidence_packet.json; pass --no-design-colors to assert there are none" >&2
+    exit 2
   fi
 fi
 if [[ -n "$design_color_errors" ]]; then
@@ -701,28 +878,9 @@ scan 'TextStyle\(fontSize\s*=' error 'R5 hardcoded typography; use PicoTheme.typ
 scan "$MODIFIER_ALPHA_DISABLED_CALL" error 'R5 hardcoded disabled alpha 0.3f; use LocalDisableAlpha.current' "${PATHS[@]}"
 
 # ---------- R6 — indication / haptics ----------
-echo "-- R6 indication & haptics"
-# Per-file check: a file that uses .clickable(...) or .clickable { ... } MUST also reference
-# LocalIndication.current and controllerHapticFeedback somewhere in the same
-# file. (The previous tree-wide `require` was too lenient and never failed in
-# practice.)
-clickable_files=$("$GREP_BIN" "${GREP_FLAGS[@]}" "${EXCLUDES[@]}" -l "$MODIFIER_CLICKABLE_CALL" "${PATHS[@]}" 2>/dev/null || true)
-if [[ -n "$clickable_files" ]]; then
-  while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    if ! file_has_code_pattern "$MODIFIER_CLICKABLE_CALL" "$f"; then
-      continue
-    fi
-    if ! file_has_code_pattern 'LocalIndication\.current' "$f"; then
-      printf '[warning] R6 clickable() without LocalIndication.current :: %s\n' "$f"
-      WARNINGS=$((WARNINGS+1))
-    fi
-    if ! file_has_code_pattern 'controllerHapticFeedback' "$f"; then
-      printf '[error] R6 clickable() without shared controllerHapticFeedback :: %s\n' "$f"
-      ERRORS=$((ERRORS+1))
-    fi
-  done <<<"$clickable_files"
-fi
+echo "-- R6 indication & optional haptics"
+# Modifier.clickable uses LocalIndication.current by default. Haptic feedback is
+# an optional enhancement, so neither requires a file-level admission check.
 
 # ---------- R7 — library-private tokens ----------
 echo "-- R7 library-private token imports"
@@ -730,8 +888,8 @@ scan 'import com\.pico\.spatial\.ui\.design\.tokens\.(DimensionTokens|ColorToken
 
 # ---------- R8 — migrated SpatialUI checklist heuristics ----------
 echo "-- R8 migrated SpatialUI checklist heuristics"
-scan 'import[ 	]+androidx\.compose\.material3(\.|$)' error 'R8 Material3 package import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
-scan 'import[ 	]+androidx\.compose\.material(\.|$)' error 'R8 Material package import; Material (v1) component import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
+scan_multiline_error '(?<![\w.])androidx\s*\.\s*compose\s*\.\s*material3\b' 'R8 Material3 package import or fully qualified reference; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
+scan_multiline_error '(?<![\w.])androidx\s*\.\s*compose\s*\.\s*material\b' 'R8 Material package import or fully qualified reference; Material (v1) component import; prefer com.pico.spatial.ui.design.* built-ins' "${PATHS[@]}"
 scan 'import com\.pico\.spatial\.ui\.design\.AlertDialog' error 'R8 AlertDialog belongs to com.pico.spatial.ui.design.windows.AlertDialog' "${PATHS[@]}"
 scan 'collectAsState\([ 	]*\)' warning 'R8 collectAsState() in UI; prefer collectAsStateWithLifecycle() for ViewModel state' "${PATHS[@]}"
 scan 'key[ 	]*=[ 	]*\{[ 	]*(index|it\.hashCode\(\))[ 	]*\}' warning 'R8 unstable lazy key; prefer stable item id' "${PATHS[@]}"
@@ -746,15 +904,28 @@ scan 'padding\((start|bottom|end|top)[ 	]*=[ 	]*[0-9]{2,3}\.dp' info 'R8 large d
 scan 'Text\("(✕|×|x|X)"' warning 'R8 handmade close glyph; prefer IconButton + vector icon' "${PATHS[@]}"
 scan 'https?://(picsum\.photos|placehold\.co|via\.placeholder\.com|dummyimage\.com)' warning 'R8 hardcoded placeholder URL in UI; bind image URLs from uiState/repository data' "${PATHS[@]}"
 
-# ---------- R9 — every Text foreground must resolve ----------
-echo "-- R9 resolved text foregrounds"
-text_color_errors=$(unresolved_text_color_violations "${PATHS[@]}")
-if [[ -n "$text_color_errors" ]]; then
+# ---------- R10 — content surface discipline ----------
+echo "-- R10 content surface discipline"
+content_border_errors=$(content_border_violations "${PATHS[@]}")
+if [[ -n "$content_border_errors" ]]; then
   while IFS=$'\t' read -r _ message; do
     [[ -z "$message" ]] && continue
     printf '[error] %s\n' "$message"
     ERRORS=$((ERRORS+1))
-  done <<<"$text_color_errors"
+  done <<<"$content_border_errors"
+fi
+
+if [[ -n "$DESIGN_SPEC" ]]; then
+  design_surface_errors=$(design_surface_violations "$DESIGN_SPEC" "${PATHS[@]}")
+  if [[ -n "$design_surface_errors" ]]; then
+    while IFS=$'\t' read -r _ message; do
+      [[ -z "$message" ]] && continue
+      printf '[error] %s\n' "$message"
+      ERRORS=$((ERRORS+1))
+    done <<<"$design_surface_errors"
+  fi
+else
+  echo "[info] R10 design-surface trace skipped: no --design-spec supplied"
 fi
 
 # ---------- summary ----------

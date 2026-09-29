@@ -17,7 +17,7 @@ Open this file **first** for any "not working / nothing renders" symptom. Most i
    `requiredDepth` / `padding3D` / `alignDepth` participate in 3D measurement, so
    their relative position can change measured size, thickness, and placement.
 4. **Direct root child rule**: `windowConstraints` only takes effect when attached to the **direct child** of a `WindowContainer` / `DefaultWindowContainer`.
-5. **`resizeType` / manifest**: window-size APIs require `ContainerResizeType.ContentSize` and a matching `pico.spatial.windowcontainer.resizetype` value (`0` Disabled, `1` User, `2` ContentSize).
+5. **`resizeType` / manifest**: window-size APIs require `ContainerResizeType.ContentSize` and a matching `pico.spatial.windowcontainer.resizetype` value (`0 = Automatic`: system-selected, currently defaults to `ContentMinSize`; `1 = ContentMinSize`: minimum size only; `2 = ContentSize`: minimum and maximum sizes).
 6. **DSL stability**: hover DSL blocks must declare the **same number of effects** in both `isActive = true` and `false` branches; only vary the values, not the structure.
 7. **Inheritance break**: `Vibrant.None` and `disableSpatialHoverEffect` terminate inheritance for an entire subtree.
 8. **Imports**: import the real symbols (`com.pico.spatial.ui.foundation.*`); IDE auto-import sometimes picks the wrong package.

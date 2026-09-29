@@ -207,7 +207,9 @@ Expected dependency set:
 
 ### 6. Add dependency exclusions when required
 
-After the project adds the Spatial SDK dependencies, add the exclusions in the Gradle configuration section.
+After adding the Spatial SDK dependencies, run or inspect dependency resolution first. Add exclusions only when that evidence identifies a concrete Compose conflict, and include only the conflicting modules. Do not add the following block as a default migration step.
+
+If the evidence requires all of these exclusions, use this Gradle configuration and record the conflict it addresses:
 
 ```groovy
 configurations.all {
@@ -270,7 +272,7 @@ Example manifest structure for a default window container:
                 android:value="dp" />
             <meta-data
                 android:name="pico.spatial.windowcontainer.materialbackground"
-                android:value="0" />
+                android:value="1" />
         </activity>
 
     </application>
@@ -449,40 +451,34 @@ if (SpatialBuild.isSpatialPlatform()) {
 
 Only call Spatial APIs after confirming the runtime is a Spatial platform.
 
-## Output format
+## Final handoff contract
 
-When using this skill, produce output in this structure:
+After completing a migration, or when the user requests a complete migration
+assessment, the final response MUST preserve the migration decisions below.
+Organize them for the user's task; exact headings and a fixed five-section
+layout are not the contract, and closely related facts may share a section.
 
-### 1. Migration assessment
+- State the observed pre-port architecture and any blocker or risk that made a
+  direct Spatial migration unsafe. If no blocker remains, say that explicitly
+  rather than omitting the assessment after implementation succeeds.
+- State the container mapping for every major screen or flow. For each one,
+  explain why it became an independent container or why it remains navigation
+  inside another container. Do not report only the resulting files.
+- Summarize the repository, version, dependency, entry, manifest, UI,
+  interaction, and navigation changes that were actually made. Separate
+  evidence-driven changes from optional recommendations.
+- State the runtime compatibility decision, including Spatial-only versus
+  shared APK behavior and any guards that preserve standard Android behavior.
+- Report concrete build or runtime evidence, remaining unverified behavior,
+  deferred Spatial capabilities, and the next validation priorities. Never
+  collapse a successful build into a claim that interaction or device behavior
+  was also verified.
 
-- current architecture summary
-- blockers to direct Spatial migration
-- screens that should become independent containers
-
-### 2. Required project changes
-
-- repository configuration updates
-- version variable definition
-- dependency block changes
-- Compose exclusions if needed
-
-### 3. Entry and container migration plan
-
-- launcher entry mapping
-- additional container definitions
-- Activity-to-container migration notes
-
-### 4. UI and interaction changes
-
-- navigation and exit changes
-- hover and focus adjustments
-- components that should move to Spatial-native patterns
-
-### 5. Compatibility and rollout notes
-
-- runtime guards for shared APK support
-- advanced Spatial capabilities to defer until later
-- testing or validation priorities for the next step
+For a scoped question or partial assessment, report only the decision facts
+relevant to that scope and identify unknown inputs instead of filling them with
+guesses. For an implementation request, distinguish completed work from
+deferred or blocked work. The required information is semantic; do not add
+empty or mechanical headings merely to satisfy this contract.
 
 ## Constraints / pitfalls
 

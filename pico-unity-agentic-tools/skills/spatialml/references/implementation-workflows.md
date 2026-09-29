@@ -144,3 +144,10 @@ diagnostics for complete app logs, crashes, screenshots, and system traces.
 - Graph resources are created once and released in the SDK-documented lifecycle order.
 - The project builds and device-dependent camera, inference, placement, and output behavior has runtime
   evidence.
+
+## Service Debug Channel
+
+For verbose service events or an explicit global tensor probe, use this plugin's
+`spatialml-debugging` skill. It covers the device-wide readback permission bypass, mode-specific
+log coverage, SDK snapshot lifetimes, and setting `debug.pico.spatialml.debug` to `0` afterward.
+Completion markers alone do not establish correct output; correlate ordinary errors and values.

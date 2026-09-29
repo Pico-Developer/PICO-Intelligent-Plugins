@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill when you need the public camera-facing APIs that create and control Spatial Adapter windows. It covers `SpatialCamera`, reusable `SpatialCameraConfiguration` assets, and the mode-specific metadata that gets sent to the host system.
 
+## Compatibility and Scope
+
+Confirm Spatial mode from the saved `mode`, installed package, and scene evidence before changing the scene; ask if they conflict. Verify `ByteDance.PICO.SpatialAdapter` APIs against the installed package. API explanations are read-only. Before scene changes, verify the running Editor and an available scene-editing tool; if unavailable, report the blocker and provide manual steps. Preserve Undo and save the intended scene after authorized changes. For camera creation use [scene setup](../spatialadapter-scene-setup/SKILL.md); for target following use [camera focus](../spatialadapter-spatial-camera-focus/SKILL.md).
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -40,7 +44,7 @@ Use this skill when you need the public camera-facing APIs that create and contr
 
 ## Reference
 
-Read `reference.md` in this folder for the full API map, serialized fields, mode behavior, metadata keys, and configuration details.
+Read [reference.md](reference.md) for the full API map, serialized fields, mode behavior, metadata keys, and configuration details.
 
 ## Common Mistakes
 

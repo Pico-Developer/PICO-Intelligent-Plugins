@@ -92,7 +92,7 @@ Use this summary for routing; load `command-families.md` for details.
 - Prefer `--format json` for inspection commands when the output will be parsed or compared.
 - Prefer explicit `--device <id>` / `-d <id>` when multiple devices are connected.
 - Inspect before writing, deleting, uninstalling, clearing logs, or starting a long-running watch.
-- Treat `pico-cli shell ...` as a raw escape hatch: if the CLI needs to auto-start a managed emulator first, explain that wait explicitly instead of treating it like immediate shell output.
+- Treat `pico-cli shell ...` as a raw escape hatch: when no device is online, run `pico-cli emulator start` explicitly and wait for readiness before invoking shell.
 - Do not route volumetric/spatial interaction through `pico-cli shell input tap x y`; that path only covers 2D screen-coordinate input and is not reliable for spatial containers.
 - For SpatialML, route workflow decisions to the unified `spatialml` skill; use this skill's reference
   only for exact command syntax and generic output handling.

@@ -13,10 +13,49 @@ not** be imported from app code.
 - Semantic colors: `error` / `alert` / `passable` / `interaction`
 - Divider: `dividerLine`
 
+### Role visual reference
+
+The following ARGB values are visual anchors for understanding each role's
+approximate lightness, opacity, and hue. SpatialUI versions generally preserve
+these visual tendencies. Vibrant can change the final rendered values, but it
+resolves roles independently and does not guarantee contrast between an
+arbitrarily paired foreground and background. Use these anchors to anticipate
+likely conflicts while generating code.
+
+These values are not app tokens or an exact runtime-color contract. Do not
+hardcode them into generated UI; continue to use
+`PicoTheme.colorScheme.<role>`.
+
+| Role                | Visual anchor | Typical tendency / use                            |
+| ------------------- | -------------- | ------------------------------------------------- |
+| `labelPrimary`      | `#FF000000`    | primary text and core content                     |
+| `labelSecondary`    | `#CC000000`    | secondary text and supporting descriptions        |
+| `labelTertiary`     | `#A6000000`    | tertiary text and weaker supporting information   |
+| `labelQuaternary`   | `#66000000`    | placeholders, disabled hints, de-emphasized text  |
+| `labelPrimaryLight` | `#FFFFFFFF`    | bright foreground on dark or emphasized fills    |
+| `fillPrimary`       | `#FF282828`    | important compact fills and primary emphasis      |
+| `fillSecondary`     | `#66FFFFFF`    | selected states and secondary emphasis            |
+| `fillTertiary`      | `#0A000000`    | low-emphasis peer controls                        |
+| `fillLight`         | `#26FFFFFF`    | very light backgrounds and broad content grouping |
+| `lightenHover`      | `#66FFFFFF`    | hover lightening layer                            |
+| `lightenPressed`    | `#66FFFFFF`    | pressed lightening layer                          |
+| `error`             | `#FFFF4D4D`    | error state                                       |
+| `alert`             | `#FFFFBF00`    | warning state                                     |
+| `passable`          | `#FFB3FF66`    | success / pass state                              |
+| `interaction`       | `#FF3377FF`    | links and interactive emphasis                    |
+| `dividerLine`       | `#1F000000`    | divider line                                      |
+
+Alpha-bearing fills such as `fillSecondary`, `fillTertiary`, and `fillLight`
+must be evaluated after compositing over the actual underlying surface.
+
 ```kotlin
-// ✅ Correct — for business cards / inner containers
-Box(Modifier.background(PicoTheme.colorScheme.fillPrimary))
-Text("Hello", color = PicoTheme.colorScheme.labelPrimary)
+Box(
+    // Correct when this bounded node owns the accepted dark design surface.
+    // design-style: design-surface featured-card
+    modifier = Modifier.background(PicoTheme.colorScheme.fillPrimary),
+) {
+    Text("Hello", color = PicoTheme.colorScheme.labelPrimaryLight)
+}
 
 // ❌ Wrong — hardcoded color
 Box(Modifier.background(Color(0xFF1A1A1A)))
@@ -31,9 +70,10 @@ Box(Modifier.background(Color(0xFF1A1A1A)))
 //          references/window-background.md.
 ```
 
-> Scope reminder: `fillPrimary / fillSecondary / fillTertiary` are intended for
-> business cards and inner containers, not the window root. The window root
-> is already glass by default (see `window-background.md`).
+> Scope reminder: `fillPrimary / fillSecondary / fillTertiary` may be used by
+> the one app-authored surface owner selected for a content path, never by
+> every nested group. They are not window-root fills. The window root is
+> already glass by default (see `window-background.md`).
 
 ## 2. Typography Roles (`PicoTheme.typography.*`)
 
@@ -56,20 +96,31 @@ Text(
 )
 ```
 
-### Text foregrounds are not CSS-inherited
+### Foreground ownership and contrast
 
 `PicoTheme(colorScheme = ...)` provides `LocalColorScheme`, not
 `LocalContentColor`. A `Text` whose `color` and `style.color` are both
 unspecified reads `LocalContentColor`; outside a component that explicitly
-provides it, the value remains `Color.Unspecified` and can render black. This is
-especially visible on dark glass.
+provides it, the value can remain `Color.Unspecified`. SpatialUI components,
+however, intentionally provide state-aware content colors to their supported
+slots.
 
 ```kotlin
-// ✅ Ordinary Box / Row / Column surface: resolve the foreground explicitly.
+// Ordinary app-owned surface: choose a foreground for the actual background.
 Text("Reef health", color = PicoTheme.colorScheme.labelPrimary)
 
-// ✅ Direct SpatialUI component slot: inherit the component's state-aware
-// content color and make that decision auditable.
+// SpatialUI stateful component: keep its paired defaults and inherit the slot
+// foreground. Do not add color merely to make the choice explicit.
+ToggleableChip(
+    isToggleOn = selected,
+    onClick = onSelect,
+    label = {
+        Text("All days")
+    },
+)
+
+// Custom component colors: configure the pair through one colors API and let
+// the slot inherit.
 Button(
     onClick = onStart,
     colors = ButtonDefaults.buttonColors(
@@ -77,21 +128,21 @@ Button(
         contentColor = PicoTheme.colorScheme.labelPrimaryLight,
     ),
 ) {
-    // design-style: inherited-content-color Button
     Text("Start")
 }
-
-// ❌ Wrong on an ordinary dark surface: PicoTheme alone does not provide
-// LocalContentColor.
-Text("Reef health", style = PicoTheme.typography.titleMedium)
 ```
 
 For a large custom surface with one foreground role, application code may wrap
 the content in
 `CompositionLocalProvider(LocalContentColor provides PicoTheme.colorScheme.labelPrimary)`.
-Still mark each inherited `Text` with
-`// design-style: inherited-content-color <provider>` so the verifier can
-distinguish deliberate inheritance from an accidental missing color.
+There is no blanket requirement that every `Text` spell out `color = ...`.
+Instead, keep one clear color owner: the built-in component, its `colors` API,
+or the app-owned surface/provider.
+
+For stateful UI, inspect each state's effective pair. A foreground may remain
+unchanged when it stays readable across backgrounds. Avoid dark-on-dark,
+light-on-light, white on light gray, and white on bright category fills.
+`labelPrimaryLight` is not a generic selected-state foreground.
 
 ## 3. Sizes / Spacing
 
@@ -115,7 +166,7 @@ want design-system timing/easing:
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `LocalContentColor`      | Current content color; `Text` and `Icon` read it by default                                                                                  | `CompositionLocalProvider(LocalContentColor provides PicoTheme.colorScheme.labelPrimary) { ... }`     |
 | `LocalDisableAlpha`      | Disabled alpha (default `0.3f`)                                                                                                              | `Modifier.alpha(if (enabled) 1f else LocalDisableAlpha.current)`                                      |
-| `LocalIndication`        | Indication for `clickable`; `PicoTheme` already provides `PicoIndication`                                                                    | `Modifier.clickable(interactionSource = ..., indication = LocalIndication.current) {}`                |
+| `LocalIndication`        | Indication for `clickable`; `PicoTheme` provides `PicoIndication`, and the concise clickable overload reads it by default                     | `Modifier.clickable(onClick = onClick)`                                                               |
 | `LocalAudioEffectPlayer` | System audio-effect player (mainly for custom toggle audio); name and package vary by SDK version — verify with IDE auto-complete before use | `LocalAudioEffectPlayer.current.playSystem(SpatialSoundEffect.StateOn)` (subject to SDK confirmation) |
 
 > `ProvideContentColor` is internal. From app code use
@@ -142,64 +193,29 @@ want design-system timing/easing:
 ## 7. Color-Scheme Mechanics and Decision Rules
 
 `PicoTheme { ... }` defaults to `systemColorScheme(LocalContext.current)`.
-That default is valid only when there is no design product to restore. **The
-goal is to reproduce the final design deliverable's coordinated theme** — its
-primary/accent color together with the semantic palette that was color-matched
-to it. When Figma, a screenshot/design package, or the design colors the caller
-passes to `verify-design-style.sh --design-color` provide that theme, the app
-MUST derive a complete custom scheme from `systemColorScheme(...)`, explicitly
-assign all 16 public roles, override matching roles with exact design values,
-and inject it through `PicoTheme(colorScheme = ...)`. Roles that remain
-adaptive are still written explicitly as `role = system.role`.
-Using the stock semantic roles without overriding their values makes the app
-wear the default PICO palette and is a hard fidelity failure.
+Keep that native scheme unchanged for every app, including design-driven
+flows. Do not reconstruct or copy it to replace `fill*`, `label*`, interaction,
+status, hover/pressed, or divider values.
 
-**Custom colors are explicitly allowed** — the design's palette wins over the
-default PICO look. Any color the design uses must survive into the running app,
-including colors that have no matching PICO role:
-
-- A design value that maps to one of the 16 roles → override that role.
-- A brand/decorative value with no matching role → carry it verbatim through a
-  named brand token in the theme/token layer, or as an annotated fixed literal
-  (`Color(0x…) // design-style: fixed-figma-color <source>`).
-- Never snap a custom design color to "the nearest" default role — that loses
-  the design identity and MUST fail review.
+**Custom colors are explicitly allowed.** Carry each design color through a
+named app-owned token in the theme layer, or as an annotated fixed literal
+(`Color(0x…) // design-style: fixed-figma-color <source>`), and use it directly
+at the intended content call site. Never assign it to a native
+`PicoTheme.colorScheme` role and never edit SpatialUI token source.
 
 ```kotlin
 @Composable
 fun ProductTheme(content: @Composable () -> Unit) {
-    val system = systemColorScheme(LocalContext.current)
-    val designColors =
-        system.copy(
-            fillPrimary = system.fillPrimary,
-            fillSecondary = system.fillSecondary,
-            fillTertiary = system.fillTertiary,
-            fillLight = system.fillLight,
-            labelPrimaryLight = system.labelPrimaryLight,
-            labelPrimary = system.labelPrimary,
-            labelSecondary = system.labelSecondary,
-            labelTertiary = system.labelTertiary,
-            labelQuaternary = system.labelQuaternary,
-            lightenHover = system.lightenHover,
-            lightenPressed = system.lightenPressed,
-            error = system.error,
-            interaction = Color(0xFFFF6B4A), // design-style: fixed-figma-color primary action
-            passable = Color(0xFF89E0B0), // design-style: fixed-figma-color completion
-            alert = Color(0xFFFFD166), // design-style: fixed-figma-color warning
-            dividerLine = system.dividerLine,
-        )
-    PicoTheme(colorScheme = designColors, content = content)
+    PicoTheme(content = content)
 }
 
-// Custom brand color with no matching role: keep it as a named token so the
-// design value is preserved verbatim and reused across the app.
-val BrandTeal = Color(0xFF0FB9B1) // design-style: fixed-figma-color brand accent
+object ProductColors {
+    val BrandTeal = Color(0xFF0FB9B1) // design-style: fixed-figma-color brand accent
+}
 ```
 
-Keep adaptive grayscale `fill*` / `label*` values from the system scheme unless
-the design contract explicitly classifies a value as fixed, but forward each
-one visibly in the complete copy. App code should still consume the result
-through `PicoTheme.colorScheme` and must not import private token objects.
+App code consumes native semantic colors through `PicoTheme.colorScheme` and
+must not import private token objects.
 
 ### Two color families
 
@@ -214,26 +230,24 @@ through `PicoTheme.colorScheme` and must not import private token objects.
 
 ### Generation rules
 
-- Treat the design deliverable's coordinated theme (primary/accent + the
-  color-matched semantic palette) as required inputs, not optional suggestions.
-  Every value must appear in the custom theme mapping or an explicitly
-  documented custom brand token.
-- A design-driven flow must contain an explicit
-  `PicoTheme(colorScheme = ...)` call and a complete assignment of all 16
-  `ColorScheme` roles. A wrapper that delegates to plain `PicoTheme {}` or a
-  partial `.copy(...)` is non-compliant.
-- If a Figma token name is a standard role (`Label Primary`, `Fill Tertiary`,
-  `Error`, `Divider Line`), map the token name to `PicoTheme.colorScheme.xxx`
-  and override that role with the design's exact value.
-- Custom colors are allowed and expected for fidelity: a design value that has
-  no matching PICO role (a brand hue, a decorative accent) must still be carried
-  verbatim through a named brand token or an annotated fixed literal. Do not
-  drop it and do not approximate it with the nearest default role.
+- Keep all 16 native roles untouched and consume them through
+  `PicoTheme.colorScheme.<role>`.
+- Do not construct a replacement `ColorScheme` or call
+  `systemColorScheme(...).copy(...)`.
+- If a Figma token name resembles a standard role, do not use that reserved
+  name for a custom value. Give it an app-specific semantic name instead.
+- Preserve every custom design color as a named app-owned token or annotated
+  fixed literal. Do not drop it or approximate it with a native role.
 - Do not hardcode adaptive hierarchy colors such as gray text values. Use the
   matching `PicoTheme.colorScheme.label*` role or `Color.Vibrant.withVibrant(...)`.
 - Do not wrap stock semantic roles again, e.g. avoid
   `PicoTheme.colorScheme.error.withVibrant(Vibrant.None)`; use
   `PicoTheme.colorScheme.error` directly.
+- Prefer built-in component color defaults for selection and toggle states.
+  Let supported `Text` / `Icon` slots inherit the component content color.
+- When custom state colors are required, use one component `colors` API where
+  possible and consider the effective foreground and background together.
+  Do not independently recolor a child slot after configuring the parent.
 - If the design intentionally uses a translucent semantic color such as
   `Color(0xCCDDFF99)`, preserve the alpha with
   `Color(0xCCDDFF99).withVibrant(Vibrant.None)` instead of replacing it with an

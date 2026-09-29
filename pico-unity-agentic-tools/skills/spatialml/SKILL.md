@@ -30,8 +30,8 @@ Explain required confirmations and manual Unity steps in plain language.
 For example:
 
 ```text
-In this PICO Unity app, estimate body pose from the passthrough camera and use it to drive an avatar.
-Start from the closest Pipeline Zoo package, import it through the Unity SDK importer, then build and
+In this PICO Unity app, detect faces from the passthrough camera and draw an overlay for each face.
+Start from picoxr/face-mediapipe-pipeline, import it through the Unity SDK importer, then build and
 verify the app. Explain any step I need to do in the Editor.
 ```
 
@@ -39,6 +39,10 @@ If the PICO Unity SDK is absent, tell the user to invoke `/pico-unity-init`; it 
 workflow. After it completes, resume this SpatialML request instead of asking the user to start over.
 
 ## Route The Request
+
+- For service logging, global tensor probes, zero/stale output, or readback permission failures,
+  use this plugin's `spatialml-debugging` skill. It owns the debug flag, capture, value inspection,
+  and cleanup workflow; resume this skill for broader graph or package changes.
 
 - For SpatialML project setup or diagnosis, stay in this skill.
 - For Pipeline Zoo discovery, selection, installation, closest-package adaptation, importer handoff,
@@ -72,7 +76,7 @@ Respect each returned status and `nextAction`:
   incompatible. Inspect the checks and capability matrix instead of treating every `PARTIAL` as the
   same problem.
 - Install or update pySpatialML with
-  `python3.13 -m pip install --upgrade pyspatialml-pico`. pico-cli supports version 0.5.0 or newer,
+  `uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`. pico-cli supports version 0.5.0 or newer,
   resolves `pyspatialml` from `PATH`, and honors `PICO_CLI_PYSPATIALML` as an explicit executable
   override.
 - `pipeline.verify`, `model.inspect`, and `model.visualize` delegate to pySpatialML. If they return
@@ -85,6 +89,10 @@ Read `references/pipeline-zoo.md` before searching for, installing, adapting, im
 verifying a package. Unity installation is complete only when the SDK-owned importer returns
 `status=installed` and a generated `packageAssetPath`. A staged `.pico-cli/spatialml-downloads/`
 directory is not a completed import.
+Each install attempt has its own revision-scoped `sourcePath`; preserve the exact returned path for a
+manual Editor import, and never replace an earlier staging directory that may still be pending.
+Treat `catalog.truncated=true` search output as non-exhaustive, and always pass an explicit
+`--package <path>` when verifying.
 
 At runtime, consume the generated `SpatialMLPipelineZooAsset`. Do not parse package JSON in
 application code to reconstruct operators, tensors, edges, globals, or scheduling.

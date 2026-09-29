@@ -102,12 +102,39 @@ npm --version
 command -v pico-cli || echo "pico-cli not on PATH"
 pico-cli --version
 pico-cli --help
+pico-cli doctor --help
 pico-cli setup --help
 pico-cli plugin --help
+pico-cli plugin doctor --help
 pico-cli update --help
 pico-cli plugin update --help
 pico-cli knowledge --help
+pico-cli knowledge doctor --help
 ```
+
+Before the first invocation of each doctor command selected for the current
+check, run that exact command's `--help` form. For example,
+`pico-cli --help` does not replace `pico-cli doctor --help`, and
+`pico-cli plugin --help` does not replace `pico-cli plugin doctor --help`.
+Do not infer support from another command's help or from this Skill's examples.
+
+Do not invoke a doctor command with `--agent-tool` until its own help has shown
+the accepted values. A general environment check does not need `--agent-tool`;
+omit it unless the user requested a specific Host or the check must inspect one
+explicitly. Host display names, executable names, and `pico-cli` identifiers are
+different namespaces:
+
+| Host        | Canonical `--agent-tool` | Executable | Accepted alias |
+| ----------- | ------------------------ | ---------- | -------------- |
+| Claude Code | `claude-code`            | `claude`   | `claude`       |
+| Trae CLI    | `traecli`                | `traex`    | none           |
+
+Use the canonical identifier in generated commands. Treat the command's current
+`--help` output as authoritative for all other Hosts and aliases; do not derive
+an identifier from an executable name. The `claude` compatibility alias belongs
+only to the current `--agent-tool` option. The deprecated `--tool` option accepts
+canonical Host IDs only, so `--tool claude` is invalid; `trae` remains invalid for
+both options.
 
 If the installed CLI exposes doctor commands, prefer JSON for machine-readable
 results and plain output for a quick human summary:
@@ -128,7 +155,7 @@ contract:
   "tool_status": "SUCCESS|PARTIAL|FAILED",
   "summary": "human-readable one-line result",
   "data": {
-    "targetPlatform": "spatial|unity",
+    "targetPlatform": "spatial|unity|null",
     "hostPlatform": "darwin|linux|win32",
     "checks": [
       {
@@ -181,22 +208,30 @@ run already collected (it triggers no extra capability):
 In plain output the overview is an `Overview` block of `- <Row>: <value>` lines
 (`unknown` when a row cannot be resolved); in JSON it is the `data.overview`
 object with `cli`, `pluginName`, `sdk`, `picoDevelopmentKnowledge`, `emulator`,
-and `editor` fields. The Emulator and
-Editor rows come from the emulator/editor doctor checks that root doctor already runs (common-doctors and
-spatial-doctors), so a normal `pico-cli doctor --platform spatial` run is enough
-to populate all six — you do not need to run `emulator doctor` / `editor doctor`
-separately just to fill the overview. A row reads `unknown` when that tool is
-not installed; treat that as "not provisioned yet" rather than a doctor failure,
-since the emulator and editor are optional tools pulled on first use.
+and `editor` fields. The Emulator and Editor rows come from checks that root
+doctor already runs (common-doctors and spatial-doctors), so a normal
+`pico-cli doctor` run from a configured Spatial project is enough to populate
+all six. You do not need to run `emulator doctor` / `editor doctor` separately
+just to fill the overview. In this root-doctor context, a row reads `unknown`
+and its check is `[skip]` when that optional tool is not installed; treat that
+as "not provisioned yet" rather than a root-doctor failure.
 
-Pass the intended development platform explicitly when it matters. For a
-project-specific check, run the command from that project directory so the
-project-context / AGENTS.md routing check is included and stays fixable:
+Root doctor selects the effective setup platform automatically. Its optional
+`--platform` value asserts the expected configured platform; it never selects
+or overrides the target. Run it from the target project directory: a valid
+local `.pico-env.json` takes precedence, and the global setup is used only when
+no local file exists. If the local file is invalid or has no supported
+platform, doctor does not fall back to global state; it runs common diagnostics
+plus untargeted plugin diagnostics and asks the user to run `pico-cli setup`:
 
 ```bash
-pico-cli doctor --format json --platform spatial
-pico-cli doctor --format json --platform unity
+pico-cli doctor --format json --platform <spatial|unity>
 ```
+
+If the assertion differs from setup, root doctor reports `doctor.platform`,
+sets `targetPlatform` to `null`, skips both platform-specific sections, and
+runs plugin doctor without a target so recorded Host resources remain
+observable.
 
 When run outside a project directory, root doctor reports project-context as a
 non-blocking setup warning. It never writes to the current directory unless an
@@ -239,12 +274,17 @@ pico-cli project context doctor --agent-tool <host> --fix --format json
 pico-cli plugin doctor --agent-tool <host> --format json
 ```
 
-Use `--platform unity` for Unity workflows:
+The same root command diagnoses Unity when the effective setup platform is
+Unity:
 
 ```bash
 pico-cli doctor --format json --platform unity --agent-tool <host> --fix
 pico-cli plugin doctor --agent-tool <host> --format json
 ```
+
+When the effective platform is unknown or the assertion fails, `pico-cli doctor
+--fix` makes no changes. Platform selection and its initial state write belong
+to `pico-cli setup`.
 
 Plugin doctor reports `agentHosts` from the nearest project-local
 `.pico-env.json`; when no project-local record exists, it falls back to
@@ -258,11 +298,14 @@ flag: its repair dispatch differs by version and may invoke broader setup or an
 incorrect plugin lifecycle operation. Read the finding and run the current
 explicit setup/install/update command instead.
 
-Avoid repair loops. Run a given repair command once for a specific finding, then
-re-run the relevant doctor. If the same `[error]` / `status: "error"` remains
-after that repair, do not run the same command again in a loop. Report the
-remaining blocker, the command already attempted, and the latest doctor output
-needed for a human or support bundle.
+Avoid repair loops. For any one finding, run its authorized repair **at most
+once**, then re-run the relevant doctor to re-verify. If the same `[error]` /
+`status: "error"` remains, do not run that repair again — and do not switch to a
+different command or a re-worded variant hoping to work around the same finding.
+Stop and report the remaining blocker, the command already attempted, and the
+latest doctor output and exact host-visible error. Many findings are conditions
+`pico-cli` cannot fix by re-running (missing toolchain, offline registry, host
+trust); repeating commands only wastes effort without resolving them.
 
 If root or module doctor commands are absent, do **not** invent them and do not
 treat their absence as a failed environment by itself. Fall back to the supported
@@ -276,7 +319,7 @@ unavailable.
 The CLI cannot diagnose itself if Node.js or `pico-cli` is missing.
 
 ```bash
-node --version                       # Node.js 18+ required
+node --version                       # Node.js 20+ required
 npm --version                        # useful for public npm install/update paths
 command -v pico-cli || echo "pico-cli not on PATH"
 pico-cli --version                   # installed CLI version, if present
@@ -284,7 +327,7 @@ pico-cli --version                   # installed CLI version, if present
 
 Heal the bootstrap layer before continuing:
 
-- `node` missing or older than 18 → stop and tell the user to install Node.js 18+
+- `node` missing or older than 20 → stop and tell the user to install Node.js 20+
   first.
 - `pico-cli` not installed → install it through the user's normal channel.
   External/public users can use:
@@ -317,12 +360,11 @@ installs, the wrong build and can break the environment.
    makes that action explicit:
    ```bash
    pico-cli update --check --format json    # refresh the version cache (read-only)
-   pico-cli doctor --format json --platform spatial
-   pico-cli doctor --format json --platform unity
+   pico-cli doctor --format json --platform <spatial|unity>
    ```
-   Choose the doctor command that matches the user's target development
-   platform. Do not use an unscoped root doctor result to drive
-   platform-specific repair decisions.
+   Run doctor from the target project directory and assert the platform needed
+   by the workflow. If `targetPlatform` is `null`, resolve the reported
+   assertion/setup problem instead of attempting platform-specific repairs.
 2. **Internal / private install** (the CLI did not come from public npm): do NOT
    run `npm view` / `npm install` against a public package. Report the installed
    `pico-cli --version` and ask the user to update through their team's
@@ -400,8 +442,6 @@ Use this mapping:
 | `PLUGIN_NOT_INSTALLED`           | Run the reported `pico-cli plugin install` command for the missing Host in the existing setup scope.                                |
 | `PLUGIN_REPAIR_REQUIRED`         | Run the reported `pico-cli plugin install` command to reconcile the same-platform env-recorded resources.                           |
 | `PLUGIN_UPDATE_AVAILABLE`        | Run the reported `pico-cli plugin update` command.                                                                                  |
-| `PLUGIN_RECORDED_VERSION_STALE`  | Run the reported `pico-cli plugin update` command to realign the recorded version with the manifest the Host actually loads.        |
-| `PLUGIN_REGISTRY_PATH_MISMATCH`  | Run the reported `pico-cli setup` command to rebuild the Host registry so it resolves the plugin from the recorded path.            |
 | `PLUGIN_PLATFORM_MISMATCH`       | Run setup and review the complete Host/platform plan; plugin lifecycle commands do not switch platforms.                            |
 | `PLUGIN_SOURCE_HANDOFF_REQUIRED` | Run setup to review and authorize the source-to-release handoff.                                                                    |
 | `PLUGIN_UPDATE_UNKNOWN`          | Keep current resources unchanged and retry doctor later, or run an explicit update when network access is available and authorized. |
@@ -469,40 +509,65 @@ Report pending Host authorization separately from missing/broken installation.
 
 #### Setup-phase dependencies
 
-`pico-cli setup` also provisions the dependencies spatial skills rely on. These
-installs are non-fatal — `setup` continues and only warns if one fails — so read
-the setup log, find the dependency that warned, and fix that specific one instead
-of only re-running `setup` blindly. A single failed dependency does not mean the
-whole environment is broken.
+`pico-cli setup` also provisions the dependencies spatial skills rely on. Each
+dependency finishes with one of three outcomes, and they are not equivalent:
 
-| Dependency                    | What it provides                                     | If it warns/fails                                                                                                                             |
-| ----------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| PICO development knowledge    | The PICO development knowledge the MCP server serves | Re-run `setup`; persistent failures are usually network/registry reachability for the knowledge-pack download — fix connectivity, then retry. |
-| `uv` (Python runtime/manager) | Python environment used by graphify and Python tools | Usually missing network or Python toolchain; ensure outbound network and a working Python, then re-run `setup`.                               |
-| graphify                      | Knowledge-graph tooling (depends on `uv`/Python)     | Fix `uv`/Python first, then re-run `setup`.                                                                                                   |
-| profiler                      | Perfetto/profiler support for `pico-cli perf` work   | Non-blocking for most tasks; re-run `setup` (or `pico-cli doctor`) when perf workflows are needed.                                            |
+- **warning** — non-blocking. `setup` completes, but the warning marks a residual
+  condition `pico-cli setup` cannot fix on its own — a dependency it could not
+  install (missing Python toolchain, offline/unreachable registry) or a state it
+  could not record (host not trusting the project, a scope pointer it could not
+  write). Re-running `setup` does **not** clear it. The user or agent must fix that
+  root cause first (install the tool manually, restore connectivity, grant host
+  trust), then re-run `setup` **at most once** to confirm. The `uv`, Unity CLI, and
+  graphify dependencies surface install failures this way so a single missing tool
+  never blocks the rest of setup.
+- **skipped** — non-blocking. An optional dependency was not provisioned. Usually
+  no action is needed; install it only when a workflow actually requires it.
+- **error** — ultimately fatal. The independent setup phases still run to the end,
+  but `setup` finishes by throwing a `dependency_failure` (`CliError`) so the run
+  fails. This is reserved for the core PICO runtime — a failed `PICO_HOME`/Primer
+  runtime or PICO development knowledge (Agent Vault) install — without which the
+  environment cannot function. Fix the underlying environment/network cause, then
+  re-run; do not loop.
+
+So read the setup log, find the specific dependency and its outcome, and fix that
+one root cause instead of re-running `setup` blindly. A single warning does not
+mean the whole environment is broken, and repeated `setup` runs will not resolve a
+condition that requires a manual fix.
+
+| Dependency                    | What it provides                                     | If it warns / fails                                                                                                                                                                                                  |
+| ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PICO development knowledge    | The PICO development knowledge the MCP server serves | Core runtime — a hard failure is `error` and fails `setup` with `dependency_failure`. Usually network/registry reachability for the knowledge-pack download; fix connectivity, then re-run `setup` once.             |
+| `uv` (Python runtime/manager) | Python environment used by graphify and Python tools | Non-blocking `warning`. Usually missing network or Python toolchain — install a working Python / restore outbound network yourself, then re-run `setup` once. Re-running alone will not install a missing toolchain. |
+| graphify                      | Knowledge-graph tooling (depends on `uv`/Python)     | Non-blocking `warning`. Fix `uv`/Python first, then re-run `setup` once. It will not fail `setup`; the run completes with a graphify warning you can act on when knowledge-graph tooling is needed.                  |
+| profiler                      | Perfetto/profiler support for `pico-cli perf` work   | Non-blocking for most tasks; re-run `setup` (or `pico-cli doctor`) once when perf workflows are needed.                                                                                                              |
 
 #### On-demand tools (not installed by setup)
 
 The PICO Emulator and Spatial Editor are **on-demand** tools. They are not
 required for a healthy base environment and are intentionally **not** installed
 by `pico-cli setup`; they are pulled the first time a workflow actually needs
-them, which keeps the initial install small. Do not treat their absence as an
-environment failure or eagerly install them "to be safe".
+them, which keeps the initial install small. Interpret absence according to the
+command entry point:
 
-- When the emulator/editor doctor reports one as not installed, it is `[skip]`
-  (optional and not provisioned yet), not `[error]`/`[warn]`. The overview rows
-  read `unknown` in that state. Report it as "not installed yet; will be pulled
-  on first use" rather than a defect to repair.
+- Root `pico-cli doctor --platform spatial` treats a cleanly uninstalled
+  optional Emulator or Editor as `[skip]`, and its overview row reads `unknown`.
+  Report that root-doctor result as "not installed yet; will be pulled on first
+  use", not as a base-environment failure.
+- Standalone `pico-cli editor doctor` validates Editor readiness specifically.
+  If Spatial Editor is not installed, it reports `editor.installation` as
+  `[error]`, returns overall `FAILED`, and points to
+  `pico-cli editor install -y`. Use this standalone command when the user's task
+  requires Editor or explicitly asks to diagnose Editor readiness; do not
+  relabel its failure as a benign root-doctor skip.
 - Install one only when the user's task actually requires it — for example an
   emulator run/device workflow, or opening the Spatial Editor — or when the user
   explicitly asks to install it. At that point the on-demand pull is triggered
   through the owning workflow (for example `spatial-emulator-usage`), not by this
   skill preemptively.
-- A genuine `[error]` (a tool that is installed but broken, or an install the
-  user asked for that failed) is still a repairable finding under the usual
-  authorization rule — only the "not installed at all" state is a benign
-  `[skip]`.
+- Any `[error]`, including standalone Editor doctor's missing-installation
+  result, is an actionable finding under the usual authorization rule. Only the
+  root doctor's cleanly uninstalled optional-tool state is a benign `[skip]`.
 
 ### Step 5 — Verify PICO development knowledge version alignment with the project SDK
 
@@ -511,8 +576,8 @@ served by the `pico-dev-knowledge` MCP must match the project's Spatial SDK
 line. A mismatch means the MCP answers with a different SDK version's knowledge
 than the code the agent is editing, which silently produces wrong API guidance.
 
-Run root doctor from the target project directory and use its overview as the
-single source of truth:
+Run root doctor from the target project directory, assert Spatial, and use its
+overview as the single source of truth:
 
 ```bash
 pico-cli doctor --format json --platform spatial
@@ -604,7 +669,7 @@ and apply the targeted fix instead of only re-running setup and hoping:
 | Root cause                                           | How to spot it                                   | Fix                                                                                                                         |
 | ---------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | Host not restarted after setup/update                | MCP only changed after install in this session   | Fully restart the host or open a new session, then re-check.                                                                |
-| `node`/`npx` not on `PATH`                           | `node --version` or `command -v npx` fails       | Install Node.js 18+ / fix `PATH`, then retry.                                                                               |
+| `node`/`npx` not on `PATH`                           | `node --version` or `command -v npx` fails       | Install Node.js 20+ / fix `PATH`, then retry.                                                                               |
 | Launcher cannot fetch the package (offline/registry) | Standalone launch errors while downloading       | Fix network or registry reachability, or install `pico-cli` globally so the host uses the local binary instead of fetching. |
 | `pico-cli` too old; `knowledge:server` missing       | `pico-cli knowledge --help` lacks the subcommand | Update `pico-cli` (Step 2), then retry.                                                                                     |
 | Knowledge-graph data not provisioned                 | Launch starts but errors on missing graph/data   | Re-run `pico-cli setup` so the PICO development knowledge is pulled (see setup dependencies), then retry.                   |
@@ -612,14 +677,7 @@ and apply the targeted fix instead of only re-running setup and hoping:
 
 Report which root cause applied; do not just say "restarted and hoped".
 
-If MCP still fails after setup/update plus restart, collect evidence with:
-
-```bash
-pico-cli plugin audit
-```
-
-Do not collect transcripts by default. Use transcript mode only when the user
-explicitly approves sharing reviewed support evidence.
+If MCP still fails after setup/update plus restart, report the relevant doctor output and exact host-visible error.
 
 ### Step 7 — Re-verify
 
@@ -636,7 +694,7 @@ After every authorized repair:
 
 | Finding                                                        | Fix                                                                                                                                                 |
 | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Node missing or older than 18                                  | Install Node.js 18+ before continuing.                                                                                                              |
+| Node missing or older than 20                                  | Install Node.js 20+ before continuing.                                                                                                              |
 | `pico-cli` not on `PATH`                                       | Public: `npm install -g @picoxr/pico-cli`; internal: team channel.                                                                                  |
 | `pico-cli` version needs review                                | Run `pico-cli update --check --format json`; when authorized, run `pico-cli update --yes --format json`.                                            |
 | Unknown `pico-cli` command or option                           | Run help discovery; use only commands the installed CLI exposes.                                                                                    |
@@ -649,7 +707,7 @@ After every authorized repair:
 | Platform mismatch or source-channel handoff                    | Run setup and review its complete transition plan; do not combine plugin uninstall/install to switch the environment.                               |
 | PICO development knowledge version mismatches project SDK line | Prompt the user to align, then run `pico-cli knowledge pull <major.minor> --platform spatial --projectRoot <projectRoot>` for the project SDK line. |
 | MCP server absent or disconnected                              | Re-run setup/update, restart the host/new session, then inspect MCP status.                                                                         |
-| Still broken after supported repair plus restart               | Run `pico-cli plugin audit` and report the support bundle path.                                                                                     |
+| Still broken after supported repair plus restart               | Report the relevant doctor output and exact host-visible error.                                                                                     |
 
 ## Self-heal rules and safe defaults
 
@@ -702,17 +760,16 @@ When you run this skill, report:
 4. **Findings**: each concrete gap with the relevant command output. For a
    project task, include the SDK–PICO development knowledge version alignment
    result from the Doctor overview.
-5. **Actions taken**: exact install, setup, update, or audit commands and their
+5. **Actions taken**: exact install, setup, or update commands and their
    results.
 6. **Restart needed?**: whether the user must restart the host or open a new
    session for skills/MCP to load.
 7. **Next step / handoff**: the smallest next action, or the specialized skill to
-   continue with (`pico-cli`, `plugin-audit`, `spatial-emulator-usage`,
+   continue with (`pico-cli`, `spatial-emulator-usage`,
    `spatial-app-onboarding`, etc.).
 
 ## Related skills
 
 - `pico-cli` — generic CLI usage and command-family selection once healthy.
-- `plugin-audit` — deeper local support-bundle workflow for setup/host issues.
 - `spatial-emulator-usage` — emulator/device lifecycle once prerequisites pass.
 - `spatial-app-onboarding` — project scaffolding after the environment is healthy.

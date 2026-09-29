@@ -32,6 +32,19 @@ The 2D counterfactual is the originality backbone: a spatial decision that can't
 - **Room-occluding default** — an oversized initial window that blocks the environment and creates pressure.
 - **Attachment reflex** — reaching for a Toolbar/TabBar/Subwindow/Augment/Popup by habit. Justify placement first; `None` or in-place control is often right.
 - **Domain reskin** — same layout and structure across domains, only copy/colors/icons swapped.
+- **Static index-based depth** — assigning repeated list, table, or card items
+  different Z offsets from array index or visual order (for example 12/6/0) to
+  imply importance. List order is not priority evidence. Keep repeated items
+  coplanar unless an explicit user requirement or domain/interaction state
+  identifies a selected, focused, or prioritized item; prefer the native
+  component state treatment before adding an external `zOffset`.
+- **Surface nesting** — giving a region a fill and then wrapping its ordinary
+  child rows, sections, or cards in more app-authored filled surfaces. Choose
+  one owner on each root-to-content path: the region or its content items.
+- **Decorative content borders** — adding an app-authored border to panels,
+  sections, list rows, or cards merely to separate content. Use spacing,
+  alignment, typography, or one intentional surface instead. Standard control
+  internals and accessibility focus indicators are not app-authored borders.
 
 ## Pre-build hard checks (critique gate)
 
@@ -45,63 +58,55 @@ Any of these sends you back to revise, not tune later:
 6. **Domain-swap test fails** — changing the domain and colors would leave the design essentially unchanged.
 7. **A core component has no data source or task**, or the layout has no derivation evidence.
 8. **The app has no single primary focus** or drives no clear decision/task outcome.
+9. **A `layout` or `domain_visual` node declares a fill, or a root-to-content
+   path contains more than one app-authored fill.** Structural regions stay
+   transparent; the system-provided window background does not count.
+10. **A design node declares `borderWidthDp` or `borderColor`.** These fields
+    are not part of the appearance contract; content boundaries must not be
+    created with app-authored borders.
+11. **A design declares `theme.rootMaterial` or `appearance.material`.** Material
+    is system-owned runtime behavior, not an app-authored design fact.
+12. **Repeated list, table, or card items receive different depth values from
+    child order or array index without explicit user-required, domain-data, or
+    interaction-state evidence.** Ordinary repeated content remains coplanar;
+    visual order alone cannot create priority.
+13. **Physical anchors, plane detection, or cross-session restoration to the
+    same real-world position are paired with Shared Space or a non-Stage form.**
+    These capabilities require Full Space + Stage.
 
 ## PICO color & glass (so the design survives code generation)
 
-A spatial design fails to reproduce faithfully when its colors are recorded as
-bare hex with no PICO grounding — but it _also_ fails if you just map them onto
-the **default** `PicoTheme` roles, because then the app wears PICO's default
-palette, not this design's. The right model: **the design's colors drive the
-theme**. Downstream builds a custom `ColorScheme` from the design's values and
-injects it via `PicoTheme(colorScheme = …)`; built-in components still read
-`PicoTheme.colorScheme.*`, so they get _this design's_ colors while keeping glass
-and vibrant behavior.
+A spatial design must preserve SpatialUI's existing semantic color contract.
+All 16 public `ColorScheme` roles, including `fill*`, `label*`, interaction,
+status, hover/pressed, and divider roles, remain the same-name values from the
+Vibrant system scheme. Do not replace, redefine, or color-match those roles.
 
-PICO has two color families, but the final theme contract is always complete:
-record all 16 public `ColorScheme` roles. Each role must contain either an exact
-design value or an explicit `inherit SpatialUI Vibrant <role>` decision. This
-lets downstream define the entire `systemColorScheme(...).copy(...)` call rather
-than relying on omitted parameters.
-
-- **Brand / accent / fixed-semantic colors → override with the design's exact
-  value.** These are the design's identity. Colors that match a fixed semantic
-  role (`error` / `alert` / `passable` / `interaction` / `dividerLine` /
-  `labelPrimaryLight`) go into the custom `ColorScheme` verbatim — these roles
-  are SDK-side pure semantic colors, safe from unwanted vibrant blending.
-  Brand / decorative colors with no matching `ColorScheme` role are carried
-  verbatim as named brand tokens (Kotlin color literals) and referenced directly;
-  they do **not** enter the `ColorScheme`.
-- **Adaptive grayscale hierarchy (`fill*` / `label*`, hover/pressed) → keep
-  adaptive by default.** The SDK maps these to Vibrant levels so text and
-  surfaces stay readable across viewing distance and passthrough brightness.
-  Record the _intended tone_ ("dark console surface", "primary text"); pin an
-  exact grey only when the design deliberately demands it. Hardcoding greys here
-  is a known way to break in-headset readability.
+Custom colors are allowed, but they live only as named `brandColors`. Use those
+app-owned tokens directly for intentional brand or decorative treatment; never
+write them into `PicoTheme.colorScheme`, `systemColorScheme(...).copy(...)`, or
+the vendored SpatialUI token definitions. This keeps built-in components and
+their adaptive contrast behavior intact while still allowing product identity.
 
 Other rules:
 
-- **Design premise — SpatialUI Web glass is the background.** Load the vendored
+- **Design premise — the window background is system-owned.** Load the vendored
   SpatialUI Web bundle first and keep its default `PicoTheme.install({
-scheme: "vibrant" })`. The app surface itself uses the library's
-  `Material.Regular` glass variables/styles; do not replace that surface with a
-  fixed gray, opaque root, or independently authored blur recipe. Any room image
-  or neutral page color sits behind the glass only to make translucency visible
-  and is not a design token or deliverable requirement.
-- **The window root is system glass** (`Material.Regular`) by default. Never put a
-  solid color / `fillPrimary` on the window root — it kills the glass and vibrant
-  linkage. `fill*` roles are for inner surfaces only.
-- **Glass tiers express depth, not decoration**: `Thin` (background shows through)
-  → `Thickest` (strong foreground focus). Under passthrough, panels with key
-  text/forms need a thicker tier or a solid backing to keep contrast.
+scheme: "vibrant" })`. Do not encode `rootMaterial` or `appearance.material`,
+  and do not replace the system surface with a fixed gray, opaque root, or
+  independently authored blur recipe. The preview page uses the fixed light
+  neutral `#DAD6D3` body background with no background image. It exists only to
+  approximate a real passthrough environment and is not a design token or
+  `design-spec.json` value.
+- **The window root background is system-owned.** Never put a solid color /
+  `fillPrimary` on the window root. `fill*` roles are only for bounded content
+  nodes, not large layout or domain regions.
 - **Status by more than color**: any color-coded status also needs a non-color
   cue (shape/icon) and a human-readable label.
 
-> Color anti-patterns (part of the domain-swap check above): (1) a palette with no
-> theming intent renders as a flat hardcoded page; (2) mapping the design's colors
-> onto the _default_ theme roles throws the design's palette away and reproduces
-> the generic PICO look. The design's brand/accent/semantic colors must actually
-> drive the custom `ColorScheme`; all remaining roles must be explicitly
-> inherited from the SpatialUI Vibrant scheme.
+> Color anti-patterns (part of the domain-swap check above): (1) scattering
+> anonymous literals through product code; (2) replacing an existing SpatialUI
+> role such as `fillPrimary` with a design color. Preserve native roles and
+> express custom colors as clearly named app-owned tokens.
 
 ## Z-axis / depth layering (even inside Planar windows)
 
@@ -113,18 +118,30 @@ Spatial apps are not limited to flat 2D stacking — **Z-axis depth is available
 | ------------------------ | --------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------ |
 | **Selection lift**       | Selected/focused card, hero, or item physically rises forward                     | `zOffset`                                    | 8–24 dp toward +Z                          |
 | **Hover feedback**       | Pointer/gaze hover makes an element pop slightly                                  | `zOffset { animate*AsState }`                | 2–6 dp toward +Z                           |
-| **Glass material depth** | Cards/panels with `backgroundMaterial` automatically reserve depth                | `backgroundMaterial`                         | handled by SDK; don't stack zOffset on top |
 | **Content thickness**    | Volumetric-looking tiles, buttons with physical presence                          | `depth`                                      | 4–12 dp                                    |
 | **3D layering**          | Floating labels, badge overhang that doesn't need sibling nesting (within reason) | `Box3D` + `zOffset`                          | keep within 640 dp total depth             |
 | **Attached ornaments**   | Tooltips, headers, or controls anchored to window corners/edges                   | `Augment(anchor = NormalizedPoint3D.*Front)` | use Augment, not manual zOffset            |
 
+### Scope boundaries
+
+| Scope                                | Rule                                                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Window, dialog, sheet, popup         | Use the matching SpatialUI system component and let it own layer placement; do not recreate window-level hierarchy with manual item `zOffset` values.    |
+| Built-in component interaction state | Prefer the component's native selected/focused/hovered treatment. Add external depth only for an explicit state and after runtime compatibility is known. |
+| Repeated list, table, or card content | Keep siblings coplanar by default. Never derive stepped depth from array index or visual order.                                                          |
+| Custom domain visualization          | Use depth only when an explicit structure or domain/interaction state defines what moves forward and when.                                              |
+
 ### Rules of thumb
 
-- **Nearest = most important**: critical interaction or focused selection sits closest; background context recedes.
+- **Depth follows explicit structure or state**: importance must already be
+  established by a user requirement, domain data, or interaction state before
+  depth is assigned. Physical nearness must never be used to invent importance.
 - **Depth = priority signal, not decoration**: don't push random elements forward just because you can. A lift must communicate state change (selected / pressed / hovered).
+- **Built-in component boundary**: do not add external static `zOffset` values
+  to SpatialUI built-ins merely to make ordinary content feel spatial. Prefer
+  the component's native state treatment.
 - **Keep depth inside 640 dp** for content inside a Planar window — past that it clips.
 - **Animate depth changes**: a selected item rising forward should animate (300–400 ms ease), not teleport.
-- **Don't stack zOffset on glass cards**: `backgroundMaterial` already reserves depth behind content; adding manual zOffset can cause depth-fighting.
 - **Prefer Augment for persistent floating UI** (tooltip, toolbar, floating header) over in-layout zOffset — Augment is a real system window with proper layering and avoids clipping.
 - **Sibling-first for overflow (2D)**: for badges/labels that only need to peek outside a rounded corner _within the same plane_, use sibling positioning (see below). Use Z-offset only when you genuinely want depth separation.
 
@@ -134,7 +151,7 @@ When describing depth in design docs, use: **+X = right, +Y = up, +Z = toward th
 
 ## Component layout anti-patterns
 
-- **Badge/label clipped by parent clip()**: When placing badges, tags, labels, notification dots, or floating indicators that should extend outside a rounded/shaped container (e.g. role tags on a card, unread dots on an avatar, corner ribbons), **use sibling positioning, not parent nesting**. Place the badge as a sibling Box in the same outer layout, positioned via `align(Alignment.TopEnd)` + offset, rather than nesting it inside the container Box that has `clip()` or `border()` applied. A clipped parent will always cut off content that extends past its rounded corners.
+- **Badge/label clipped by parent clip()**: When placing badges, tags, labels, notification dots, or floating indicators that should extend outside a rounded/shaped container (e.g. role tags on a card, unread dots on an avatar, corner ribbons), **use sibling positioning, not parent nesting**. Place the badge as a sibling Box in the same outer layout, positioned via `align(Alignment.TopEnd)` + offset, rather than nesting it inside the container Box that has `clip()` applied. A clipped parent will always cut off content that extends past its rounded corners.
 
   ```kotlin
   // ❌ Bad: badge inside clipped parent → gets cut off
@@ -152,7 +169,7 @@ When describing depth in design docs, use: **+X = right, +Y = up, +Z = toward th
   }
   ```
 
-- **Hardcoded corner clipping on outer containers**: The window itself has a fixed 32 dp corner radius; inner containers with their own `clip()` create nested rounded rectangles that can trap overflow content. Reserve clipping for content that genuinely needs to be masked (images, scrollable lists); use `border()` alone for outlines that don't need to clip.
+- **Hardcoded corner clipping on outer containers**: The window itself has a fixed 32 dp corner radius; inner containers with their own `clip()` create nested rounded rectangles that can trap overflow content. Reserve clipping for content that genuinely needs to be masked (images, scrollable lists). Keep ordinary groups transparent and use spacing or alignment instead of adding an outline.
 
 ## Terminology boundary
 
