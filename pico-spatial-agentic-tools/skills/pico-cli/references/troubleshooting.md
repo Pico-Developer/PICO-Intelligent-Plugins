@@ -43,12 +43,6 @@ pico-cli <family> <command> --help
 
 Route to `pico-env-doctor` when the problem is host setup, missing skills, stale plugin content, or `pico-dev-knowledge` MCP connectivity. That skill checks the installed CLI version, discovers supported setup/plugin/MCP commands before using doctor-style checks, repairs with `pico-cli setup` / `pico-cli plugin update`, and reminds the user to restart the host or open a new session after `.mcp.json` changes.
 
-For support bundles after setup remains broken, prefer metadata-only audit first:
-
-```bash
-pico-cli plugin audit
-```
-
 ## Device Not Found
 
 Start with target discovery:
@@ -116,14 +110,13 @@ Route the investigation to the unified `spatialml` skill, then load `spatialml-c
 command or output details are needed. Preserve the distinction between project detection, setup,
 package installation, and the installed pySpatialML delegation boundary.
 
-- Detection failure: verify `--project` is the actual Native OpenXR, Unity, or Kotlin SDK project root.
+- Detection failure: verify `--project` is the actual Kotlin Spatial SDK project root. Unity failures
+  belong to PICO Unity Agentic Tools' `spatialml` skill.
 - Setup returns `action-required`: complete the returned parent-SDK or SDK-owned handoff; do not fake
   readiness by creating marker files.
-- Unity install returns `PARTIAL` or `action-required`: the package is staged but not imported; follow
-  the returned Unity importer handoff.
 - `PSM_TOOL_UNAVAILABLE` with exit code `3`: `pipeline verify`, `model inspect`, or `model visualize`
   could not find a compatible pySpatialML executable. Install or update it with
-  `python3.13 -m pip install --upgrade pyspatialml-pico`, verify `pyspatialml --version` reports 0.5.0
+  `uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`, verify `pyspatialml --version` reports 0.5.0
   or newer, and ensure it is on `PATH`. If it is installed elsewhere, set
   `PICO_CLI_PYSPATIALML` to its executable path. Do not substitute legacy Docker/QNN/JSON tooling.
 

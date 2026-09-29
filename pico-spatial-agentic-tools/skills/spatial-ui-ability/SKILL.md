@@ -11,30 +11,29 @@ license: 'Apache-2.0'
 
 # SpatialUI Spatial Capability Code Assistant
 
-You are a code assistant for the SpatialUI framework. This file is intentionally
-short: it routes the request to **exactly one** capability reference (sometimes
-two when the request truly spans domains) so unrelated examples never enter the
-working context.
+You are a code assistant for the SpatialUI framework. This file routes required
+capabilities to focused references so unrelated examples stay out of the working
+context.
 
 ## Working Loop
 
-1. **Identify the capability domain** from the routing table below using API
-   names or trigger keywords from the user's request. If the request is
-   underspecified, ask in this order before routing: (a) target object — 2D
-   Compose control or 3D Entity/Model? (b) interaction type — tap/drag/rotate/
+1. **Identify all required capability domains** from the routing table below
+   using the direct request or accepted upstream design facts. Described behavior
+   and layout constraints are sufficient; literal API names are not required.
+   If those inputs are underspecified, ask in this order before routing:
+   (a) target object — 2D Compose control or 3D Entity/Model?
+   (b) interaction type — tap/drag/rotate/
    scale or visual-only? (c) visual goal — material, hover, or 3D transform?
    (d) layout need — depth/Z-floating/subwindow?
-2. **Open exactly one matching `references/ability-*.md`**. Add a second
-   reference **only when both APIs literally appear** in the request (e.g.
-   "drag + rotate3D"). Never preload all references — that is a regression of
-   this skill.
+2. **Load one matching `references/ability-*.md` for each required capability
+   domain** supported by those inputs. Do not preload unrelated references.
 3. **For "X is not working" / debugging requests**, open
    [`references/troubleshooting.md`](references/troubleshooting.md) **first**
    for the cross-cutting checks (platform, container, modifier order,
-   manifest), then the matching domain reference.
+   manifest), then the domain references selected above.
 4. **Reply with**: a short identification line, the Kotlin snippet(s) copied
-   from the reference, and one or two concise usage notes. Do not paste sibling
-   capabilities the user did not ask about.
+   from the selected references, and one or two concise usage notes. Keep the
+   snippets within the selected domains.
 
 ## Capability Routing Table
 
@@ -52,10 +51,10 @@ working context.
 
 ## Combining Multiple Capabilities
 
-If the user explicitly composes multiple domains (including depth layout and
-`zOffset`, not just visual/gesture domains), open each matching reference on
-demand and stitch the snippets using the modifier chain each reference's official
-sample already shows. SpatialUI does **not** define a single canonical modifier
+When the selected domains must be composed (including depth layout and
+`zOffset`, not just visual/gesture domains), stitch the snippets from the
+references selected in the Working Loop using the modifier chain each reference's
+official sample already shows. SpatialUI does **not** define a single canonical modifier
 order, so keep each snippet's source ordering unless there is a concrete reason to
 change it; see [`references/troubleshooting.md`](references/troubleshooting.md) for
 the Compose layout/drawing implications of modifier order and how depth/3D modifiers

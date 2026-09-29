@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/host-assets/claude-code/hooks/ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Skill|Read|mcp__pico-(?:dev-knowledge|spatial-editor)__)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/host-assets/claude-code/hooks/ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "^mcp__pico-(?:dev-knowledge|spatial-editor)__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/host-assets/claude-code/hooks/ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      }
+    ]
+  }
+}

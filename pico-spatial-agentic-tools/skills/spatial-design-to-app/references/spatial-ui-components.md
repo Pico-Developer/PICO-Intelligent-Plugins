@@ -61,10 +61,53 @@ Stage immersion mode is primarily controlled by manifest metadata such as
 | `Timepicker` / `WheelPicker`                                      | corresponding picker API                     | time/general wheel selection          |
 | `Link`                                                            | `Link(...)`                                  | lightweight link action               |
 | `ListItem`                                                        | `ListItem(...)`                              | standard row with content slots       |
-| `TitleBar`                                                        | `TitleBar(...)`                              | page header                           |
+| `TitleBar`                                                        | `TitleBar(...)`                              | composable page header                |
 | `SideNavigation` / `SideNavigationSection` / `SideNavigationItem` | corresponding side-navigation API            | in-page side navigation               |
 | `SegmentControl` / `SegmentItem`                                  | `SegmentControl { SegmentItem(...) }`        | segmented switching                   |
 | `StereoImage`                                                     | `StereoImage(...)`                           | stereo texture layout                 |
+
+For an actionable `ListItem`, keep `ListItem` as the root and put
+`clickable(...)` on its modifier; never wrap it in `Button`. See
+[`spatialui-web-to-compose.md`](./spatialui-web-to-compose.md#clickable-list-items)
+for the complete mapping.
+
+### Side navigation
+
+Keep the item data, selected state, and component usage together in the example.
+The click handler updates selection and is where the app drives the
+corresponding page content:
+
+```kotlin
+@Composable
+fun SideNavigationSample() {
+    val items = listOf("Featured", "Categories", "Installed", "Updates")
+    val selectedItem = remember { mutableStateOf(items.first()) }
+
+    SideNavigation(
+        modifier = Modifier.fillMaxHeight(),
+        header = {
+            Text("Store")
+        },
+    ) {
+        items.forEach { item ->
+            SideNavigationItem(
+                selected = selectedItem.value == item,
+                modifier = Modifier.clickable {
+                    // This selection also drives the corresponding page content.
+                    selectedItem.value = item
+                },
+            ) {
+                Text(item, maxLines = 1)
+            }
+        }
+    }
+}
+```
+
+`SideNavigationItem` already owns its row width, content padding, shape, and
+selected background. Do not add `fillMaxWidth()`, item-level `padding(...)`, or
+a `Spacer` after every item by default. Override those defaults only when the
+accepted design explicitly requires it.
 
 ## Window-level / spatial-specific UI
 
@@ -147,7 +190,7 @@ inventing a name.
 - Do not upgrade a master-detail page to `Subwindow` unless the detail panel is independently persistent.
 - Do not use `TabBar` / `Toolbar` as ordinary content containers inside a page `Column`.
 - Prefer `SearchField` over a hand-built `TextField + search icon + placeholder` when the input clearly shows search-box semantics.
-- `TitleBar` APIs vary by SDK version: `title` is often a `@Composable` lambda and newer variants may use `endContent` rather than `actions`; verify the signature before assuming raw `String` / `actions` parameters.
+- `TitleBar` APIs vary by SDK version: `title` is often a `@Composable` lambda and newer variants may use `endContent` rather than `actions`; verify the signature before assuming raw `String` / `actions` parameters. On versions with `leadingActions` / `trailingActions`, each lambda may emit multiple composables, and `title` may contain structured content such as a title plus an app-wide `SearchField`. Preserve that composition instead of flattening its children into a sibling row.
 - `TabBar` may expose DSL-style `item(...)` entries rather than a dedicated `TabItem`. Do not assume `icon = painterResource(...)` or `onClick = {}` parameters exist on every SDK version; common item shape is `item(text = ..., selected = ..., modifier = Modifier.clickable { ... }, itemIcon = { Icon(...) })`.
 - Chips / tags can contain icons. If the design shows chip icons, model the chip content as a `Row` or slot-based structure instead of plain `Text`.
 - Configure `IconButton` through its component APIs: shell color via `colors = ButtonDefaults.buttonColors(containerColor = ...)`, render size via `IconButtonDefaults.iconButtonSize(...)`, outer size via `modifier = Modifier.size(...)`. Avoid painting `Modifier.background()` / `clip()` directly on the `IconButton` shell.
@@ -202,6 +245,8 @@ PICO design rules require every hoverable container to use
 | Symbol                                         | Fully-qualified name                                             |
 | ---------------------------------------------- | ---------------------------------------------------------------- |
 | `Modifier.spatialHoverEffect`                  | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect`        |
+| Spatial Hover `spring`                         | `com.pico.spatial.ui.foundation.hover.spring`                    |
+| Spatial Hover `tween`                          | `com.pico.spatial.ui.foundation.hover.tween`                     |
 | `SpatialHoverStyle.Default` / `.Highlight`     | `com.pico.spatial.ui.graphics.SpatialHoverStyle`                 |
 | `Modifier.spatialHoverEffectGroup(group)`      | `com.pico.spatial.ui.foundation.hover.spatialHoverEffectGroup`   |
 | `SpatialHoverEffectGroup.obtain()`             | `com.pico.spatial.ui.foundation.hover.SpatialHoverEffectGroup`   |
@@ -212,6 +257,8 @@ PICO design rules require every hoverable container to use
 ```kotlin
 // 1. preset style (shortest)
 import com.pico.spatial.ui.foundation.hover.spatialHoverEffect
+import com.pico.spatial.ui.foundation.hover.spring
+import com.pico.spatial.ui.foundation.hover.tween
 import com.pico.spatial.ui.graphics.SpatialHoverStyle
 
 Box(Modifier.size(100.dp).spatialHoverEffect())                     // = SpatialHoverStyle.Default
@@ -238,15 +285,20 @@ val group = remember { SpatialHoverEffectGroup.obtain() }
 items.forEach { Card(Modifier.spatialHoverEffectGroup(group).spatialHoverEffect()) { /* ... */ } }
 ```
 
+Spatial Hover animation blocks must use the `tween` and `spring` imports shown
+above. Do not substitute the same-named `androidx.compose.animation.core`
+builders; they return Compose animation specs rather than `SpatialHoverAnimation`.
+
 ### Mandatory modifier order
 
 ```
-clip → (border/background → backgroundMaterial) → spatialHoverEffect → clickable
+clip → background → spatialHoverEffect → clickable
 ```
 
 `clip` defines the shape first, `spatialHoverEffect` reads that shape, then
 `clickable` appends the click behaviour. Wrong order → hover highlight does
-**not** track the `clip` boundary.
+**not** track the `clip` boundary. App-authored content borders are not part of
+this chain.
 
 ### When NOT to add `spatialHoverEffect`
 

@@ -1,6 +1,11 @@
 # Spatial App Design Doc — <project name>
 
-> Copy this file to `design-doc.md` in your working directory and fill each section as you move through the six phases. This is the single carrying layer for the design's reasoning. Delete the guidance italics as you go. Keep facts in PICO design terminology (Shared/Full Space, WindowContainer Planar/Volumetric, Stage) — no code enums.
+> Copy this file to `design-doc.md` in your working directory and fill each
+> section as you move through the six phases. This carries rationale and review
+> evidence; `design-spec.json` is the source of truth for executable design
+> facts. Delete the guidance italics as you go. Keep facts in PICO design
+> terminology (Shared/Full Space, WindowContainer Planar/Volumetric, Stage) —
+> no code enums.
 
 ## 1 · Frame
 
@@ -49,28 +54,36 @@ _Concept, signature idea, main risk._
 
 ## 3 · Plan
 
+**Executable spec** — `design-spec.json`, schema version `1.0`, revision
+`<revision>`. _Write and validate it before generating HTML. The tables below
+summarize the spec for human review; if they disagree, repair the JSON and
+regenerate the preview._
+
 ### Visual tokens
 
-The design's own colors drive the theme — downstream builds a **complete custom `ColorScheme` from these values and injects it into `PicoTheme(colorScheme = …)`**. Define every public role below. Use an exact hex for fixed design values; otherwise write `inherit SpatialUI Vibrant <role>`. No role may be omitted from the final `systemColorScheme(...).copy(...)`.
+Preserve SpatialUI's native `ColorScheme`: every public role below must inherit
+the same-name Vibrant role. Do not assign custom values to `fill*`, `label*`,
+interaction, status, hover/pressed, or divider roles. Put any custom color in
+the separate brand/decorative token table and consume it directly.
 
-| `ColorScheme` role  | Exact hex or explicit Vibrant inheritance   | Used for |
+| `ColorScheme` role  | Required value                              | Used for |
 | ------------------- | ------------------------------------------- | -------- |
 | `fillPrimary`       | `inherit SpatialUI Vibrant fillPrimary`     |          |
 | `fillSecondary`     | `inherit SpatialUI Vibrant fillSecondary`   |          |
 | `fillTertiary`      | `inherit SpatialUI Vibrant fillTertiary`    |          |
 | `fillLight`         | `inherit SpatialUI Vibrant fillLight`       |          |
-| `labelPrimaryLight` | `#` or inheritance                          |          |
+| `labelPrimaryLight` | `inherit SpatialUI Vibrant labelPrimaryLight` |        |
 | `labelPrimary`      | `inherit SpatialUI Vibrant labelPrimary`    |          |
 | `labelSecondary`    | `inherit SpatialUI Vibrant labelSecondary`  |          |
 | `labelTertiary`     | `inherit SpatialUI Vibrant labelTertiary`   |          |
 | `labelQuaternary`   | `inherit SpatialUI Vibrant labelQuaternary` |          |
 | `lightenHover`      | `inherit SpatialUI Vibrant lightenHover`    |          |
 | `lightenPressed`    | `inherit SpatialUI Vibrant lightenPressed`  |          |
-| `error`             | `#` or inheritance                          |          |
-| `alert`             | `#` or inheritance                          |          |
-| `passable`          | `#` or inheritance                          |          |
-| `interaction`       | `#` or inheritance                          |          |
-| `dividerLine`       | `#` or inheritance                          |          |
+| `error`             | `inherit SpatialUI Vibrant error`           |          |
+| `alert`             | `inherit SpatialUI Vibrant alert`           |          |
+| `passable`          | `inherit SpatialUI Vibrant passable`        |          |
+| `interaction`       | `inherit SpatialUI Vibrant interaction`     |          |
+| `dividerLine`       | `inherit SpatialUI Vibrant dividerLine`     |          |
 
 **Brand / decorative tokens outside `ColorScheme`**
 
@@ -86,9 +99,14 @@ The design's own colors drive the theme — downstream builds a **complete custo
 
 **Type** — display face, body face, type scale (map to `PicoTheme.typography.*`: display/headline/title/body/label; override the Typography where the design's type differs from default).
 
-**Materials / depth** — glass tier per surface (`Thin/Regular/Thick/Thickest`) and depth language. The window root is system `Material.Regular` glass by default — **never paint a solid color / `fillPrimary` on the window root** (it kills the glass + vibrant linkage); `fill*` roles are for inner cards/containers. Under passthrough, key text/forms need a thicker glass tier or a solid backing to keep contrast.
+**Depth** — record only product-owned depth relationships. Do not choose or
+record `rootMaterial` or per-node material tiers. The system owns the window
+background; `fill*` roles are available only for bounded content nodes, never
+for structural `layout` or `domain_visual` regions.
 
-**Glass premise** — the root surface is the vendored SpatialUI Web `vibrant` theme with its `Material.Regular` glass. Design and judge contrast on that actual library surface. Do not define a substitute gray root, custom blur recipe, or opaque background token.
+**Window-background premise** — preview the unchanged SpatialUI Web system
+surface against the fixed environment color. Do not define a substitute root,
+custom blur recipe, material field, or opaque background token.
 
 ### Signature element
 
@@ -148,20 +166,25 @@ _Read `./spatialui-web-guide.md`, then inspect the matching vendored component s
 | Every core component has data source + task                 |       |          |
 | All 16 `ColorScheme` roles are explicitly defined           |       |          |
 | Every standard control/system surface maps to SpatialUI Web |       |          |
+| `design-spec.json` is valid and all references resolve      |       |          |
+| Surface-discipline check passes                             |       |          |
+| Repeated-item depth is state/data-driven, never index-driven |       |          |
 | Single primary focus / clear decision                       |       |          |
 
 _Only proceed to Build once all pass._
 
 ## 5 · Build — coverage manifest
 
-_The denominator for the second critique. See `./preview-guide.md`._
+_Generate this denominator from `design-spec.json`, then render the HTML. See
+`./preview-guide.md`._
 
-| #   | Kind (state/transition/component/binding) | From design doc | Implemented in preview.html (selector/where) |
-| --- | ----------------------------------------- | --------------- | -------------------------------------------- |
+| #   | Kind (surface/state/transition/action/node/binding/rule/asset) | JSON ID/path | Implemented in preview.html (selector/where) |
+| --- | -------------------------------------------------------------- | ------------ | -------------------------------------------- |
 
 ## 6 · Critique again
 
-**Independent coverage rebuild** — _diff between the manifest and what's actually triggerable in the prototype._
+**Independent coverage rebuild** — _rebuild from `design-spec.json`; diff it
+against what is actually rendered and triggerable in the prototype._
 
 **Quality bar**
 
@@ -173,17 +196,23 @@ _The denominator for the second critique. See `./preview-guide.md`._
 | ≥3 alternatives compared, rejects have reasons                                   |      |          |
 | Every window/surface records final default/min/max dimensions                    |      |          |
 | Design derives from domain (survives domain-swap)                                |      |          |
+| `design-spec.json` is schema-valid and all references resolve                    |      |          |
+| Embedded JSON exactly matches `design-spec.json`; no HTML-only design facts      |      |          |
 | SpatialUI bundle is inline; mapped tags are registered, present, and event-wired |      |          |
 | No unjustified native/hand-rolled duplicate of an available `sui-*` control      |      |          |
-| Root surface uses SpatialUI Web `vibrant` + `Material.Regular` glass             |      |          |
+| Root leaves the SpatialUI Web system window background unchanged                |      |          |
+| Structural layout/domain regions are transparent; no nested app-authored surfaces |      |          |
+| Preview backgrounds use the canonical one-to-one data-design-surface path         |      |          |
+| No app-authored content borders or renderer-invented surface decoration          |      |          |
 | No design/debug-only controls appear in the product UI                           |      |          |
 | preview.html is a triggerable state machine, full coverage                       |      |          |
+| Rendered page passes visual review at default and minimum surface sizes          |      |          |
 | Signature present, surroundings quiet                                            |      |          |
 
 **Patch log** (max 3 rounds)
 
-| Round | Problem | Target | Expected improvement | Re-ran Build+critique? |
-| ----- | ------- | ------ | -------------------- | ---------------------- |
+| Round | Problem | JSON target / renderer defect | Expected improvement | Revision | Re-ran Build+critique? |
+| ----- | ------- | ----------------------------- | -------------------- | -------- | ---------------------- |
 
 **Device validation** — `not_performed` (Web validates logic/layout only; real-device comfort/occlusion/size/performance not verified).
 

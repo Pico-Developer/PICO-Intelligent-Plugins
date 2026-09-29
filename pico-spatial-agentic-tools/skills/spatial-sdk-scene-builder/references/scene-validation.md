@@ -58,14 +58,20 @@ constraint holds.
 
 ## Build and Launch
 
-Use `spatial-app-dev-workflow` for the enclosing edit/build/install/launch loop.
-Use `spatial-emulator-usage` for emulator or device selection, screenshots,
-recordings, and logs.
+The managed `spatial-3d-generation` Run owns source validation and the deterministic
+Gradle build through its Codegen Child. Do not run a second build before submitting
+the Codegen authoring Handoff. Require the terminal root Result to include the
+source Artifact and successful build Evidence.
 
-After the final edit:
+Use `spatial-emulator-usage` after that build only when emulator or device selection,
+installation, launch, screenshots, recordings, or logs are part of the request.
 
-1. Build the affected app and resolve compilation errors.
-2. Install and launch the intended activity or experience.
+After the managed build:
+
+1. Inspect the root Workflow build Evidence and resolve any reported compilation
+   error through the same Run's current Handoff.
+2. When runtime evidence is required, install and launch the intended activity or
+   experience.
 3. Watch for crashes, asset-load failures, and relevant log errors.
 4. Navigate to the scene and allow asynchronous assets and layout to stabilize.
 5. Re-run the scene after lifecycle recreation when duplicate or stale Entities

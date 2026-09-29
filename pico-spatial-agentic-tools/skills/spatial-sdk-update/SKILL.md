@@ -83,7 +83,7 @@ Goal: establish the target Spatial SDK line before changing project files, then 
     ```
   - Omit `--project` only when the current working directory is the intended project root. The command defaults to the current directory and writes `<projectRoot>/.pico-env.json`.
   - This command installs or refreshes the PICO development knowledge and updates only the knowledge-related keys in `.pico-env.json` (`version`, `platform`, `agentVaultWorkspace`), preserving unrelated project-local keys.
-  - Use `--source auto` by default. Pass `--source global`, `--source cn`, or `--source internal` only when the user or environment explicitly requires that source.
+  - Use `--source auto` by default. Pass `--source global` or `--source cn` only when the user or environment explicitly requires one of those sources.
 - **[Must] Switch the live MCP knowledge graph to the installed workspace**:
   - Read the just-written `<projectRoot>/.pico-env.json` and extract `agentVaultWorkspace`.
   - Build the workspace directory as:
@@ -159,7 +159,7 @@ Goal: ensure the matching Spatial Editor and PICO Emulator are available after t
     pico-cli editor install --editor-version <major.minor>
     ```
   - Activate `spatial-emulator-usage` with the selected SDK `major.minor` line and any user-required source. The handoff must require `pico-cli emulator install <major.minor>` and pass `--bundle-version <major.minor>` to every create/start command. It owns emulator doctor/install and returns the usable bundle/AVD/version or the exact host/artifact blocker. Do not duplicate those commands here.
-  - Use explicit sources such as global, CN, or internal only when the user or environment requires them, and pass that requirement into the handoff.
+  - Use explicit sources such as global or CN only when the user or environment requires them, and pass that requirement into the handoff.
   - If a tool install fails because no artifact matches the current host, report the returned fallback state. Do not claim runtime validation is fully covered unless a usable matching Editor/Emulator is actually available.
   - If a tool install or doctor command is unavailable in the user's installed pico-cli, report that exact blocker before claiming runtime validation is possible.
 - **[Must] Start a matching emulator when runtime validation needs one**:

@@ -1,0 +1,2571 @@
+{
+  "schemaVersion": "1.0",
+  "iconSet": "ICON 7.0",
+  "version": "7.0",
+  "exportedAt": "2026-09-15",
+  "viewport": {
+    "width": 24,
+    "height": 24,
+    "unit": "dp"
+  },
+  "foreground": "currentColor",
+  "categories": [
+    {
+      "id": "arrows",
+      "label": "Arrows"
+    },
+    {
+      "id": "people",
+      "label": "People"
+    },
+    {
+      "id": "edit",
+      "label": "Editing"
+    },
+    {
+      "id": "media",
+      "label": "Media"
+    },
+    {
+      "id": "files",
+      "label": "Files & layout"
+    },
+    {
+      "id": "system",
+      "label": "System"
+    },
+    {
+      "id": "devices",
+      "label": "Devices"
+    },
+    {
+      "id": "network",
+      "label": "Network"
+    },
+    {
+      "id": "status",
+      "label": "Status"
+    },
+    {
+      "id": "text",
+      "label": "Typography"
+    },
+    {
+      "id": "objects",
+      "label": "Objects"
+    }
+  ],
+  "icons": [
+    {
+      "name": "ic_arrow_up_circle",
+      "label": "Arrow Up Circle",
+      "keywords": ["upload"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_up_circle.svg",
+        "androidVector": "android-vector/ic_arrow_up_circle.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_outside_up",
+      "label": "Arrow Outside Up",
+      "keywords": ["export"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_outside_up.svg",
+        "androidVector": "android-vector/ic_arrow_outside_up.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_outside_right",
+      "label": "Arrow Outside Right",
+      "keywords": ["external"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_outside_right.svg",
+        "androidVector": "android-vector/ic_arrow_outside_right.xml"
+      }
+    },
+    {
+      "name": "ic_share",
+      "label": "Share",
+      "keywords": ["send"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_share.svg",
+        "androidVector": "android-vector/ic_share.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_down",
+      "label": "Arrow Down",
+      "keywords": ["down"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_down.svg",
+        "androidVector": "android-vector/ic_arrow_down.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_up",
+      "label": "Arrow Up",
+      "keywords": ["up"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_up.svg",
+        "androidVector": "android-vector/ic_arrow_up.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_right",
+      "label": "Arrow Right",
+      "keywords": ["next"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_right.svg",
+        "androidVector": "android-vector/ic_arrow_right.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_left",
+      "label": "Arrow Left",
+      "keywords": ["back"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_left.svg",
+        "androidVector": "android-vector/ic_arrow_left.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_long_left",
+      "label": "Arrow Long Left",
+      "keywords": ["back"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_long_left.svg",
+        "androidVector": "android-vector/ic_arrow_long_left.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_long_down",
+      "label": "Arrow Long Down",
+      "keywords": ["down"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_long_down.svg",
+        "androidVector": "android-vector/ic_arrow_long_down.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_long_up",
+      "label": "Arrow Long Up",
+      "keywords": ["up"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_long_up.svg",
+        "androidVector": "android-vector/ic_arrow_long_up.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_long_right",
+      "label": "Arrow Long Right",
+      "keywords": ["next"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_long_right.svg",
+        "androidVector": "android-vector/ic_arrow_long_right.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_relative",
+      "label": "Arrow Relative",
+      "keywords": ["swap"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_relative.svg",
+        "androidVector": "android-vector/ic_arrow_relative.xml"
+      }
+    },
+    {
+      "name": "ic_undo",
+      "label": "Undo",
+      "keywords": ["back"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_undo.svg",
+        "androidVector": "android-vector/ic_undo.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_circle_right",
+      "label": "Arrow Circle Right",
+      "keywords": ["refresh", "rotate"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_circle_right.svg",
+        "androidVector": "android-vector/ic_arrow_circle_right.xml"
+      }
+    },
+    {
+      "name": "ic_expand",
+      "label": "Expand",
+      "keywords": ["fullscreen"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_expand.svg",
+        "androidVector": "android-vector/ic_expand.xml"
+      }
+    },
+    {
+      "name": "ic_collapse",
+      "label": "Collapse",
+      "keywords": ["minimize"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_collapse.svg",
+        "androidVector": "android-vector/ic_collapse.xml"
+      }
+    },
+    {
+      "name": "ic_report_fill",
+      "label": "Report Fill",
+      "keywords": ["report", "flag"],
+      "category": "status",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_report_fill.svg",
+        "androidVector": "android-vector/ic_report_fill.xml"
+      }
+    },
+    {
+      "name": "ic_mask_group",
+      "label": "Mask Group",
+      "keywords": ["swap"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_mask_group.svg",
+        "androidVector": "android-vector/ic_mask_group.xml"
+      }
+    },
+    {
+      "name": "ic_history",
+      "label": "History",
+      "keywords": ["recent", "time"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_history.svg",
+        "androidVector": "android-vector/ic_history.xml"
+      }
+    },
+    {
+      "name": "ic_reopen",
+      "label": "Reopen",
+      "keywords": ["restore"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_reopen.svg",
+        "androidVector": "android-vector/ic_reopen.xml"
+      }
+    },
+    {
+      "name": "ic_rotate",
+      "label": "Rotate",
+      "keywords": ["rotate", "refresh"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_rotate.svg",
+        "androidVector": "android-vector/ic_rotate.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_double_down",
+      "label": "Arrow Double Down",
+      "keywords": ["expand"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_double_down.svg",
+        "androidVector": "android-vector/ic_arrow_double_down.xml"
+      }
+    },
+    {
+      "name": "ic_people_circle",
+      "label": "People Circle",
+      "keywords": ["account", "avatar", "user"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_people_circle.svg",
+        "androidVector": "android-vector/ic_people_circle.xml"
+      }
+    },
+    {
+      "name": "ic_panoramic",
+      "label": "Panoramic",
+      "keywords": ["panorama"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_panoramic.svg",
+        "androidVector": "android-vector/ic_panoramic.xml"
+      }
+    },
+    {
+      "name": "ic_person_badge_plus_fill",
+      "label": "Person Badge Plus Fill",
+      "keywords": ["add", "user"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_badge_plus_fill.svg",
+        "androidVector": "android-vector/ic_person_badge_plus_fill.xml"
+      }
+    },
+    {
+      "name": "ic_person_badge_minus_fill",
+      "label": "Person Badge Minus Fill",
+      "keywords": ["remove", "user"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_badge_minus_fill.svg",
+        "androidVector": "android-vector/ic_person_badge_minus_fill.xml"
+      }
+    },
+    {
+      "name": "ic_person_fill",
+      "label": "Person Fill",
+      "keywords": ["account", "avatar", "user"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_fill.svg",
+        "androidVector": "android-vector/ic_person_fill.xml"
+      }
+    },
+    {
+      "name": "ic_person_slash_fill",
+      "label": "Person Slash Fill",
+      "keywords": ["user", "off"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_slash_fill.svg",
+        "androidVector": "android-vector/ic_person_slash_fill.xml"
+      }
+    },
+    {
+      "name": "ic_person_2_fill",
+      "label": "Person 2 Fill",
+      "keywords": ["team", "group"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_2_fill.svg",
+        "androidVector": "android-vector/ic_person_2_fill.xml"
+      }
+    },
+    {
+      "name": "ic_person_plus_fill",
+      "label": "Person Plus Fill",
+      "keywords": ["invite", "add"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_person_plus_fill.svg",
+        "androidVector": "android-vector/ic_person_plus_fill.xml"
+      }
+    },
+    {
+      "name": "ic_body",
+      "label": "Body",
+      "keywords": ["body"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_body.svg",
+        "androidVector": "android-vector/ic_body.xml"
+      }
+    },
+    {
+      "name": "ic_travel",
+      "label": "Travel",
+      "keywords": ["walk"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_travel.svg",
+        "androidVector": "android-vector/ic_travel.xml"
+      }
+    },
+    {
+      "name": "ic_male",
+      "label": "Male",
+      "keywords": ["male"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_male.svg",
+        "androidVector": "android-vector/ic_male.xml"
+      }
+    },
+    {
+      "name": "ic_female",
+      "label": "Female",
+      "keywords": ["female"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_female.svg",
+        "androidVector": "android-vector/ic_female.xml"
+      }
+    },
+    {
+      "name": "ic_pen",
+      "label": "Pen",
+      "keywords": ["pencil", "draw"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_pen.svg",
+        "androidVector": "android-vector/ic_pen.xml"
+      }
+    },
+    {
+      "name": "ic_edit",
+      "label": "Edit",
+      "keywords": ["write", "pencil"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_edit.svg",
+        "androidVector": "android-vector/ic_edit.xml"
+      }
+    },
+    {
+      "name": "ic_crop",
+      "label": "Crop",
+      "keywords": ["crop"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_crop.svg",
+        "androidVector": "android-vector/ic_crop.xml"
+      }
+    },
+    {
+      "name": "ic_scissors",
+      "label": "Scissors",
+      "keywords": ["cut"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_scissors.svg",
+        "androidVector": "android-vector/ic_scissors.xml"
+      }
+    },
+    {
+      "name": "ic_stack",
+      "label": "Stack",
+      "keywords": ["layers"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_stack.svg",
+        "androidVector": "android-vector/ic_stack.xml"
+      }
+    },
+    {
+      "name": "ic_delete",
+      "label": "Delete",
+      "keywords": ["trash", "remove"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_delete.svg",
+        "androidVector": "android-vector/ic_delete.xml"
+      }
+    },
+    {
+      "name": "ic_plus",
+      "label": "Plus",
+      "keywords": ["add", "new"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_plus.svg",
+        "androidVector": "android-vector/ic_plus.xml"
+      }
+    },
+    {
+      "name": "ic_minus",
+      "label": "Minus",
+      "keywords": ["subtract", "remove"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_minus.svg",
+        "androidVector": "android-vector/ic_minus.xml"
+      }
+    },
+    {
+      "name": "ic_check",
+      "label": "Check",
+      "keywords": ["tick", "done", "success"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_check.svg",
+        "androidVector": "android-vector/ic_check.xml"
+      }
+    },
+    {
+      "name": "ic_cross",
+      "label": "Cross",
+      "keywords": ["close", "cancel", "x"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_cross.svg",
+        "androidVector": "android-vector/ic_cross.xml"
+      }
+    },
+    {
+      "name": "ic_check_circle",
+      "label": "Check Circle",
+      "keywords": ["tick", "done", "success"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_check_circle.svg",
+        "androidVector": "android-vector/ic_check_circle.xml"
+      }
+    },
+    {
+      "name": "ic_check_circle_fill",
+      "label": "Check Circle Fill",
+      "keywords": ["tick", "done", "success"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_check_circle_fill.svg",
+        "androidVector": "android-vector/ic_check_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_plus_circle",
+      "label": "Plus Circle",
+      "keywords": ["add"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_plus_circle.svg",
+        "androidVector": "android-vector/ic_plus_circle.xml"
+      }
+    },
+    {
+      "name": "ic_plus_circle_fill",
+      "label": "Plus Circle Fill",
+      "keywords": ["add"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_plus_circle_fill.svg",
+        "androidVector": "android-vector/ic_plus_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_minus_circle",
+      "label": "Minus Circle",
+      "keywords": ["remove"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_minus_circle.svg",
+        "androidVector": "android-vector/ic_minus_circle.xml"
+      }
+    },
+    {
+      "name": "ic_minus_circle_fill",
+      "label": "Minus Circle Fill",
+      "keywords": ["remove"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_minus_circle_fill.svg",
+        "androidVector": "android-vector/ic_minus_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_lock",
+      "label": "Lock",
+      "keywords": ["lock", "security", "password"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_lock.svg",
+        "androidVector": "android-vector/ic_lock.xml"
+      }
+    },
+    {
+      "name": "ic_lock_fill",
+      "label": "Lock Fill",
+      "keywords": ["security", "password"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_lock_fill.svg",
+        "androidVector": "android-vector/ic_lock_fill.xml"
+      }
+    },
+    {
+      "name": "ic_cross_circle_fill",
+      "label": "Cross Circle Fill",
+      "keywords": ["close", "cancel"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_cross_circle_fill.svg",
+        "androidVector": "android-vector/ic_cross_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_question_fill",
+      "label": "Question Fill",
+      "keywords": ["help"],
+      "category": "edit",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_question_fill.svg",
+        "androidVector": "android-vector/ic_question_fill.xml"
+      }
+    },
+    {
+      "name": "ic_volume_none",
+      "label": "Volume None",
+      "keywords": ["speaker"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_none.svg",
+        "androidVector": "android-vector/ic_volume_none.xml"
+      }
+    },
+    {
+      "name": "ic_volume_slash",
+      "label": "Volume Slash",
+      "keywords": ["mute", "sound", "off"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_slash.svg",
+        "androidVector": "android-vector/ic_volume_slash.xml"
+      }
+    },
+    {
+      "name": "ic_volume_mute",
+      "label": "Volume Mute",
+      "keywords": ["sound", "off"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_mute.svg",
+        "androidVector": "android-vector/ic_volume_mute.xml"
+      }
+    },
+    {
+      "name": "ic_volume_min",
+      "label": "Volume Min",
+      "keywords": ["speaker", "sound", "low"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_min.svg",
+        "androidVector": "android-vector/ic_volume_min.xml"
+      }
+    },
+    {
+      "name": "ic_volume_loud",
+      "label": "Volume Loud",
+      "keywords": ["speaker", "sound", "high"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_loud.svg",
+        "androidVector": "android-vector/ic_volume_loud.xml"
+      }
+    },
+    {
+      "name": "ic_volume_loudest",
+      "label": "Volume Loudest",
+      "keywords": ["speaker", "sound", "max"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_volume_loudest.svg",
+        "androidVector": "android-vector/ic_volume_loudest.xml"
+      }
+    },
+    {
+      "name": "ic_player_2d_fill",
+      "label": "Player 2d Fill",
+      "keywords": ["2d", "video"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_2d_fill.svg",
+        "androidVector": "android-vector/ic_player_2d_fill.xml"
+      }
+    },
+    {
+      "name": "ic_fisheye_fill",
+      "label": "Fisheye Fill",
+      "keywords": ["fisheye"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_fisheye_fill.svg",
+        "androidVector": "android-vector/ic_fisheye_fill.xml"
+      }
+    },
+    {
+      "name": "ic_rectangle_split_2x1_fill",
+      "label": "Rectangle Split 2x1 Fill",
+      "keywords": ["split"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_rectangle_split_2x1_fill.svg",
+        "androidVector": "android-vector/ic_rectangle_split_2x1_fill.xml"
+      }
+    },
+    {
+      "name": "ic_rectangle_fill",
+      "label": "Rectangle Fill",
+      "keywords": ["screen"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_rectangle_fill.svg",
+        "androidVector": "android-vector/ic_rectangle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_rectangle_split_1x2_fill",
+      "label": "Rectangle Split 1x2 Fill",
+      "keywords": ["split"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_rectangle_split_1x2_fill.svg",
+        "androidVector": "android-vector/ic_rectangle_split_1x2_fill.xml"
+      }
+    },
+    {
+      "name": "ic_microphone_fill",
+      "label": "Microphone Fill",
+      "keywords": ["mic", "record"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_microphone_fill.svg",
+        "androidVector": "android-vector/ic_microphone_fill.xml"
+      }
+    },
+    {
+      "name": "ic_microphone_slash_fill",
+      "label": "Microphone Slash Fill",
+      "keywords": ["mic", "mute"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_microphone_slash_fill.svg",
+        "androidVector": "android-vector/ic_microphone_slash_fill.xml"
+      }
+    },
+    {
+      "name": "ic_microphone_a_fill",
+      "label": "Microphone A Fill",
+      "keywords": ["mic", "auto"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_microphone_a_fill.svg",
+        "androidVector": "android-vector/ic_microphone_a_fill.xml"
+      }
+    },
+    {
+      "name": "ic_player_contrastratio",
+      "label": "Player Contrastratio",
+      "keywords": ["contrast", "ratio"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_contrastratio.svg",
+        "androidVector": "android-vector/ic_player_contrastratio.xml"
+      }
+    },
+    {
+      "name": "ic_vr_180",
+      "label": "VR 180",
+      "keywords": ["vr"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_vr_180.svg",
+        "androidVector": "android-vector/ic_vr_180.xml"
+      }
+    },
+    {
+      "name": "ic_vr_360",
+      "label": "VR 360",
+      "keywords": ["vr", "panorama"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_vr_360.svg",
+        "androidVector": "android-vector/ic_vr_360.xml"
+      }
+    },
+    {
+      "name": "ic_player_play",
+      "label": "Player Play",
+      "keywords": ["play", "start"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_play.svg",
+        "androidVector": "android-vector/ic_player_play.xml"
+      }
+    },
+    {
+      "name": "ic_player_previous",
+      "label": "Player Previous",
+      "keywords": ["previous", "back"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_previous.svg",
+        "androidVector": "android-vector/ic_player_previous.xml"
+      }
+    },
+    {
+      "name": "ic_player_next",
+      "label": "Player Next",
+      "keywords": ["next", "forward"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_next.svg",
+        "androidVector": "android-vector/ic_player_next.xml"
+      }
+    },
+    {
+      "name": "ic_player_pause",
+      "label": "Player Pause",
+      "keywords": ["pause"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_pause.svg",
+        "androidVector": "android-vector/ic_player_pause.xml"
+      }
+    },
+    {
+      "name": "ic_recording",
+      "label": "Recording",
+      "keywords": ["record"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_recording.svg",
+        "androidVector": "android-vector/ic_recording.xml"
+      }
+    },
+    {
+      "name": "ic_original",
+      "label": "Original",
+      "keywords": ["original", "ratio"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_original.svg",
+        "androidVector": "android-vector/ic_original.xml"
+      }
+    },
+    {
+      "name": "ic_camera_3d",
+      "label": "Camera 3d",
+      "keywords": ["camera"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_camera_3d.svg",
+        "androidVector": "android-vector/ic_camera_3d.xml"
+      }
+    },
+    {
+      "name": "ic_share_screen",
+      "label": "Share Screen",
+      "keywords": ["cast", "screen"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_share_screen.svg",
+        "androidVector": "android-vector/ic_share_screen.xml"
+      }
+    },
+    {
+      "name": "ic_tv",
+      "label": "Tv",
+      "keywords": ["television", "screen"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_tv.svg",
+        "androidVector": "android-vector/ic_tv.xml"
+      }
+    },
+    {
+      "name": "ic_share_stop",
+      "label": "Share Stop",
+      "keywords": ["stop", "share"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_share_stop.svg",
+        "androidVector": "android-vector/ic_share_stop.xml"
+      }
+    },
+    {
+      "name": "ic_video",
+      "label": "Video",
+      "keywords": ["movie", "film"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_video.svg",
+        "androidVector": "android-vector/ic_video.xml"
+      }
+    },
+    {
+      "name": "ic_parameter",
+      "label": "Parameter",
+      "keywords": ["settings", "sliders"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_parameter.svg",
+        "androidVector": "android-vector/ic_parameter.xml"
+      }
+    },
+    {
+      "name": "ic_picture",
+      "label": "Picture",
+      "keywords": ["image", "photo"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_picture.svg",
+        "androidVector": "android-vector/ic_picture.xml"
+      }
+    },
+    {
+      "name": "ic_mountain",
+      "label": "Mountain",
+      "keywords": ["landscape"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_mountain.svg",
+        "androidVector": "android-vector/ic_mountain.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse",
+      "label": "Arrow Ellipse",
+      "keywords": ["panorama", "orbit"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_ellipse.svg",
+        "androidVector": "android-vector/ic_arrow_ellipse.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse_1",
+      "label": "Arrow Ellipse 1",
+      "keywords": ["panorama", "orbit"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_ellipse_1.svg",
+        "androidVector": "android-vector/ic_arrow_ellipse_1.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_ellipse_slash",
+      "label": "Arrow Ellipse Slash",
+      "keywords": ["off"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_ellipse_slash.svg",
+        "androidVector": "android-vector/ic_arrow_ellipse_slash.xml"
+      }
+    },
+    {
+      "name": "ic_camera_fill",
+      "label": "Camera Fill",
+      "keywords": ["photo", "camera"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_camera_fill.svg",
+        "androidVector": "android-vector/ic_camera_fill.xml"
+      }
+    },
+    {
+      "name": "ic_headphone",
+      "label": "Headphone",
+      "keywords": ["headset", "audio"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_headphone.svg",
+        "androidVector": "android-vector/ic_headphone.xml"
+      }
+    },
+    {
+      "name": "ic_set",
+      "label": "Set",
+      "keywords": ["settings"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_set.svg",
+        "androidVector": "android-vector/ic_set.xml"
+      }
+    },
+    {
+      "name": "ic_video_type",
+      "label": "Video Type",
+      "keywords": ["format"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_video_type.svg",
+        "androidVector": "android-vector/ic_video_type.xml"
+      }
+    },
+    {
+      "name": "ic_article",
+      "label": "Article",
+      "keywords": ["document", "file"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_article.svg",
+        "androidVector": "android-vector/ic_article.xml"
+      }
+    },
+    {
+      "name": "ic_phone",
+      "label": "Phone",
+      "keywords": ["mobile", "smartphone"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_phone.svg",
+        "androidVector": "android-vector/ic_phone.xml"
+      }
+    },
+    {
+      "name": "ic_article_2",
+      "label": "Article 2",
+      "keywords": ["document", "file"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_article_2.svg",
+        "androidVector": "android-vector/ic_article_2.xml"
+      }
+    },
+    {
+      "name": "ic_rectangle_list",
+      "label": "Rectangle List",
+      "keywords": ["list"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_rectangle_list.svg",
+        "androidVector": "android-vector/ic_rectangle_list.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_list",
+      "label": "Arrow List",
+      "keywords": ["list"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_list.svg",
+        "androidVector": "android-vector/ic_arrow_list.xml"
+      }
+    },
+    {
+      "name": "ic_list_sort_down",
+      "label": "List Sort Down",
+      "keywords": ["sort", "descending"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_list_sort_down.svg",
+        "androidVector": "android-vector/ic_list_sort_down.xml"
+      }
+    },
+    {
+      "name": "ic_list",
+      "label": "List",
+      "keywords": ["menu"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_list.svg",
+        "androidVector": "android-vector/ic_list.xml"
+      }
+    },
+    {
+      "name": "ic_live",
+      "label": "Live",
+      "keywords": ["broadcast"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_live.svg",
+        "androidVector": "android-vector/ic_live.xml"
+      }
+    },
+    {
+      "name": "ic_picture_double",
+      "label": "Picture Double",
+      "keywords": ["gallery", "photos"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_picture_double.svg",
+        "androidVector": "android-vector/ic_picture_double.xml"
+      }
+    },
+    {
+      "name": "ic_folder_arrow_down",
+      "label": "Folder Arrow Down",
+      "keywords": ["folder", "download"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_folder_arrow_down.svg",
+        "androidVector": "android-vector/ic_folder_arrow_down.xml"
+      }
+    },
+    {
+      "name": "ic_folder_lock",
+      "label": "Folder Lock",
+      "keywords": ["folder", "lock"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_folder_lock.svg",
+        "androidVector": "android-vector/ic_folder_lock.xml"
+      }
+    },
+    {
+      "name": "ic_folder",
+      "label": "Folder",
+      "keywords": ["folder", "directory"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_folder.svg",
+        "androidVector": "android-vector/ic_folder.xml"
+      }
+    },
+    {
+      "name": "ic_folder_plus",
+      "label": "Folder Plus",
+      "keywords": ["folder", "add"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_folder_plus.svg",
+        "androidVector": "android-vector/ic_folder_plus.xml"
+      }
+    },
+    {
+      "name": "ic_folder2",
+      "label": "Folder2",
+      "keywords": ["folder", "directory"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_folder2.svg",
+        "androidVector": "android-vector/ic_folder2.xml"
+      }
+    },
+    {
+      "name": "ic_download",
+      "label": "Download",
+      "keywords": ["download", "save"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_download.svg",
+        "androidVector": "android-vector/ic_download.xml"
+      }
+    },
+    {
+      "name": "ic_download_fill",
+      "label": "Download Fill",
+      "keywords": ["download", "save"],
+      "category": "files",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_download_fill.svg",
+        "androidVector": "android-vector/ic_download_fill.xml"
+      }
+    },
+    {
+      "name": "ic_grid",
+      "label": "Grid",
+      "keywords": ["layout", "grid"],
+      "category": "files",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_grid.svg",
+        "androidVector": "android-vector/ic_grid.xml"
+      }
+    },
+    {
+      "name": "ic_grid_fill",
+      "label": "Grid Fill",
+      "keywords": ["layout", "grid"],
+      "category": "files",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_grid_fill.svg",
+        "androidVector": "android-vector/ic_grid_fill.xml"
+      }
+    },
+    {
+      "name": "ic_mask",
+      "label": "Mask",
+      "keywords": ["mask"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_mask.svg",
+        "androidVector": "android-vector/ic_mask.xml"
+      }
+    },
+    {
+      "name": "ic_list_search",
+      "label": "List Search",
+      "keywords": ["search", "find"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_list_search.svg",
+        "androidVector": "android-vector/ic_list_search.xml"
+      }
+    },
+    {
+      "name": "ic_scan",
+      "label": "Scan",
+      "keywords": ["scan"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_scan.svg",
+        "androidVector": "android-vector/ic_scan.xml"
+      }
+    },
+    {
+      "name": "ic_scan_close",
+      "label": "Scan Close",
+      "keywords": ["scan", "close"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_scan_close.svg",
+        "androidVector": "android-vector/ic_scan_close.xml"
+      }
+    },
+    {
+      "name": "ic_close_other",
+      "label": "Close Other",
+      "keywords": ["close", "tabs"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_close_other.svg",
+        "androidVector": "android-vector/ic_close_other.xml"
+      }
+    },
+    {
+      "name": "ic_private",
+      "label": "Private",
+      "keywords": ["private", "incognito"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_private.svg",
+        "androidVector": "android-vector/ic_private.xml"
+      }
+    },
+    {
+      "name": "ic_copy_link",
+      "label": "Copy Link",
+      "keywords": ["copy", "url"],
+      "category": "network",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_copy_link.svg",
+        "androidVector": "android-vector/ic_copy_link.xml"
+      }
+    },
+    {
+      "name": "ic_pin",
+      "label": "Pin",
+      "keywords": ["pin"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_pin.svg",
+        "androidVector": "android-vector/ic_pin.xml"
+      }
+    },
+    {
+      "name": "ic_add_tab",
+      "label": "Add Tab",
+      "keywords": ["new", "tab"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_add_tab.svg",
+        "androidVector": "android-vector/ic_add_tab.xml"
+      }
+    },
+    {
+      "name": "ic_close_tab",
+      "label": "Close Tab",
+      "keywords": ["close", "tab"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_close_tab.svg",
+        "androidVector": "android-vector/ic_close_tab.xml"
+      }
+    },
+    {
+      "name": "ic_close_right",
+      "label": "Close Right",
+      "keywords": ["close", "right"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_close_right.svg",
+        "androidVector": "android-vector/ic_close_right.xml"
+      }
+    },
+    {
+      "name": "ic_vr_top_and_bottom_fill",
+      "label": "VR Top And Bottom Fill",
+      "keywords": ["vr", "stereo"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_vr_top_and_bottom_fill.svg",
+        "androidVector": "android-vector/ic_vr_top_and_bottom_fill.xml"
+      }
+    },
+    {
+      "name": "ic_player_left",
+      "label": "Player Left",
+      "keywords": ["player", "left"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_left.svg",
+        "androidVector": "android-vector/ic_player_left.xml"
+      }
+    },
+    {
+      "name": "ic_player_right",
+      "label": "Player Right",
+      "keywords": ["player", "right"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_right.svg",
+        "androidVector": "android-vector/ic_player_right.xml"
+      }
+    },
+    {
+      "name": "ic_player_stop",
+      "label": "Player Stop",
+      "keywords": ["stop"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_stop.svg",
+        "androidVector": "android-vector/ic_player_stop.xml"
+      }
+    },
+    {
+      "name": "ic_player_up",
+      "label": "Player Up",
+      "keywords": ["player", "up"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_up.svg",
+        "androidVector": "android-vector/ic_player_up.xml"
+      }
+    },
+    {
+      "name": "ic_player_down",
+      "label": "Player Down",
+      "keywords": ["player", "down"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_player_down.svg",
+        "androidVector": "android-vector/ic_player_down.xml"
+      }
+    },
+    {
+      "name": "ic_panoramic_new",
+      "label": "Panoramic New",
+      "keywords": ["panorama", "360"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_panoramic_new.svg",
+        "androidVector": "android-vector/ic_panoramic_new.xml"
+      }
+    },
+    {
+      "name": "ic_vr_left_and_right_fill",
+      "label": "VR Left And Right Fill",
+      "keywords": ["vr", "stereo"],
+      "category": "media",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_vr_left_and_right_fill.svg",
+        "androidVector": "android-vector/ic_vr_left_and_right_fill.xml"
+      }
+    },
+    {
+      "name": "ic_music_note",
+      "label": "Music Note",
+      "keywords": ["music", "song"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_music_note.svg",
+        "androidVector": "android-vector/ic_music_note.xml"
+      }
+    },
+    {
+      "name": "ic_music_note_slash",
+      "label": "Music Note Slash",
+      "keywords": ["music", "off", "mute"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_music_note_slash.svg",
+        "androidVector": "android-vector/ic_music_note_slash.xml"
+      }
+    },
+    {
+      "name": "ic_power",
+      "label": "Power",
+      "keywords": ["power", "switch"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_power.svg",
+        "androidVector": "android-vector/ic_power.xml"
+      }
+    },
+    {
+      "name": "ic_play_circle",
+      "label": "Play Circle",
+      "keywords": ["play", "start"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_play_circle.svg",
+        "androidVector": "android-vector/ic_play_circle.xml"
+      }
+    },
+    {
+      "name": "ic_display_resolution",
+      "label": "Display Resolution",
+      "keywords": ["display", "resolution"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_display_resolution.svg",
+        "androidVector": "android-vector/ic_display_resolution.xml"
+      }
+    },
+    {
+      "name": "ic_sunny",
+      "label": "Sunny",
+      "keywords": ["brightness", "sun"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_sunny.svg",
+        "androidVector": "android-vector/ic_sunny.xml"
+      }
+    },
+    {
+      "name": "ic_battery_2",
+      "label": "Battery 2",
+      "keywords": ["battery", "charge"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_battery_2.svg",
+        "androidVector": "android-vector/ic_battery_2.xml"
+      }
+    },
+    {
+      "name": "ic_sight",
+      "label": "Sight",
+      "keywords": ["target", "focus"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_sight.svg",
+        "androidVector": "android-vector/ic_sight.xml"
+      }
+    },
+    {
+      "name": "ic_search",
+      "label": "Search",
+      "keywords": ["find", "magnifier"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": false,
+      "warning": "Known semantic mismatch: do not choose automatically; exact resolution is allowed with review.",
+      "source": {
+        "svg": "svg/ic_search.svg",
+        "androidVector": "android-vector/ic_search.xml"
+      }
+    },
+    {
+      "name": "ic_grid_4",
+      "label": "Grid 4",
+      "keywords": ["grid", "apps", "layout"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_grid_4.svg",
+        "androidVector": "android-vector/ic_grid_4.xml"
+      }
+    },
+    {
+      "name": "ic_search_minus",
+      "label": "Search Minus",
+      "keywords": ["zoom", "out"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_search_minus.svg",
+        "androidVector": "android-vector/ic_search_minus.xml"
+      }
+    },
+    {
+      "name": "ic_tick_circle",
+      "label": "Tick Circle",
+      "keywords": ["tick", "check", "done"],
+      "category": "status",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_tick_circle.svg",
+        "androidVector": "android-vector/ic_tick_circle.xml"
+      }
+    },
+    {
+      "name": "ic_exclamation_mark",
+      "label": "Exclamation Mark",
+      "keywords": ["warning", "alert"],
+      "category": "status",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_exclamation_mark.svg",
+        "androidVector": "android-vector/ic_exclamation_mark.xml"
+      }
+    },
+    {
+      "name": "ic_set_line",
+      "label": "Set Line",
+      "keywords": ["settings", "gear"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_set_line.svg",
+        "androidVector": "android-vector/ic_set_line.xml"
+      }
+    },
+    {
+      "name": "ic_arrow_enter",
+      "label": "Arrow Enter",
+      "keywords": ["enter", "login"],
+      "category": "arrows",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_arrow_enter.svg",
+        "androidVector": "android-vector/ic_arrow_enter.xml"
+      }
+    },
+    {
+      "name": "ic_cube",
+      "label": "Cube",
+      "keywords": ["3d", "box"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_cube.svg",
+        "androidVector": "android-vector/ic_cube.xml"
+      }
+    },
+    {
+      "name": "ic_pico",
+      "label": "Pico",
+      "keywords": ["pico"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_pico.svg",
+        "androidVector": "android-vector/ic_pico.xml"
+      }
+    },
+    {
+      "name": "ic_dashed_circle",
+      "label": "Dashed Circle",
+      "keywords": ["circle", "dashed"],
+      "category": "edit",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_dashed_circle.svg",
+        "androidVector": "android-vector/ic_dashed_circle.xml"
+      }
+    },
+    {
+      "name": "ic_browser_app",
+      "label": "Browser App",
+      "keywords": ["browser", "app"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_browser_app.svg",
+        "androidVector": "android-vector/ic_browser_app.xml"
+      }
+    },
+    {
+      "name": "ic_wifi_6",
+      "label": "Wifi 6",
+      "keywords": ["wifi", "wlan"],
+      "category": "network",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_wifi_6.svg",
+        "androidVector": "android-vector/ic_wifi_6.xml"
+      }
+    },
+    {
+      "name": "ic_wifi",
+      "label": "Wifi",
+      "keywords": ["wifi", "wlan"],
+      "category": "network",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_wifi.svg",
+        "androidVector": "android-vector/ic_wifi.xml"
+      }
+    },
+    {
+      "name": "ic_bluetooth",
+      "label": "Bluetooth",
+      "keywords": ["bluetooth"],
+      "category": "network",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_bluetooth.svg",
+        "androidVector": "android-vector/ic_bluetooth.xml"
+      }
+    },
+    {
+      "name": "ic_link",
+      "label": "Link",
+      "keywords": ["link", "url"],
+      "category": "network",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_link.svg",
+        "androidVector": "android-vector/ic_link.xml"
+      }
+    },
+    {
+      "name": "ic_fireworks",
+      "label": "Fireworks",
+      "keywords": ["celebrate", "fireworks"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_fireworks.svg",
+        "androidVector": "android-vector/ic_fireworks.xml"
+      }
+    },
+    {
+      "name": "ic_message_slash",
+      "label": "Message Slash",
+      "keywords": ["message", "mute"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_message_slash.svg",
+        "androidVector": "android-vector/ic_message_slash.xml"
+      }
+    },
+    {
+      "name": "ic_message",
+      "label": "Message",
+      "keywords": ["chat", "conversation"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": false,
+      "warning": "Known semantic mismatch: do not choose automatically; exact resolution is allowed with review.",
+      "source": {
+        "svg": "svg/ic_message.svg",
+        "androidVector": "android-vector/ic_message.xml"
+      }
+    },
+    {
+      "name": "ic_message_fill",
+      "label": "Message Fill",
+      "keywords": ["chat", "conversation"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": false,
+      "warning": "Known semantic mismatch: do not choose automatically; exact resolution is allowed with review.",
+      "source": {
+        "svg": "svg/ic_message_fill.svg",
+        "androidVector": "android-vector/ic_message_fill.xml"
+      }
+    },
+    {
+      "name": "ic_hmd",
+      "label": "Hmd",
+      "keywords": ["vr", "headset"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_hmd.svg",
+        "androidVector": "android-vector/ic_hmd.xml"
+      }
+    },
+    {
+      "name": "ic_hmd_dashed",
+      "label": "Hmd Dashed",
+      "keywords": ["vr", "headset"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_hmd_dashed.svg",
+        "androidVector": "android-vector/ic_hmd_dashed.xml"
+      }
+    },
+    {
+      "name": "ic_hmd_slash",
+      "label": "Hmd Slash",
+      "keywords": ["vr", "headset", "off"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_hmd_slash.svg",
+        "androidVector": "android-vector/ic_hmd_slash.xml"
+      }
+    },
+    {
+      "name": "ic_controller_right",
+      "label": "Controller Right",
+      "keywords": ["right", "controller"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_controller_right.svg",
+        "androidVector": "android-vector/ic_controller_right.xml"
+      }
+    },
+    {
+      "name": "ic_controller_left",
+      "label": "Controller Left",
+      "keywords": ["left", "controller"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_controller_left.svg",
+        "androidVector": "android-vector/ic_controller_left.xml"
+      }
+    },
+    {
+      "name": "ic_controller",
+      "label": "Controller",
+      "keywords": ["gamepad"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_controller.svg",
+        "androidVector": "android-vector/ic_controller.xml"
+      }
+    },
+    {
+      "name": "ic_swift",
+      "label": "Swift",
+      "keywords": ["tracker", "swift"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_swift.svg",
+        "androidVector": "android-vector/ic_swift.xml"
+      }
+    },
+    {
+      "name": "ic_keyboard",
+      "label": "Keyboard",
+      "keywords": ["keyboard", "input"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_keyboard.svg",
+        "androidVector": "android-vector/ic_keyboard.xml"
+      }
+    },
+    {
+      "name": "ic_audio",
+      "label": "Audio",
+      "keywords": ["speaker", "sound"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_audio.svg",
+        "androidVector": "android-vector/ic_audio.xml"
+      }
+    },
+    {
+      "name": "ic_mouse",
+      "label": "Mouse",
+      "keywords": ["mouse"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_mouse.svg",
+        "androidVector": "android-vector/ic_mouse.xml"
+      }
+    },
+    {
+      "name": "ic_usb",
+      "label": "Usb",
+      "keywords": ["usb", "cable"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_usb.svg",
+        "androidVector": "android-vector/ic_usb.xml"
+      }
+    },
+    {
+      "name": "ic_computer",
+      "label": "Computer",
+      "keywords": ["computer", "monitor", "desktop"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_computer.svg",
+        "androidVector": "android-vector/ic_computer.xml"
+      }
+    },
+    {
+      "name": "ic_telephone_1",
+      "label": "Telephone 1",
+      "keywords": ["mobile", "smartphone"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_telephone_1.svg",
+        "androidVector": "android-vector/ic_telephone_1.xml"
+      }
+    },
+    {
+      "name": "ic_telephone_2",
+      "label": "Telephone 2",
+      "keywords": ["mobile", "smartphone"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_telephone_2.svg",
+        "androidVector": "android-vector/ic_telephone_2.xml"
+      }
+    },
+    {
+      "name": "ic_telephone_3",
+      "label": "Telephone 3",
+      "keywords": ["mobile", "smartphone"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_telephone_3.svg",
+        "androidVector": "android-vector/ic_telephone_3.xml"
+      }
+    },
+    {
+      "name": "ic_battery_1",
+      "label": "Battery 1",
+      "keywords": ["battery", "charge"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_battery_1.svg",
+        "androidVector": "android-vector/ic_battery_1.xml"
+      }
+    },
+    {
+      "name": "ic_battery_3",
+      "label": "Battery 3",
+      "keywords": ["battery", "charge"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_battery_3.svg",
+        "androidVector": "android-vector/ic_battery_3.xml"
+      }
+    },
+    {
+      "name": "ic_battery_4",
+      "label": "Battery 4",
+      "keywords": ["battery", "charge"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_battery_4.svg",
+        "androidVector": "android-vector/ic_battery_4.xml"
+      }
+    },
+    {
+      "name": "ic_battery_5",
+      "label": "Battery 5",
+      "keywords": ["battery", "charge"],
+      "category": "devices",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_battery_5.svg",
+        "androidVector": "android-vector/ic_battery_5.xml"
+      }
+    },
+    {
+      "name": "ic_exclamation_mark_fill",
+      "label": "Exclamation Mark Fill",
+      "keywords": ["warning", "alert"],
+      "category": "status",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_exclamation_mark_fill.svg",
+        "androidVector": "android-vector/ic_exclamation_mark_fill.xml"
+      }
+    },
+    {
+      "name": "ic_letter_a_circle",
+      "label": "Letter A Circle",
+      "keywords": ["text", "letter"],
+      "category": "text",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_letter_a_circle.svg",
+        "androidVector": "android-vector/ic_letter_a_circle.xml"
+      }
+    },
+    {
+      "name": "ic_letter_a_circle_fill",
+      "label": "Letter A Circle Fill",
+      "keywords": ["text", "letter"],
+      "category": "text",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_letter_a_circle_fill.svg",
+        "androidVector": "android-vector/ic_letter_a_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_letter_m_circle",
+      "label": "Letter M Circle",
+      "keywords": ["text", "letter"],
+      "category": "text",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_letter_m_circle.svg",
+        "androidVector": "android-vector/ic_letter_m_circle.xml"
+      }
+    },
+    {
+      "name": "ic_letter_m_circle_fill",
+      "label": "Letter M Circle Fill",
+      "keywords": ["text", "letter"],
+      "category": "text",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_letter_m_circle_fill.svg",
+        "androidVector": "android-vector/ic_letter_m_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_info_circle",
+      "label": "Info Circle",
+      "keywords": ["help", "information"],
+      "category": "status",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_info_circle.svg",
+        "androidVector": "android-vector/ic_info_circle.xml"
+      }
+    },
+    {
+      "name": "ic_info_circle_fill",
+      "label": "Info Circle Fill",
+      "keywords": ["help", "information"],
+      "category": "status",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_info_circle_fill.svg",
+        "androidVector": "android-vector/ic_info_circle_fill.xml"
+      }
+    },
+    {
+      "name": "ic_text",
+      "label": "Text",
+      "keywords": ["text", "font"],
+      "category": "text",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_text.svg",
+        "androidVector": "android-vector/ic_text.xml"
+      }
+    },
+    {
+      "name": "ic_letter_a",
+      "label": "Letter A",
+      "keywords": ["text", "font"],
+      "category": "text",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_letter_a.svg",
+        "androidVector": "android-vector/ic_letter_a.xml"
+      }
+    },
+    {
+      "name": "ic_thumb_up",
+      "label": "Thumb Up",
+      "keywords": ["like", "thumbs", "up"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_thumb_up.svg",
+        "androidVector": "android-vector/ic_thumb_up.xml"
+      }
+    },
+    {
+      "name": "ic_thumb_up_fill",
+      "label": "Thumb Up Fill",
+      "keywords": ["like", "thumbs", "up"],
+      "category": "people",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_thumb_up_fill.svg",
+        "androidVector": "android-vector/ic_thumb_up_fill.xml"
+      }
+    },
+    {
+      "name": "ic_thumb_down",
+      "label": "Thumb Down",
+      "keywords": ["dislike", "thumbs", "down"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_thumb_down.svg",
+        "androidVector": "android-vector/ic_thumb_down.xml"
+      }
+    },
+    {
+      "name": "ic_hand",
+      "label": "Hand",
+      "keywords": ["hand", "gesture"],
+      "category": "people",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_hand.svg",
+        "androidVector": "android-vector/ic_hand.xml"
+      }
+    },
+    {
+      "name": "ic_scan_code",
+      "label": "Scan Code",
+      "keywords": ["qr", "scan"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_scan_code.svg",
+        "androidVector": "android-vector/ic_scan_code.xml"
+      }
+    },
+    {
+      "name": "ic_scan_code_eye",
+      "label": "Scan Code Eye",
+      "keywords": ["qr", "eye"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_scan_code_eye.svg",
+        "androidVector": "android-vector/ic_scan_code_eye.xml"
+      }
+    },
+    {
+      "name": "ic_tools",
+      "label": "Tools",
+      "keywords": ["tool", "wrench"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_tools.svg",
+        "androidVector": "android-vector/ic_tools.xml"
+      }
+    },
+    {
+      "name": "ic_settings",
+      "label": "Settings",
+      "keywords": ["settings", "gear", "config"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_settings.svg",
+        "androidVector": "android-vector/ic_settings.xml"
+      }
+    },
+    {
+      "name": "ic_sofa",
+      "label": "Sofa",
+      "keywords": ["couch", "furniture"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_sofa.svg",
+        "androidVector": "android-vector/ic_sofa.xml"
+      }
+    },
+    {
+      "name": "ic_game",
+      "label": "Game",
+      "keywords": ["game", "controller"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_game.svg",
+        "androidVector": "android-vector/ic_game.xml"
+      }
+    },
+    {
+      "name": "ic_planet",
+      "label": "Planet",
+      "keywords": ["planet", "space"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_planet.svg",
+        "androidVector": "android-vector/ic_planet.xml"
+      }
+    },
+    {
+      "name": "ic_home",
+      "label": "Home",
+      "keywords": ["home", "house"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_home.svg",
+        "androidVector": "android-vector/ic_home.xml"
+      }
+    },
+    {
+      "name": "ic_cloud",
+      "label": "Cloud",
+      "keywords": ["cloud", "weather"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_cloud.svg",
+        "androidVector": "android-vector/ic_cloud.xml"
+      }
+    },
+    {
+      "name": "ic_book",
+      "label": "Book",
+      "keywords": ["book", "reading"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_book.svg",
+        "androidVector": "android-vector/ic_book.xml"
+      }
+    },
+    {
+      "name": "ic_bell",
+      "label": "Bell",
+      "keywords": ["bell", "notification", "alert"],
+      "category": "status",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_bell.svg",
+        "androidVector": "android-vector/ic_bell.xml"
+      }
+    },
+    {
+      "name": "ic_eye",
+      "label": "Eye",
+      "keywords": ["eye", "visible", "view"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_eye.svg",
+        "androidVector": "android-vector/ic_eye.xml"
+      }
+    },
+    {
+      "name": "ic_eye_slash",
+      "label": "Eye Slash",
+      "keywords": ["eye", "hidden", "off"],
+      "category": "system",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_eye_slash.svg",
+        "androidVector": "android-vector/ic_eye_slash.xml"
+      }
+    },
+    {
+      "name": "ic_clock",
+      "label": "Clock",
+      "keywords": ["clock", "time", "recent"],
+      "category": "status",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_clock.svg",
+        "androidVector": "android-vector/ic_clock.xml"
+      }
+    },
+    {
+      "name": "ic_clock_fill",
+      "label": "Clock Fill",
+      "keywords": ["clock", "time", "recent"],
+      "category": "status",
+      "treatment": "fill",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_clock_fill.svg",
+        "androidVector": "android-vector/ic_clock_fill.xml"
+      }
+    },
+    {
+      "name": "ic_sun",
+      "label": "Sun",
+      "keywords": ["sun", "light", "brightness"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_sun.svg",
+        "androidVector": "android-vector/ic_sun.xml"
+      }
+    },
+    {
+      "name": "ic_bulb",
+      "label": "Bulb",
+      "keywords": ["idea", "light", "bulb"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_bulb.svg",
+        "androidVector": "android-vector/ic_bulb.xml"
+      }
+    },
+    {
+      "name": "ic_image",
+      "label": "Image",
+      "keywords": ["image", "photo"],
+      "category": "media",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_image.svg",
+        "androidVector": "android-vector/ic_image.xml"
+      }
+    },
+    {
+      "name": "ic_lightning",
+      "label": "Lightning",
+      "keywords": ["lightning", "bolt", "energy"],
+      "category": "objects",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_lightning.svg",
+        "androidVector": "android-vector/ic_lightning.xml"
+      }
+    },
+    {
+      "name": "ic_text_format",
+      "label": "Text Format",
+      "keywords": ["typography", "format"],
+      "category": "text",
+      "treatment": "line",
+      "autoSelectable": true,
+      "source": {
+        "svg": "svg/ic_text_format.svg",
+        "androidVector": "android-vector/ic_text_format.xml"
+      }
+    }
+  ]
+}

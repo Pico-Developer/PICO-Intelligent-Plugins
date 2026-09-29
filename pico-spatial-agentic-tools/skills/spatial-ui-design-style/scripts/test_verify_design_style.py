@@ -38,6 +38,13 @@ class VerifyDesignStyleTest(unittest.TestCase):
             encoding="utf-8",
         )
 
+    def write_design_spec(self, nodes: list[dict[str, object]]) -> Path:
+        scratch_dir = self.module_dir / ".scratch"
+        scratch_dir.mkdir(exist_ok=True)
+        path = scratch_dir / "design-spec.json"
+        path.write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
+        return path
+
     def run_verifier(self, *extra_args: str) -> subprocess.CompletedProcess[str]:
         args = ["bash", str(SCRIPT_PATH), str(self.module_dir), *extra_args]
         # A fixture with no evidence packet and no explicit --design-color is,
@@ -56,33 +63,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
             check=False,
         )
 
-    def test_clickable_without_haptic_feedback_is_rejected(self) -> None:
-        self.write_ui(
-            """
-            import androidx.compose.foundation.clickable
-            import androidx.compose.foundation.LocalIndication
-            import androidx.compose.foundation.interaction.MutableInteractionSource
-            import androidx.compose.runtime.remember
-            import androidx.compose.ui.Modifier
-            import com.pico.spatial.ui.design.PicoTheme
-
-            fun Demo() {
-                PicoTheme {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
-                    ) { }
-                }
-            }
-            """,
-        )
-
-        result = self.run_verifier()
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("controllerHapticFeedback", result.stdout)
-
-    def test_clickable_trailing_lambda_without_haptic_feedback_is_rejected(self) -> None:
+    def test_clickable_without_explicit_indication_or_haptics_is_accepted(self) -> None:
         self.write_ui(
             """
             import androidx.compose.foundation.clickable
@@ -99,8 +80,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         result = self.run_verifier()
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("controllerHapticFeedback", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
 
     def test_clickable_with_shared_haptic_feedback_is_accepted(self) -> None:
         self.write_ui(
@@ -130,35 +110,6 @@ class VerifyDesignStyleTest(unittest.TestCase):
         result = self.run_verifier()
 
         self.assertEqual(0, result.returncode, result.stdout)
-
-    def test_commented_haptic_feedback_does_not_satisfy_clickable_requirement(self) -> None:
-        self.write_ui(
-            """
-            import androidx.compose.foundation.clickable
-            import androidx.compose.foundation.LocalIndication
-            import androidx.compose.foundation.interaction.MutableInteractionSource
-            import androidx.compose.runtime.remember
-            import androidx.compose.ui.Modifier
-            import com.pico.spatial.ui.design.PicoTheme
-            // import com.pico.spatial.ui.foundation.haptic.controllerHapticFeedback
-
-            fun Demo() {
-                PicoTheme {
-                    val interactionSource = remember { MutableInteractionSource() }
-                    Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = LocalIndication.current,
-                    ) { }
-                    // .controllerHapticFeedback(interactionSource = interactionSource)
-                }
-            }
-            """,
-        )
-
-        result = self.run_verifier()
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("controllerHapticFeedback", result.stdout)
 
     def test_direct_hoverable_is_rejected(self) -> None:
         self.write_ui(
@@ -299,11 +250,14 @@ class VerifyDesignStyleTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("Material package import", result.stdout)
 
-    def test_design_colors_reject_plain_pico_theme(self) -> None:
-        self.write_design_colors([{"slot": "interaction", "hex": "#FF6B4A"}])
+    def test_design_colors_accept_plain_pico_theme_with_app_owned_token(self) -> None:
+        self.write_design_colors([{"slot": "brandAccent", "hex": "#FF6B4A"}])
         self.write_ui(
             """
+            import androidx.compose.ui.graphics.Color
             import com.pico.spatial.ui.design.PicoTheme
+
+            val BrandAccent = Color(0xFFFF6B4A) // design-style: fixed-figma-color brandAccent
 
             fun Demo() {
                 PicoTheme { }
@@ -313,24 +267,18 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         result = self.run_verifier()
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("no PicoTheme(colorScheme = ...) injection", result.stdout)
-        self.assertIn("#FF6B4A", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
 
     def test_design_colors_reject_missing_exact_value(self) -> None:
-        self.write_design_colors([{"slot": "interaction", "hex": "#FF6B4A"}])
+        self.write_design_colors([{"slot": "brandAccent", "hex": "#FF6B4A"}])
         self.write_ui(
             """
             import androidx.compose.ui.graphics.Color
             import com.pico.spatial.ui.design.PicoTheme
-            import com.pico.spatial.ui.design.systemColorScheme
 
-            fun Demo() {
-                val colors = systemColorScheme(context).copy(
-                    interaction = Color(0xFF00AA00), // design-style: fixed-figma-color wrong value
-                )
-                PicoTheme(colorScheme = colors) { }
-            }
+            val BrandAccent = Color(0xFF00AA00) // design-style: fixed-figma-color wrong value
+
+            fun Demo() { PicoTheme { } }
             """,
         )
 
@@ -339,41 +287,22 @@ class VerifyDesignStyleTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("design color #FF6B4A", result.stdout)
 
-    def test_design_colors_accept_exact_custom_scheme_mapping(self) -> None:
+    def test_design_colors_accept_exact_app_owned_tokens(self) -> None:
         self.write_design_colors(
             [
-                {"slot": "interaction", "hex": "#FF6B4A"},
-                {"slot": "passable", "hex": "#89E0B0"},
+                {"slot": "brandAccent", "hex": "#FF6B4A"},
+                {"slot": "successAccent", "hex": "#89E0B0"},
             ]
         )
         self.write_ui(
             """
             import androidx.compose.ui.graphics.Color
             import com.pico.spatial.ui.design.PicoTheme
-            import com.pico.spatial.ui.design.systemColorScheme
 
-            fun Demo() {
-                val system = systemColorScheme(context)
-                val colors = system.copy(
-                    fillPrimary = system.fillPrimary,
-                    fillSecondary = system.fillSecondary,
-                    fillTertiary = system.fillTertiary,
-                    fillLight = system.fillLight,
-                    labelPrimaryLight = system.labelPrimaryLight,
-                    labelPrimary = system.labelPrimary,
-                    labelSecondary = system.labelSecondary,
-                    labelTertiary = system.labelTertiary,
-                    labelQuaternary = system.labelQuaternary,
-                    lightenHover = system.lightenHover,
-                    lightenPressed = system.lightenPressed,
-                    error = system.error,
-                    alert = system.alert,
-                    interaction = Color(0xFFFF6B4A), // design-style: fixed-figma-color primary
-                    passable = Color(0xFF89E0B0), // design-style: fixed-figma-color success
-                    dividerLine = system.dividerLine,
-                )
-                PicoTheme(colorScheme = colors) { }
-            }
+            val BrandAccent = Color(0xFFFF6B4A) // design-style: fixed-figma-color brandAccent
+            val SuccessAccent = Color(0xFF89E0B0) // design-style: fixed-figma-color successAccent
+
+            fun Demo() { PicoTheme { } }
             """,
         )
 
@@ -381,8 +310,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_design_colors_reject_partial_system_color_scheme(self) -> None:
-        self.write_design_colors([{"slot": "interaction", "hex": "#FF6B4A"}])
+    def test_native_color_scheme_copy_is_rejected(self) -> None:
         self.write_ui(
             """
             import androidx.compose.ui.graphics.Color
@@ -401,17 +329,40 @@ class VerifyDesignStyleTest(unittest.TestCase):
         result = self.run_verifier()
 
         self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("define all 16 ColorScheme roles", result.stdout)
-        self.assertIn("fillPrimary", result.stdout)
+        self.assertIn("modifies the native SpatialUI ColorScheme", result.stdout)
+
+    def test_pico_theme_color_scheme_override_after_nested_call_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.layout.padding
+            import androidx.compose.ui.Modifier
+            import androidx.compose.ui.unit.dp
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.systemColorScheme
+
+            val customScheme = systemColorScheme()
+
+            fun Demo() {
+                PicoTheme(
+                    modifier = Modifier.padding(8.dp),
+                    colorScheme = customScheme,
+                ) { }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("modifies the native SpatialUI ColorScheme", result.stdout)
 
     def test_design_colors_ignore_commented_out_mapping(self) -> None:
-        self.write_design_colors([{"slot": "interaction", "hex": "#FF6B4A"}])
+        self.write_design_colors([{"slot": "brandAccent", "hex": "#FF6B4A"}])
         self.write_ui(
             """
             import com.pico.spatial.ui.design.PicoTheme
 
-            // PicoTheme(colorScheme = colors) { }
-            // interaction = Color(0xFFFF6B4A)
+            // val BrandAccent = Color(0xFFFF6B4A)
             fun Demo() {
                 PicoTheme { }
             }
@@ -421,31 +372,25 @@ class VerifyDesignStyleTest(unittest.TestCase):
         result = self.run_verifier()
 
         self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("no PicoTheme(colorScheme = ...) injection", result.stdout)
-        self.assertIn("design color #FF6B4A", result.stdout)
+        self.assertIn("custom design color #FF6B4A", result.stdout)
 
-    def test_design_color_must_bind_to_declared_theme_role(self) -> None:
+    def test_design_color_cannot_use_native_role_name(self) -> None:
         self.write_design_colors([{"slot": "interaction", "hex": "#FF6B4A"}])
         self.write_ui(
             """
             import androidx.compose.ui.graphics.Color
             import com.pico.spatial.ui.design.PicoTheme
-            import com.pico.spatial.ui.design.systemColorScheme
 
-            fun Demo() {
-                val decorative = Color(0xFFFF6B4A) // design-style: fixed-figma-color decoration
-                val colors = systemColorScheme(context).copy(
-                    interaction = Color(0xFF00AA00), // design-style: fixed-figma-color wrong role value
-                )
-                PicoTheme(colorScheme = colors) { }
-            }
+            val Accent = Color(0xFFFF6B4A) // design-style: fixed-figma-color accent
+
+            fun Demo() { PicoTheme { } }
             """,
         )
 
         result = self.run_verifier()
 
         self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("mapped exactly to ColorScheme.interaction", result.stdout)
+        self.assertIn("cannot be overridden", result.stdout)
 
     def test_cli_design_color_enforces_r1b_without_evidence_packet(self) -> None:
         # The code_only flow has no .scratch/evidence_packet.json at all. R1b
@@ -460,48 +405,89 @@ class VerifyDesignStyleTest(unittest.TestCase):
             """,
         )
 
-        result = self.run_verifier("--design-color", "interaction=#FF6B4A")
+        result = self.run_verifier("--design-color", "brandAccent=#FF6B4A")
 
         self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("no PicoTheme(colorScheme = ...) injection", result.stdout)
+        self.assertIn("custom design color #FF6B4A", result.stdout)
 
-    def test_cli_design_color_accepts_exact_mapping(self) -> None:
+    def test_cli_design_color_accepts_exact_app_owned_token(self) -> None:
         self.write_ui(
             """
             import androidx.compose.ui.graphics.Color
             import com.pico.spatial.ui.design.PicoTheme
-            import com.pico.spatial.ui.design.systemColorScheme
 
-            fun Demo() {
-                val system = systemColorScheme(context)
-                val colors = system.copy(
-                    fillPrimary = system.fillPrimary,
-                    fillSecondary = system.fillSecondary,
-                    fillTertiary = system.fillTertiary,
-                    fillLight = system.fillLight,
-                    labelPrimaryLight = system.labelPrimaryLight,
-                    labelPrimary = system.labelPrimary,
-                    labelSecondary = system.labelSecondary,
-                    labelTertiary = system.labelTertiary,
-                    labelQuaternary = system.labelQuaternary,
-                    lightenHover = system.lightenHover,
-                    lightenPressed = system.lightenPressed,
-                    error = system.error,
-                    alert = system.alert,
-                    interaction = Color(0xFFFF6B4A), // design-style: fixed-figma-color primary
-                    passable = system.passable,
-                    dividerLine = system.dividerLine,
-                )
-                PicoTheme(colorScheme = colors) { }
-            }
+            val BrandAccent = Color(0xFFFF6B4A) // design-style: fixed-figma-color brandAccent
+
+            fun Demo() { PicoTheme { } }
             """,
         )
 
-        result = self.run_verifier("--design-color", "interaction=#FF6B4A")
+        result = self.run_verifier("--design-color", "brandAccent=#FF6B4A")
 
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_missing_color_source_is_an_error_not_a_silent_pass(self) -> None:
+    def test_cli_design_color_rejects_non_lower_camel_case_token_names(self) -> None:
+        for token in ("", "lift-shadow", "lift_shadow", "LiftShadow", "_shadow", "9shadow"):
+            with self.subTest(token=token):
+                result = self.run_verifier(
+                    "--design-color",
+                    f"{token}=#00000066",
+                )
+
+                self.assertEqual(2, result.returncode, result.stdout)
+                self.assertIn(
+                    f"invalid --design-color token name '{token}'",
+                    result.stdout,
+                )
+                self.assertIn("expected lowerCamelCase", result.stdout)
+                self.assertNotIn("invalid --design-color color value", result.stdout)
+
+    def test_cli_design_color_reports_invalid_color_value(self) -> None:
+        for color in ("", "000000", "#000", "#0000000", "#GG0000", "#000000000"):
+            with self.subTest(color=color):
+                result = self.run_verifier(
+                    "--design-color",
+                    f"liftShadow={color}",
+                )
+
+                self.assertEqual(2, result.returncode, result.stdout)
+                self.assertIn(
+                    f"invalid --design-color color value '{color}' for token 'liftShadow'",
+                    result.stdout,
+                )
+                self.assertIn("#RRGGBB or #AARRGGBB", result.stdout)
+                self.assertNotIn("invalid --design-color token name", result.stdout)
+
+    def test_cli_design_color_reports_missing_separator(self) -> None:
+        result = self.run_verifier(
+            "--design-color",
+            "liftShadow#00000066",
+        )
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("missing '=' separator", result.stdout)
+
+    def test_design_spec_requires_value_before_next_option(self) -> None:
+        self.write_ui("fun Demo() { PicoTheme { } }")
+
+        result = subprocess.run(
+            [
+                "bash",
+                str(SCRIPT_PATH),
+                str(self.module_dir),
+                "--design-spec",
+                "--no-design-colors",
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("--design-spec needs a path", result.stdout)
+
+    def test_missing_color_source_is_an_invocation_error(self) -> None:
         # Regression guard: before --design-color existed the verifier exited 0
         # when no evidence packet was found, which silently disabled R1b for any
         # flow that did not write one. Absence must now be stated explicitly.
@@ -523,7 +509,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
             check=False,
         )
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertEqual(2, result.returncode, result.stdout)
         self.assertIn("--no-design-colors", result.stdout)
 
     def test_no_design_colors_flag_skips_r1b(self) -> None:
@@ -542,7 +528,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertIn("R1b skipped", result.stdout)
 
-    def test_text_without_resolved_foreground_is_rejected(self) -> None:
+    def test_text_without_explicit_foreground_is_not_rejected(self) -> None:
         self.write_ui(
             """
             import com.pico.spatial.ui.design.PicoTheme
@@ -561,9 +547,8 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         result = self.run_verifier()
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertIn("R9", result.stdout)
-        self.assertIn("PicoTheme does not provide LocalContentColor", result.stdout)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("R9", result.stdout)
 
     def test_text_with_explicit_semantic_color_is_accepted(self) -> None:
         self.write_ui(
@@ -587,7 +572,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stdout)
 
-    def test_text_with_documented_component_inheritance_is_accepted(self) -> None:
+    def test_component_slot_inheritance_needs_no_annotation(self) -> None:
         self.write_ui(
             """
             import com.pico.spatial.ui.design.Button
@@ -597,7 +582,6 @@ class VerifyDesignStyleTest(unittest.TestCase):
             fun Demo() {
                 PicoTheme {
                     Button(onClick = {}) {
-                        // design-style: inherited-content-color Button
                         Text("Start")
                     }
                 }
@@ -646,7 +630,6 @@ class VerifyDesignStyleTest(unittest.TestCase):
     def test_material_clipped_before_background_is_accepted(self) -> None:
         self.write_ui(
             """
-            import androidx.compose.foundation.border
             import androidx.compose.foundation.shape.RoundedCornerShape
             import androidx.compose.ui.Modifier
             import androidx.compose.ui.draw.clip
@@ -661,7 +644,6 @@ class VerifyDesignStyleTest(unittest.TestCase):
                     Modifier
                         .clip(shape)
                         .backgroundMaterial(enable = true, style = Material.Regular)
-                        .border(1.dp, PicoTheme.colorScheme.dividerLine, shape)
                 }
             }
             """,
@@ -670,6 +652,272 @@ class VerifyDesignStyleTest(unittest.TestCase):
         result = self.run_verifier()
 
         self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_app_authored_modifier_border_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.border
+            import androidx.compose.ui.Modifier
+            import androidx.compose.ui.unit.dp
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier.border(1.dp, PicoTheme.colorScheme.dividerLine)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("R10", result.stdout)
+        self.assertIn("Modifier.border", result.stdout)
+
+    def test_app_authored_border_stroke_is_rejected(self) -> None:
+        self.write_ui(
+            """
+            import androidx.compose.foundation.BorderStroke
+            import androidx.compose.ui.unit.dp
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    BorderStroke(1.dp, PicoTheme.colorScheme.dividerLine)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("R10", result.stdout)
+        self.assertIn("BorderStroke", result.stdout)
+
+    def test_unmapped_background_is_rejected_when_design_spec_is_supplied(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "detail-pane",
+                    "kind": "text",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier.background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("R10", result.stdout)
+        self.assertIn("has no nearby", result.stdout)
+
+    def test_background_mapped_to_surface_owning_design_node_is_accepted(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "detail-pane",
+                    "kind": "text",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-surface detail-pane
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_duplicate_background_marker_is_rejected(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "event-item",
+                    "kind": "text",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-surface event-item
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                    Modifier
+                        // design-style: design-surface event-item
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("implemented by 2 background calls", result.stdout)
+
+    def test_background_material_is_rejected_when_design_spec_is_supplied(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "detail-pane",
+                    "kind": "layout",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.shape.RoundedCornerShape
+            import androidx.compose.ui.Modifier
+            import androidx.compose.ui.draw.clip
+            import androidx.compose.ui.unit.dp
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.foundation.material.backgroundMaterial
+            import com.pico.spatial.ui.platform.Material
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        // design-style: design-surface detail-pane
+                        .backgroundMaterial(enable = true, style = Material.Regular)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("backgroundMaterial is not allowed", result.stdout)
+
+    def test_material_fields_in_design_spec_are_rejected(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "detail-pane",
+                    "kind": "layout",
+                    "appearance": {"material": "none"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme { }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("declares material", result.stdout)
+
+    def test_background_marker_for_transparent_node_is_rejected(self) -> None:
+        spec = self.write_design_spec([{"id": "detail-pane", "kind": "layout"}])
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-surface detail-pane
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("declares no fill", result.stdout)
+
+    def test_structural_fill_node_is_rejected(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "main-region",
+                    "kind": "domain_visual",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme { }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("structural regions must remain transparent", result.stdout)
+
+    def test_unmapped_spatialui_card_is_rejected_when_design_spec_is_supplied(self) -> None:
+        spec = self.write_design_spec([])
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.Card
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Card(onClick = {}) { }
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("Card has no nearby", result.stdout)
 
     def test_explicit_rectangular_material_is_accepted(self) -> None:
         self.write_ui(

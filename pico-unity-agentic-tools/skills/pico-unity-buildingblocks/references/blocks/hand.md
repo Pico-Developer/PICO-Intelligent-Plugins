@@ -12,11 +12,12 @@ Trigger words: virtual hand / hand / hand interaction / hand tracking / hands.
 - Hand-model prefabs, runtime-branched: PICO-native path needs the PICO
   `HandLeft` / `HandRight` prefabs (in the PICO SDK); OpenXR path needs the Unity
   XR Hands `HandVisualizer` sample (`com.unity.xr.hands`, imported on demand).
-- **XRI `Hands Interaction Demo` sample** — enable imports this sample from
-  `com.unity.xr.interaction.toolkit` to source the hand-interactor rig. Because
-  importing a sample copies assets and triggers an Editor recompile, **enable is
-  TWO-PHASE the first time** (see below). If XRI is not installed, the interactor
-  cannot be mounted and the C# layer reports `error`.
+- **XRI `Hands Interaction Demo` sample** — resolve this sample from
+  `com.unity.xr.interaction.toolkit` before enable to source the hand-interactor
+  rig. Importing it copies assets and triggers an Editor recompile, so settle
+  before calling enable. If this pre-resolution is bypassed, the C# layer retains
+  a two-phase on-demand import fallback. If XRI is not installed and cannot be
+  resolved, the interactor cannot be mounted.
 - The hand _models_ are runtime-branched. On the **PICO-native** path they use
   the PICO-native prefabs (`PXR_Hand` + `HandLeft`/`HandRight`), which need no
   `com.unity.xr.hands` package. On the **OpenXR** path (`ENABLE_PICO_OPENXR_SDK`)
@@ -26,6 +27,11 @@ Trigger words: virtual hand / hand / hand interaction / hand tracking / hands.
   — mirroring the PICO SDK's own OpenXR hand building block (`GenerateXRHands`).
   Mounting the PICO prefabs under OpenXR would leave a missing-script on the
   prefab root, so the two paths must not be mixed.
+- Resolve the runtime-specific model dependency and the shared XRI interactor
+  sample through `pico-unity-package-manager` before calling `enable`. This keeps
+  each package/sample mutation and domain reload explicit. The MCP tool retains
+  on-demand imports as an idempotent fallback when this pre-resolution is
+  bypassed.
 
 ## Cheatsheet
 
@@ -95,15 +101,16 @@ Trigger words: virtual hand / hand / hand interaction / hand tracking / hands.
     XRI Input Actions asset. Runs on **every** enable so it self-heals a project
     whose input asset predates this fix. If the SDK type is absent it logs a warning
     and the user must run that building block once manually.
-- **TWO-PHASE (first enable only).** If the `Hands Interaction Demo` sample is not
-  yet imported, the first `enable` imports it and returns a `skipped` /
-  recompiling status. Run the post-write settle loop (poll `pico_xr_status` until
-  the bridge returns), then call `pico_xr_hand(action=enable)` **again** — the
-  second call mounts the interactors and returns `ok`. Once the sample is present,
-  enable is single-phase.
-- If the C# layer returns `error` mentioning a missing `HandLeft`/`HandRight`
-  prefab, the user's PICO SDK install is incomplete; do NOT auto-fix — relay
-  the error and ask them to verify/update the PICO SDK.
+- **Import/recompile fallback.** If an expected sample was not pre-resolved,
+  `enable` may import it and return `skipped` with `data.recompiling=true`. Record
+  the imported sample, run the post-write settle loop, and retry. Allow each
+  distinct documented stage once: OpenXR may first import `HandVisualizer` and
+  later import `Hands Interaction Demo`; repeating the same stage means no
+  progress and must stop. Once both samples are present, enable is single-phase.
+- On the PICO-native path only, an `error` mentioning missing
+  `HandLeft`/`HandRight` means the PICO SDK install is incomplete; do NOT
+  auto-fix—relay the error and ask the user to verify/update the PICO SDK. On
+  OpenXR, diagnose `com.unity.xr.hands` / `HandVisualizer` instead.
 
 ### Disable Hand
 
@@ -118,25 +125,55 @@ Trigger words: virtual hand / hand / hand interaction / hand tracking / hands.
 - `installed` is true only when BOTH hand markers are present. If only one
   is mounted, `reason` explains the partial state.
 
-## Typical pipeline — enable, FIRST time (sample not yet imported)
+## Typical pipeline — enable, PICO-native cold start
 
 ```
-pico_xr_status()               → xr_origin=ok, hand=off
-pico_xr_hand(action=enable)    → skipped (recompiling): models mounted, XRI
-                                  "Hands Interaction Demo" sample imported,
-                                  Editor recompiling
-  → run the post-write settle loop (poll pico_xr_status until the bridge returns)
-pico_xr_hand(action=enable)    → ok   (interactors now mounted)
+pico_xr_status()               → runtime=native, xr_origin=ok, hand=off
+pico_xr_package(action=list_samples, packageName=com.unity.xr.interaction.toolkit)
+                               → Hands Interaction Demo not imported
+pico_xr_package(action=import_sample,
+                packageName=com.unity.xr.interaction.toolkit,
+                sampleName="Hands Interaction Demo") → ok
+pico_xr_status() [settle loop] → poll until the MCP bridge returns
+pico_xr_hand(action=enable)    → ok   (PICO models + interactors mounted)
 pico_xr_status()               → hand=on   (internal verify)
 Save Scene                     → ok
 ```
 
-## Typical pipeline — enable (sample already imported)
+## Typical pipeline — enable, OpenXR cold start
+
+```
+pico_xr_status()               → runtime=openxr, xr_origin=ok, hand=off
+pico_xr_package(action=info, packageName=com.unity.xr.hands)
+                               → skipped if package is missing
+pico_xr_package(action=add, identifier=com.unity.xr.hands)
+                               → ok when installation is needed
+pico_xr_status() [settle loop] → poll until the MCP bridge returns
+pico_xr_package(action=list_samples, packageName=com.unity.xr.hands)
+                               → HandVisualizer not imported
+pico_xr_package(action=import_sample, packageName=com.unity.xr.hands,
+                sampleName=HandVisualizer) → ok
+pico_xr_status() [settle loop] → poll until the MCP bridge returns
+pico_xr_package(action=list_samples, packageName=com.unity.xr.interaction.toolkit)
+                               → Hands Interaction Demo not imported
+pico_xr_package(action=import_sample,
+                packageName=com.unity.xr.interaction.toolkit,
+                sampleName="Hands Interaction Demo") → ok
+pico_xr_status() [settle loop] → poll until the MCP bridge returns
+pico_xr_hand(action=enable)    → ok   (XR Hands models + interactors mounted)
+pico_xr_status()               → hand=on   (internal verify)
+Save Scene                     → ok
+```
+
+Skip a package/sample mutation when `info` / `list_samples` shows the dependency
+is already installed/imported. If the idempotent mutation itself returns
+`already_present`, proceed without a settle loop because it was a no-op.
+
+## Typical pipeline — enable (all dependencies already present)
 
 ```
 pico_xr_status()               → xr_origin=ok, hand=off
-pico_xr_hand(action=enable)    → ok   (models + interactors in one call;
-                                  or error if PICO SDK hand prefabs missing)
+pico_xr_hand(action=enable)    → ok   (runtime-appropriate models + interactors)
 pico_xr_status()               → hand=on   (internal verify)
 Save Scene                     → ok
 ```

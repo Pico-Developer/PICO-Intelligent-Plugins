@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/host-assets/cursor/hooks/ingest.mjs\"",
+        "matcher": "Read",
+        "timeout": 65
+      }
+    ],
+    "afterMCPExecution": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/host-assets/cursor/hooks/ingest.mjs\"",
+        "timeout": 65
+      }
+    ]
+  }
+}

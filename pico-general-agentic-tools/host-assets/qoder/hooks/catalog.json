@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "pico-general-agentic-tools",
+      "version": "1.0.0",
+      "skills": [
+        "knowledge-query"
+      ],
+      "mcpServers": []
+    },
+    {
+      "id": "pico-spatial-agentic-tools",
+      "version": "1.0.0",
+      "skills": [
+        "pico-cli",
+        "pico-env-doctor",
+        "pico-spatial-app-designer",
+        "pico-workflow-integrator",
+        "porting-android-app",
+        "spatial-app-dev-workflow",
+        "spatial-app-onboarding",
+        "spatial-app-performance-analysis",
+        "spatial-app-performance-analysis-ext",
+        "spatial-design-to-app",
+        "spatial-editor",
+        "spatial-emulator-usage",
+        "spatial-sdk-guideline",
+        "spatial-sdk-scene-builder",
+        "spatial-sdk-update",
+        "spatial-ui-ability",
+        "spatial-ui-design-style",
+        "spatialml",
+        "spatialml-debugging"
+      ],
+      "mcpServers": [
+        "pico-dev-knowledge",
+        "pico-spatial-editor"
+      ]
+    },
+    {
+      "id": "pico-unity-agentic-tools",
+      "version": "1.0.0",
+      "skills": [
+        "develop-pico-unity-apps",
+        "pico-unity-buildingblocks",
+        "pico-unity-init",
+        "pico-unity-package-manager",
+        "pico-unity-spatial",
+        "spatialadapter-camera-window-api",
+        "spatialadapter-components-api",
+        "spatialadapter-input-api",
+        "spatialadapter-runtime-core-api",
+        "spatialadapter-runtime-overview",
+        "spatialadapter-scene-setup",
+        "spatialadapter-spatial-camera-focus",
+        "spatialml",
+        "spatialml-debugging"
+      ],
+      "mcpServers": [
+        "pico-dev-knowledge"
+      ]
+    }
+  ]
+}

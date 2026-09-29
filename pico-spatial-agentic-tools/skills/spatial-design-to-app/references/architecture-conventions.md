@@ -32,6 +32,7 @@ com.picoxr.<module>/
     ├── <feature>/                     # REQUIRED: 1 directory per Screen
     │   ├── <Feature>UiState.kt        # data class + sealed interface Event
     │   ├── <Feature>ViewModel.kt      # androidx.lifecycle.ViewModel
+    │   ├── <Feature>ViewModelFactory.kt # Repository-to-ViewModel assembly
     │   ├── <Feature>Screen.kt         # stateful + stateless 双层
     │   └── components/                # @Composable building blocks; non-empty for non-trivial screens
     ├── theme/                         # Brushes / shapes / palette helpers
@@ -59,7 +60,7 @@ not actually isolate components.
 | `data/`                                         | nothing app-specific (only kotlinx, libs)                | reference Compose, ViewModel, Android lifecycle            |
 | `domain/model/`                                 | nothing                                                  | reference Compose, Repository, ViewModel                   |
 | `domain/usecase/`                               | `data/repository/`, `domain/model/`                      | reference Compose, ViewModel                               |
-| `ui/<feature>/`                                 | `domain/`, `data/repository/` (for default Factory only) | hold mock data inline; expose mutable state to Composables |
+| `ui/<feature>/`                                 | `domain/`; `data/repository/` only from `*ViewModelFactory.kt` | let `*Screen.kt` or Composables reference Repository; hold mock data inline; expose mutable state to Composables |
 | `ui/components/`, `ui/theme/`, `ui/navigation/` | `domain/model/`                                          | depend on `data/` or any ViewModel                         |
 | `platform/`                                     | top-level `mainApp` only                                 | hold business logic                                        |
 
@@ -84,9 +85,14 @@ class FeatureViewModel(/* injected use cases */) : ViewModel() {
     fun onEvent(event: FeatureEvent) { /* reduce → _state.update {} */ }
 }
 
+class FeatureViewModelFactory : ViewModelProvider.Factory {
+    // This non-Composable file assembles Repository / UseCase dependencies.
+    // It is the only file under ui/<feature>/ that may reference a Repository.
+}
+
 @Composable
-fun FeatureScreen(/* defaults via remember { … } */) {
-    val vm: FeatureViewModel = viewModel(factory = …)
+fun FeatureScreen() {
+    val vm: FeatureViewModel = viewModel(factory = FeatureViewModelFactory())
     val state by vm.state.collectAsStateWithLifecycle()
     FeatureContent(state = state, onEvent = vm::onEvent)
 }
@@ -101,6 +107,12 @@ Forbidden in Composables emitted by this skill:
   a Repository / UseCase. Local UI-only state (focus, expanded) is fine.
 - Direct calls into a `Repository` from a Composable.
 - `runBlocking` / `GlobalScope` anywhere.
+
+`*Screen.kt` files must not import, construct, or reference a Repository.
+Place Repository-to-ViewModel assembly in a sibling
+`<Feature>ViewModelFactory.kt` file instead. This keeps the Screen as a
+state-wiring shell and allows the architecture checker to apply A5 uniformly
+to every Composable file.
 
 ## 4. Repository abstraction (REQUIRED if there is any data)
 
@@ -160,5 +172,7 @@ for emergencies but the SKILL still demands a clean run before sign-off.
 - "Where do I filter / search?" → `domain/usecase/*UseCase.kt` (pure function preferred)
 - "Where do I keep `enum class CardLayout` / colour roles?" → `domain/model/`
 - "Where do I keep the `Brush.verticalGradient(...)` derived from a domain value?" → `ui/theme/`
-- "Where do I keep the design's exact colors?" → one `object <App>Colors` under `ui/theme/` — semantic `ColorScheme` roles as Kotlin `Color(0x…)` (required by design-style R1b), non-semantic surface/text/brand colors optionally in `res/color/*.xml` referenced via `colorResource(...)`. See `figma-mapping.md §7.2`.
+- "Where do I keep the design's exact colors?" → one `object <App>Colors` under
+  `ui/theme/`, using app-owned names and annotated Kotlin `Color(0x…)` values.
+  Never replace native `ColorScheme` roles. See `figma-mapping.md §7.2`.
 - "Where do I hold `selectedTab` / `searchQuery`?" → `<Feature>UiState` inside the ViewModel, never `remember`

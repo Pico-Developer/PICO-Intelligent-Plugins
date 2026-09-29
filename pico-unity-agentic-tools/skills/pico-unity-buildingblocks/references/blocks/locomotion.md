@@ -60,6 +60,7 @@ Save Scene                                           → ok
 
 ## Notes
 
-- Do NOT call `pico_xr_locomotion(configure)` without parsing the user's
+- Do NOT call `pico_xr_locomotion(action=configure)` without parsing the user's
   intent first. The default preset is `Default`; if the user said "all",
-  pass `All`; if they said "off", they probably mean `pico_xr_locomotion(disable)`.
+  pass `All`; if they said "off", they probably mean
+  `pico_xr_locomotion(action=disable)`.

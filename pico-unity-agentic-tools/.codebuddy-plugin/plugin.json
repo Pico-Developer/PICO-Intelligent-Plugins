@@ -1,0 +1,12 @@
+{
+  "name": "pico-unity-agentic-tools",
+  "version": "0.1.0",
+  "description": "Agentic tools for PICO Unity development (skills and MCP). Helps AI agents assist with Unity project setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
+  "author": {
+    "name": "PICO Immersive Pte. Ltd."
+  },
+  "homepage": "https://developer.picoxr.com/",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

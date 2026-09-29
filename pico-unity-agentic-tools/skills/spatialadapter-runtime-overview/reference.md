@@ -18,9 +18,10 @@ This folder is an AI-agent-oriented map of the public C# API surface in `Spatial
 
 ## Common Return Conventions
 
-- `int` return value:
-  - `0` means success.
-  - Non-zero means the native/backend call failed or the request was rejected.
+- Status-code `int` return value:
+  - `0` generally means success for native status-code calls.
+  - Non-zero indicates failure for those calls; verify the specific method contract.
+  - Resource-returning APIs are different: `RegisterDynamicTexture()` returns a texture asset ID on success and `-1` on failure.
 - `bool` return value:
   - `true` means the wrapper call completed successfully.
   - `false` means the wrapper detected a failure and already logged an error.
@@ -31,12 +32,12 @@ This folder is an AI-agent-oriented map of the public C# API surface in `Spatial
   - Caller shares mutable struct memory with the runtime/native layer.
   - Populate all required fields before calling.
 
-## Files In This Folder
+## Topic References
 
-- `runtime-core.md`: session, scene graph, resource, mesh, and low-level native bridge APIs.
-- `camera-and-window.md`: spatial window and camera configuration APIs.
-- `input.md`: spatial interaction and Unity Input System integration APIs.
-- `components.md`: native text, video, hover, shadow, collision, and canvas-related APIs.
+- [Runtime core](../spatialadapter-runtime-core-api/reference.md): session, scene graph, resource, mesh, and low-level native bridge APIs.
+- [Camera and window](../spatialadapter-camera-window-api/reference.md): spatial window and camera configuration APIs.
+- [Input](../spatialadapter-input-api/reference.md): spatial interaction and Unity Input System integration APIs.
+- [Components](../spatialadapter-components-api/reference.md): native text, video, hover, shadow, collision, and canvas-related APIs.
 
 ## Important Agent Notes
 

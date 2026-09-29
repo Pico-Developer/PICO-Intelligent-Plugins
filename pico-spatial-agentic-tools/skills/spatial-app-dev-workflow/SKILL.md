@@ -1,6 +1,6 @@
 ---
 name: spatial-app-dev-workflow
-description: 'Runs an iterative PICO Spatial SDK feature-development workflow after spatial-app-onboarding handoff. Use for follow-up requirements in an existing Spatial app: inspect AGENTS.md, plan/implement one increment, build, install, launch in the PICO emulator/device, capture screenshots, check success criteria, watch for crashes/logcat, and self-repair until verified or clearly blocked.'
+description: 'Runs iterative behavior-only feature work in an existing PICO Spatial SDK app when visible UI and spatial structure stay unchanged, including search/filter/data/business logic, interaction behavior, SDK/ECS integration, and crash or functional fixes. This is the primary workflow when an existing Editor .bundle and .scenes.json handoff must be integrated or loaded into the app. Route visible-control, layout, design-fidelity, panel-hierarchy, and container/window-model changes to spatial-design-to-app.'
 license: 'Apache-2.0'
 allowed-tools: 'Bash(pico-cli *) Bash(adb *) Bash(./gradlew *) Bash(git *) Read Edit Write'
 ---
@@ -8,7 +8,11 @@ allowed-tools: 'Bash(pico-cli *) Bash(adb *) Bash(./gradlew *) Bash(git *) Read 
 # Spatial App Development Workflow
 
 Use this skill for **post-onboarding development** in an existing PICO Spatial SDK Android/Kotlin project.
-It continues from the project state left by `spatial-app-onboarding`: a runnable scaffold, a project-specific `AGENTS.md`, and a baseline that should already build/install/launch.
+It continues from the project state left by `spatial-app-onboarding`: an existing scaffold and project-specific `AGENTS.md`. Verify current behavior through the normal development loop; an earlier runnable handoff does not establish that the app still builds or launches.
+
+Use `spatial-design-to-app` instead when the request adds or removes visible
+controls or alters layout, visual fidelity, panel hierarchy, or the
+container/window model. Do not chain the two workflows by default.
 
 The operating rhythm is:
 
@@ -49,10 +53,11 @@ Before changing code:
 4. Confirm the current user request is a follow-up feature/fix inside this project. If the directory is empty or not a Spatial SDK app, route to `spatial-app-onboarding` instead of using this workflow.
 5. Preserve the existing scaffold and visible baseline unless the user explicitly asks for a migration.
 6. If editor-authored content already exists as co-located `.bundle` and `.scenes.json` files, consume that handoff without reopening the editor.
+   Keep both files under `app/src/main/assets/` for a Spatial app. Configure Gradle `androidResources.noCompress` to include `bundle`; the built APK still needs the check below.
 7. Detect new 3D model asset generation before classifying runtime ownership. When the current task needs one or more new 3D model assets, activate `spatial-editor` first. Override this default only when the user explicitly says not to use Spatial Editor; Kotlin integration, an empty asset directory, or an eventual runtime-controlled Entity is not an implicit opt-out.
 8. Classify each remaining 3D step by ownership: Kotlin/Spatial SDK Entity implementation, editor-authored content, or both. Do not infer Editor ownership merely because code-created Entities form a visible scene, and do not infer Kotlin ownership merely because Editor-authored content will later be used by the app.
 9. For code-owned hierarchy, loading, transforms, arrangement, or placement, activate `spatial-sdk-scene-builder` and keep this workflow as the enclosing build/install/launch/verification loop.
-10. For editor-authored scene or asset content, activate `spatial-editor` and resume app implementation only after its managed Controller returns a completed handoff or structured blocker.
+10. For editor-authored scene or asset content, activate `spatial-editor` and resume app implementation only after its public Workflow Run returns a completed Result or structured blocker.
 11. For mixed work, use Spatial Editor for authored content and Scene Builder for Kotlin Entity integration and placement.
 
 Handoff rule:
@@ -64,6 +69,8 @@ Handoff rule:
 ## 1. Work One Requirement at a Time
 
 Convert the user's request into a small, observable increment.
+
+Include repairs to application code or configuration that block implementing or verifying that increment, even when the defect predates the request. Scope controls limit unrelated features and rewrites; a known startup failure is necessary repair work. Resolve it and continue the original requirement.
 
 For each requirement, write down internally:
 
@@ -83,6 +90,14 @@ Prefer incremental edits over rewrites:
 - Use `spatial-sdk-guideline` references before writing nontrivial ECS, resource loading, interaction, physics, animation, or coordinate conversion code.
 - Keep snippets idiomatic for the existing Kotlin/Compose style.
 
+### Revisit window structure only when the increment changes it
+
+When a request adds or separates a panel/window, changes its attachment or lifecycle, or requires independent placement, read the existing window declarations and apply `../spatial-design-to-app/references/structure-decisions.md` (Part 2 — Window model) before writing that region.
+
+Record the existing and chosen window models plus the concrete requirement that justifies the change. A request to show settings "in a new window" alone does not establish independent lifecycle or placement requirements. Use the shared rules to distinguish an auxiliary panel from a genuinely independent window; ask only when a missing fact would change that choice.
+
+Continue the current increment after this bounded decision. A changed window model cannot use the `incremental_patch` exemption that skips Decide. Ordinary edits within the existing panel keep its window model and do not require this review or a full design-to-app run.
+
 ## 2. Build Before Runtime Verification
 
 After each implemented increment, run host-side checks before launching:
@@ -90,6 +105,8 @@ After each implemented increment, run host-side checks before launching:
 ```bash
 ./gradlew assembleDebug
 ```
+
+When this increment consumes an Editor `.bundle`, run `pico-cli app bundle verify app/build/outputs/apk/debug/app-debug.apk` before install. It must find the bundle in APK assets with ZIP method 0 (stored). If the check fails, fix Gradle packaging, rebuild, and rerun it. Record the verified APK path and bundle count; a passing build alone does not prove the bundle is loadable.
 
 If the project has relevant tests, run the narrowest meaningful checks first, then broader checks when affordable:
 
@@ -159,10 +176,16 @@ Crash loop:
    - entity not visible/interactive → check container, transform units, lighting/IBL, `CollisionComponent`, `InteractableComponent`, and scene attachment.
    - main-thread blocking or lifecycle issue → move loading/work to the recommended async/lifecycle location.
    - launch/activity issue → verify manifest package/activity and retry explicit `--activity`.
-5. Apply the fix.
-6. Rebuild locally, then hand reinstall/relaunch/log verification back to `spatial-emulator-usage`.
+5. Fix the application source or packaged configuration responsible for the failure. Record device-data edits, resets, and other temporary workarounds as diagnostic experiments; they do not establish that the delivered app is repaired.
+6. Rebuild locally, then hand reinstall verification to `spatial-emulator-usage`. Confirm the installed APK contains the source/configuration repair before changing diagnostic device data again; an in-place APK reinstall may preserve app data.
+7. On that newly installed repaired build, cover the triggering persisted-data state and the missing/invalid values relevant to the diagnosis. Use an isolated test package or explicitly recoverable test data; this failure-state coverage must finish before baseline restoration.
+8. Restore every diagnostic device-data mutation to the agreed baseline (the captured pre-test value, or a user-approved clean state). If restoration fails, report the exact residual state and recovery command and do **not** claim completion. Do not clear unrelated user data or add clean-data checks to every healthy increment.
+9. Only after successful restoration, relaunch the newly installed repaired build and repeat the final launch/crash/log check in the restored baseline state, without relying on the workaround.
+10. Resume the original increment and verify its requested behavior. Writing only SharedPreferences/device data, or restoring startup without completing the requested feature, is an incomplete result.
 
 Do at least one self-repair attempt for actionable code/config crashes before asking the user. Stop and report clearly only when blocked by missing external prerequisites, missing private assets, nondeterministic device failure, or lack of enough error evidence.
+
+If the correct repair requires a business decision that the project does not establish, ask for that specific decision. A defect being pre-existing is not itself a blocker.
 
 ## 7. Keep Documentation and Handoff Current
 

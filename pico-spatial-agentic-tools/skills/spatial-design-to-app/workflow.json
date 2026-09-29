@@ -1,0 +1,202 @@
+{
+  "$comment": "Routing and implementation contract for product-specific PICO Spatial app generation. The registered public Workflow owns intent_only orchestration; host-LLM phases apply to the source-specific declarative routes. pico-spatial-app-designer is a conditional design subworkflow, while spatial-ui-ability and spatial-ui-design-style are integrated resources and gates rather than separately activated app-generation workflows.",
+  "schema_version": 1,
+  "name": "spatial-design-to-app",
+  "orchestrator": "host_llm",
+  "entry_skill": "spatial-design-to-app",
+  "managed_workflow": {
+    "name": "spatial-design-to-app",
+    "applies_when": "input_mode is intent_only",
+    "availability": "registered in both public and internal pico-cli distributions",
+    "control_model": "domain_module_kernel",
+    "sequence": ["feature_definition", "design", "design_review", "compose_app", "compose_review"],
+    "fallback_scope": "visual_design, visual_reference, product_doc, hybrid, and incremental_patch continue to use this declarative contract"
+  },
+  "execution": {
+    "ordering": "sequential_and_gated",
+    "on_failed_gate": "stop_or_repair_before_continuing",
+    "app_generation_workflow_count": 1
+  },
+  "routing_contract": {
+    "feature_bearing_request": {
+      "entry": "spatial-design-to-app",
+      "includes": [
+        "one-line intent",
+        "PRD or feature specification",
+        "Figma URL",
+        "screenshot or mockup",
+        "hybrid design sources",
+        "bounded existing-panel patch"
+      ]
+    },
+    "designer_gate": {
+      "required_when": "the user supplied neither a visual asset nor an executable design package",
+      "mandatory_input_modes": ["intent_only", "product_doc"],
+      "mandatory_hybrid_condition": "no Figma URL and no screenshot or mockup and no user-provided executable design package",
+      "one_line_generation": "always invoke pico-spatial-app-designer before extraction or code generation",
+      "cannot_be_bypassed_by": [
+        "implement directly",
+        "application simplicity",
+        "absence of the word design",
+        "an agent-authored outline"
+      ],
+      "skip_only_when": "the user supplied a visual asset or an executable design package with information architecture, page structure, and state model",
+      "user_package_result": "record user_package_passed only after Stage 1 confirms the user supplied the package with the request and it contains all three required design dimensions"
+    }
+  },
+  "integrated_resources": {
+    "designer": {
+      "skill": "pico-spatial-app-designer",
+      "mode": "conditional_subworkflow",
+      "workflow": "../pico-spatial-app-designer/workflow.json"
+    },
+    "spatial_ui_capabilities": {
+      "skill": "spatial-ui-ability",
+      "mode": "on_demand_reference_router",
+      "skill_file": "../spatial-ui-ability/SKILL.md",
+      "loading_rule": "load one matching ability reference for each capability domain supported by the direct request or accepted upstream design facts; do not preload unrelated references"
+    },
+    "spatial_ui_design_style": {
+      "skill": "spatial-ui-design-style",
+      "mode": "mandatory_build_and_verification_contract",
+      "skill_file": "../spatial-ui-design-style/SKILL.md",
+      "verification": "../spatial-ui-design-style/scripts/verify_spatial_ui_design.py"
+    },
+    "icons": {
+      "mode": "ordered_source_resolution_then_materialization",
+      "source_priority": [
+        "user or Figma supplied asset",
+        "existing approved app asset",
+        "SDK-owned semantic icon",
+        "exact bundled ICON 7.0 catalog match",
+        "new ICON 7.0-style custom drawing"
+      ],
+      "selection_reference": "../pico-spatial-app-designer/references/icon-selection.md",
+      "catalog_script": "../pico-spatial-app-designer/scripts/icon-catalog.mjs",
+      "drawing_reference": "references/icon-drawing.md"
+    }
+  },
+  "phases": [
+    {
+      "id": "route",
+      "kind": "decision",
+      "does": "Classify input_mode and generation_mode, identify the target, resolve Figma prerequisites, and evaluate the sole executable-design criterion.",
+      "gate": "input mode, generation mode, target, and designer-gate decision are explicit"
+    },
+    {
+      "id": "feature_definition",
+      "kind": "managed_workflow_handoff_summary",
+      "when": "input_mode is intent_only and the designer gate is required",
+      "owner": "registered spatial-design-to-app Workflow",
+      "taskId": "feature-definition",
+      "description": "The first caller-agent Handoff normalizes the intent and produces <target>/.scratch/intent-brief.md. This entry describes managed Workflow behavior and is not a host-LLM instruction to create the artifact before starting the Workflow."
+    },
+    {
+      "id": "designer_gate",
+      "kind": "conditional_subworkflow",
+      "invoke": "pico-spatial-app-designer",
+      "when": "routing_contract.designer_gate.required_when",
+      "inputs": [
+        "user request",
+        "known product constraints",
+        "target context",
+        "intent-brief.md when input_mode is intent_only"
+      ],
+      "required_outputs": ["design-doc.md", "design-spec.json", "preview.html"],
+      "acceptance": [
+        "design-doc.md is complete",
+        "design-spec.json is schema-valid",
+        "every declared icon asset resolves and every custom icon SVG exists",
+        "preview.html embeds the accepted design-spec.json without divergence",
+        "rendered visual quality passed at default and minimum surface sizes",
+        "post-build critique verdict is pass",
+        "design_escalation_receipt.json records status=designer_passed"
+      ],
+      "on_success": "return accepted design facts to this workflow and continue to extract",
+      "on_failure": "BLOCKED; do not generate app code",
+      "must_precede": [
+        "extract",
+        "decide",
+        "resolve_spatial_ui_capabilities",
+        "admit_spatial_ui_style",
+        "build"
+      ]
+    },
+    {
+      "id": "extract",
+      "kind": "reasoning",
+      "does": "On a design-package route, consume design-spec.json as the authoritative executable source for surfaces, nodes, initial state, states, transitions, actions, data, dimensions, tokens, responsive rules, and assets. On the Designer path, use design-doc.md for rationale and preview.html only for accepted visual evidence. On the user-package path, require the prior user_package_passed route result. Resolve every icon through the ordered source priority: preserve user/Figma, app, and SDK assets; use exact icon70 catalog matches; retain design-assets/icons SVG as the authority for custom drawings. On other routes, extract equivalent facts from the accepted source.",
+      "reads_on_designer_route": [
+        "references/design-package-bridge.md",
+        "references/spatialui-web-to-compose.md",
+        "../pico-spatial-app-designer/references/icon-selection.md",
+        "references/icon-drawing.md"
+      ],
+      "gate": "enough accepted evidence exists to choose or inherit the app structure"
+    },
+    {
+      "id": "decide",
+      "kind": "decision",
+      "does": "Choose exactly one root container and window model, recording rejected alternatives.",
+      "skip_when": "input_mode is incremental_patch and the existing container and window model remain unchanged",
+      "gate": "container and window model are legal and singular"
+    },
+    {
+      "id": "resolve_spatial_ui_capabilities",
+      "kind": "integrated_reference_resolution",
+      "does": "Derive required SpatialUI capability domains from the direct request or accepted upstream design facts and load their references according to integrated_resources.spatial_ui_capabilities.loading_rule before implementation.",
+      "resource": "integrated_resources.spatial_ui_capabilities",
+      "domains": [
+        "gestures",
+        "vibrant",
+        "hover",
+        "window_constraints",
+        "depth_layout",
+        "z_offset",
+        "3d_transforms",
+        "augment_subwindows"
+      ],
+      "gate": "every required capability has an official API pattern or is explicitly blocked"
+    },
+    {
+      "id": "admit_spatial_ui_style",
+      "kind": "mandatory_contract",
+      "does": "Load the spatial-ui-design-style contract before emitting Compose and bind PicoTheme, token roles, built-in component, hover, haptics, system-window-background, and Material-ban requirements to the build.",
+      "resource": "integrated_resources.spatial_ui_design_style",
+      "gate": "the implementation plan satisfies all pre-build design-style admission rules"
+    },
+    {
+      "id": "build",
+      "kind": "implementation",
+      "does": "Create or update the Kotlin, SpatialUI Compose, manifest, assets, architecture layers, and focused tests from the accepted design and resolved capability patterns. Prefer built-in component state colors and let supported Text/Icon slots inherit their content color. When custom category, brand, selection, or toggle colors are required, use the component colors API where available and consider each affected state's effective foreground/background pair; do not infer white text merely because the state is selected. Materialize only referenced icon70 VectorDrawables. For every accepted custom SVG, create a matching 24 x 24 Android VectorDrawable through the icon-drawing reference. Render either source through painterResource in the mapped SpatialUI Icon or icon slot; text, emoji, and approximate substitutes are forbidden.",
+      "forbids": [
+        "Material or Material3 UI",
+        "app-authored material restored from a design or preview",
+        "custom replacements for mapped SpatialUI built-ins",
+        "app code before a required designer gate passes"
+      ],
+      "gate": "implementation is ready for machine and structural verification"
+    },
+    {
+      "id": "verify",
+      "kind": "verification",
+      "does": "Run workflow/build checks, compare the finished app's implementation mapping receipt with the authoritative design-spec.json and source anchors, verify catalog-backed and custom-drawn icon resources, run design-style verification, architecture and unit-test checks, Figma hooks when applicable, and structural/visual self-review.",
+      "required_command": "bash scripts/validate_workflow_and_build.sh <target> --input-mode <mode> --generation-mode <mode> [--design-gate-result user_package_passed]",
+      "required_results": [
+        "verification_summary.json.clean == true",
+        "intent-brief.md exists and is non-empty for intent_only",
+        "design_fidelity_result.json.passed == true when design-spec.json exists",
+        "design_style_result.json.passed == true",
+        "every declared icon has its authoritative or exact catalog/custom drawable and no glyph placeholder",
+        "design_escalation_receipt.json status=designer_passed when the designer gate was required, or user_package_passed for a user-provided executable package"
+      ],
+      "gate": "all required checks pass without a skipped or degraded design-style admission"
+    }
+  ],
+  "standalone_boundaries": {
+    "pico-spatial-app-designer": "may still be selected directly for design-only requests",
+    "spatial-ui-ability": "may still be selected directly for focused API or troubleshooting questions",
+    "spatial-ui-design-style": "may still be selected directly for focused UI consistency or admission questions",
+    "app_generation": "always remains owned by this single spatial-design-to-app workflow"
+  }
+}

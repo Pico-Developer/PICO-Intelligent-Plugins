@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"],
+        "timeoutSec": 65
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"],
+        "timeoutSec": 65
+      }
+    ]
+  }
+}

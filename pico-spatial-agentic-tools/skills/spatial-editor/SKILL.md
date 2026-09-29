@@ -1,314 +1,218 @@
 ---
 name: spatial-editor
-description: 'Plans and runs managed Spatial Editor authoring and handoff workflows. Invoke for new or revised Editor-owned scenes, assets, composition, materials, effects, visual inspection, or packaging.'
+description: 'Plans and runs managed Spatial Editor workflows to create or revise Editor-owned scenes, assets, composition, materials, effects, visual inspection, or packages. When an existing .bundle and .scenes.json pair only needs to be integrated or loaded into an app, use spatial-app-dev-workflow instead; do not reopen Editor.'
 license: 'Apache-2.0'
-metadata:
-  version: '2.47.0'
 ---
 
 # Spatial Editor Workflow
 
-Use this Skill to decide when Spatial Editor owns the work, decompose the authored
-content, run the managed workflow, review visual results, and hand completed content
-to downstream app work.
+Use this Skill for Editor-owned 3D assets, scene composition, materials, effects,
+visual review, packaging, and handoff. Kotlin Entity implementation, runtime
+behavior, app builds, and device validation remain with the calling app workflow.
 
-Do not use it for Kotlin Entity implementation, runtime behavior, build repair,
-emulator/device validation, or loading an existing bundle without changing authored
-content. Those concerns remain with the calling app workflow.
-
-## Companion Skill Routing
+## Load Only What The Current State Needs
 
 This Skill owns workflow intent and task decomposition. It deliberately does not
 duplicate form schemas or error-code handling.
 
-| Situation                                                                                                                                                                         | Required Skill                                                          |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Deciding whether to use Editor, decomposing content, planning assets/layout, understanding lifecycle or handoff                                                                   | Continue with `spatial-editor`.                                         |
-| Before `submit_editor_manifest`, `submit_editor_review`, `submit_editor_scene_plan`, `submit_editor_scene_mutation`, `request_editor_scene_evidence`, or `submit_editor_decision` | Read `contracts.md` from this Skill directory and use its current form. |
-| Controller rejects a form, returns `errors[]`, `EDITOR_*`, `interrupted`, or a user-decision gate                                                                                 | Read `recovery.md` from this Skill directory before acting.             |
+| Current need                                                                   | Action                                                                                                 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Choose Editor, decompose content, run the normal lifecycle, or prepare handoff | Continue with this file.                                                                               |
+| Submit any Handoff                                                             | Read `contracts.md` from this Skill directory and obey the current live `next.submission.inputSchema`. |
+| Handle a rejection, error, blocked Run, interruption, or user decision         | Read `recovery.md` from this Skill directory before acting.                                            |
 
-Never reconstruct a form from this workflow overview. Never interpret an error by
-guessing from its name when `recovery.md` covers it.
+Never reconstruct a form from this overview. Never preload `recovery.md` during a
+healthy run, and never guess an error meaning that it defines.
 
-## When To Use Editor
+## Ownership And Safety
 
-Spatial Editor owns:
+Spatial Editor owns generated or imported models, primitive-authored prototypes
+and other structural or dimension-driven geometry, Editor hierarchy and transforms,
+materials, lighting/effects intent, visual inspection, and packaged authored content.
+Use `spatial-sdk-scene-builder` when
+Kotlin code owns Entity creation, runtime hierarchy, behavior, or dynamic transforms.
+When both apply, Editor authors and packages first; app code consumes the handoff.
 
-- Generated or imported 3D model assets.
-- Primitive-authored structural or dimension-driven geometry.
-- Editor scene composition, visual hierarchy, materials, lighting, effects, and
-  animation intent.
-- Model, material, enhancement, and final scene visual inspection.
-- Packaged Editor content and editor-to-app handoff.
-- Custom component declaration sync required for later Editor authoring.
+All production mutations and packaging must remain inside the managed public
+Workflow Run. Before starting it, do not invoke a direct Editor readiness command or
+start a standalone bootstrap session for the target project. A read-only status
+check is allowed, but the Workflow Session must establish and own its Editor
+process. If another session owns the same project, resolve ownership before writing.
 
-Use `spatial-sdk-scene-builder` instead when Kotlin/Spatial SDK code owns Entity
-creation, hierarchy, placement, runtime behavior, or dynamic transforms. When both
-apply, Editor produces authored content first and Scene Builder consumes the handoff.
+Never bypass the Workflow Service or its Drivers with direct backend mutation,
+scene creation, packaging, or unmanaged edits. Reflected `get_scene_info` and
+`get_entity_info` calls are read-only observations and do not require a Workflow Handoff.
 
 ## Managed Workflow
 
-Do not call dynamic Editor backend tools directly during a managed workflow. The
-Controller owns execution order, retries, generation/import polling, assembly,
-packaging, cleanup, and persisted checkpoints.
+Start through the stable `start_editor_workflow` compatibility facade. It starts the
+public `spatial-3d-generation` root with `backendPreference="editor"`; never start the Editor Child directly or supply an internal Workflow ID.
 
-The normal production lifecycle is:
+Use the current working directory as `workspace_root` unless the user selected
+another workspace. Treat the Workflow-returned `projectPath` as authoritative.
+When the user selects an existing scene entry, pass its canonical project-relative
+`Sources/Scenes/*.usd[a|c]` path as `target_scene_path`; do not leave it to the
+model-plan placeholder heuristic.
+Headless is the default; request GUI only for a reason allowed by `contracts.md`.
 
-1. Start one managed production run for the current workspace and goal.
-2. Decompose the request and submit a production Manifest using `contracts.md`.
-3. Follow `nextAction`. Advance deterministic steps once; use managed wait for
-   long-running model generation/import.
-4. Inspect every model evidence view and submit the bound Agent review.
-5. When scene planning begins, query/mutate managed instances only when needed.
-6. Use accepted model bounds, imported transforms, reviewed orientation, scene
-   intent, and current instances to submit one complete Scene Assembly Plan.
-7. Let the Controller assemble models, primitives, and groups before material work.
-8. Inspect and submit every required material/enhancement review.
-9. Inspect the final six world-axis views plus front three-quarter view. Request
-   minimal supplemental evidence only for real occlusion.
-10. Accept only when required physical, semantic, visual, and functional criteria are
-    evidenced.
-11. Let the Controller package the accepted scene, write handoff metadata, and clean
-    up.
+The normal loop is:
 
-Treat every Controller result as one state-machine instruction. Before each workflow
-tool call, read the latest result and dispatch its exact `nextAction.type`; after the
-call, discard the previous instruction and parse the newly returned state. Never use
-a generic advance-then-wait helper or an automatic progression loop that handles only
-some action types.
+1. Start one public production Run for the workspace and goal.
+2. Resume the initial `author-scene-spec` Handoff with every requested semantic
+   subject and count.
+3. At `editor-model-plan`, submit distinct model archetypes only. Repeated
+   occurrences, final transforms, primitives, groups, materials, and runtime nodes
+   belong to scene planning.
+4. Let deterministic work advance. When `next.action="wait"`, call `next.tool` with
+   its returned bounded arguments.
+5. Inspect every required model/material view and submit the current review.
+6. Before scene planning, inspect the live hierarchy with `get_scene_info`, then
+   inspect every existing target with `get_entity_info`.
+7. Submit one complete Scene Plan from accepted bounds, imported transforms,
+   orientation evidence, current scene facts, and task-derived acceptance.
+8. Inspect the final six world-axis views, front three-quarter view, and required
+   `top_down_orthographic` view. Request supplemental evidence only for real
+   occlusion.
+9. Accept only when physical, semantic, visual, functional, and deterministic
+   spatial-quality checks pass.
+10. Let the managed Run package, write provenance and handoff metadata, and clean up.
 
-Use `advance_editor_workflow` only for `advance` and `wait_editor_workflow` only for
-`wait`. `submit_manifest`, `submit_review`, `submit_scene_plan`, `submit_decision`,
-and `resume` are hard stops that require their matching action before any further
-progression. If a non-terminal result has an absent or unknown action, stop and read
-`contracts.md` and `recovery.md`; do not guess. After reconnect, fetch current status.
-On interruption, read `recovery.md` and resume the persisted run.
+The current Workflow checks the live `get_viewport_screenshot` schema before final
+scene capture. When it returns `EDITOR_ORTHOGRAPHIC_CAPTURE_UNSUPPORTED`, do not
+retry, omit fields, or substitute a perspective image. The installed Spatial Editor
+package must be updated to a republished build that exposes both
+`camera_projection` and `camera_orthographic_size`; then resume the same Run and
+choose `recapture_current`.
 
-An action mismatch is a non-terminal rejection: the Controller preserves the current
-gate and returns its latest `nextAction`. Follow that action instead of abandoning or
-replacing the run.
+Treat every Workflow MCP response as one observation of the public Run. Read
+`runId`, `current`, `next`, `error`, and terminal `result`/`artifacts`/`evidence`,
+then discard the previous response.
 
-## Project Resolution
+For any submit action, call `next.tool` with `next.arguments` plus one `input` object
+that validates against `next.submission.inputSchema`. Use
+`next.submission.kind`; never infer task IDs, revisions, or wait durations.
+`get_editor_workflow_status` is observation-only. During model work,
+`current.module`, `current.phase`, and `current.models` provide compact progress.
+`advance_editor_workflow` is a deprecated observation-only compatibility entry.
 
-Use the current working directory as the absolute workspace root unless the user
-explicitly selects another workspace.
-
-Omit project overrides by default. The Controller deterministically creates or reuses
-the standard project under the workspace. Supply a custom project path or name only
-when the user explicitly requests it, then treat the Controller-returned
-`projectPath` as authoritative for the entire run.
-
-Headless is the default execution mode. Use GUI only when visible interaction is
-required, such as an explicit user request or authentication. The exact start form
-and allowed reasons live in `contracts.md`.
+A Handoff mismatch is a non-terminal rejection: the Workflow Service preserves the
+current public waiting state. Read it again and submit only the current Handoff.
+After interruption or reconnect, continue the same public `runId`. A persisted
+`native-runtime/editor-modules/<module>/recovery.md` is read-only audit evidence,
+not a state mutation channel.
 
 ## Task Decomposition
 
-Before submitting the Manifest, divide the goal into:
+Before model production, separate:
 
 1. Distinct generated/imported model archetypes.
 2. Repeated occurrences that can reuse one accepted archetype.
-3. Structural or dimension-driven elements better authored as primitives.
-4. Requested material work and its semantic targets.
-5. Whole-scene relationships and acceptance criteria.
-6. Optional lighting, animation, or effect work.
+3. Structural or dimension-driven primitives.
+4. Requested material work and semantic targets.
+5. Whole-scene relationships and acceptance.
+6. Optional lighting, animation, or effects.
 7. Downstream runtime-node and delivery contracts.
 
-Do not turn undocumented preferences into requirements. Every acceptance criterion
-must trace to the user request or an accepted upstream contract.
+Do not turn undocumented preferences into requirements. Every criterion must trace
+to the request or an accepted upstream contract.
 
 ### Asset Archetypes And Reuse
 
-The user does not need to say "reuse." Consider reuse when occurrences share the same
-requested form, appearance, and semantic role. Represent one selected archetype in
-the Manifest, then create additional managed instances during scene planning.
-
-Reuse is a design heuristic, not an acceptance gate. Preserve separate model work
-when geometry, appearance, function, identity, or acceptance requires meaningful
-variation. Choose counts and arrangement from scene purpose, available space, and
-measured bounds rather than a fixed default.
+Reuse when occurrences share form, appearance, and semantic role. Put one archetype
+in model production and additional occurrences in the Scene Plan. Reuse is a design heuristic, not an acceptance gate; keep separate assets when identity, function,
+geometry, or acceptance differs.
 
 ### Structural Primitives
 
-Separate the structural envelope from independently placeable furniture, fixtures,
-and equipment. Prefer supported primitives when an element is primarily defined by
-dimensions, placement, openings, and finish. Typical non-normative candidates include
-floors, ceilings, straight wall segments, columns, platforms, partitions, and simple
-built-in volumes.
+Use primitives for dimension-driven floors, walls, columns, platforms, partitions,
+and simple volumes. Use generated/imported assets when silhouette, topology,
+curvature, ornament, or semantic identity requires authored geometry.
 
-Use generated/imported models when silhouette, topology, curvature, ornamentation,
-integrated detail, semantic identity, or a design reference requires authored
-geometry. A requested finish alone does not require generated geometry.
+Defer final primitive transforms until accepted model bounds are known:
 
-For new workflows, defer final primitive position, rotation, and size until accepted
-model bounds are available. The Scene Plan is the authority for final primitives:
+- Model-only: placements and optional instances.
+- Mixed: placements, instances, and final primitives.
+- Primitive-only: empty models and placements, with final Plan primitives.
 
-- Model-only: placements, no plan primitives.
-- Mixed: model placements and final primitives in the same Plan.
-- Primitive-only: empty model list and placements, final geometry in Plan primitives.
-
-Legacy Manifest primitives remain compatibility input only. Exact fields and material
-forward references live in `contracts.md`.
-
-### Materials
-
-Create material work only for requested or contract-required surface properties.
-Keep generated material preview, compilation, visual review, commit, and rollback
-inside the Controller.
-
-When exact color, emission, opacity, roughness, metallic behavior, or render mode is
-part of acceptance, provide explicit `properties` through `contracts.md`; do not rely
-on natural-language interpretation alone. A failed material review must change the
-effective prompt or structured properties before another preview.
-
-A primitive display color is only a normalized RGBA fallback. Never report it as an
-emissive, PBR, or visually verified material. The Controller assembles plan-native
-primitives first so material work can resolve their real managed paths.
+The Scene Plan owns concrete primitive definitions and transforms. Exact fields live
+only in `contracts.md`.
 
 ### Scene Intent And Hierarchy
 
-Whole-scene intent describes composition and requested relationships, not model
-generation details. Derive hierarchy from editing and runtime semantics:
+Create material work only for requested or contract-required properties. Explicit
+color, emission, opacity, roughness, metallic behavior, and render mode require
+structured properties. A primitive display color is only an RGBA fallback, not
+proof of a PBR or emissive material.
 
-- Prefer a group for a coherent local assembly that should be selected, moved,
-  duplicated, or inspected as one unit.
-- Shared type or proximity alone is insufficient.
-- Avoid broad wrappers, decorative one-member groups, and grouping that breaks
-  independent interaction, animation ownership, or runtime paths.
-- When the user or scene acceptance explicitly requires a named hierarchy, the Plan
-  must include it.
+Group only coherent assemblies that should be selected, moved, duplicated, or
+inspected together. Groups are identity-transform `Xform` nodes. Declare `scene.runtimeNodes` only for downstream-addressable entities; use `./...` from the
+discovered managed root and never derive a root path from `scene.name`.
 
-Groups are identity-transform `Xform` nodes. The exact member discriminators,
-identifier rules, and nesting constraints live in `contracts.md`.
+## Visual And Spatial Review
 
-Declare `scene.runtimeNodes` only for entities that downstream runtime code must
-address. For create-mode managed content, use `./...` paths relative to the
-Controller-discovered scene root; never derive a root path from `scene.name`. Use an
-absolute path only when an existing path is already evidenced. The Controller
-normalizes resolved paths in final validation and handoff.
+Actually inspect every image referenced by current evidence. File existence, a
+successful call, bounds, or a package is not visual proof.
 
-## Visual Review
+For `reuse_required`, scope that model's evidence-image review to direction-related evidence only. Do not evaluate or fail geometry, appearance, topology, or detail,
+and use `orientation.verdict="ambiguous"` when an imported model has no reliable
+semantic front. This is not a request to generate a replacement; final scene review still
+evaluates placement and physical/spatial defects.
 
-Actually inspect every image referenced by current evidence. A successful tool call,
-file existence, bounds record, or package is not visual proof.
+Clearly evidenced floating, penetration, instability, unusable scale, obstruction,
+or an explicit requirement violation blocks acceptance. Depth-dependent findings
+need multiple views. Use inconclusive or supplemental evidence when visibility is
+insufficient.
 
-Use a conservative failure policy:
+Before final planning:
 
-- When the user explicitly requires model reuse
-  (`source.strategy="reuse_required"`), scope that model's evidence-image review to
-  direction-related evidence only: semantic front, up-axis consistency, and imported
-  orientation. Do not evaluate or fail geometry, appearance, topology, detail, or
-  other model-quality characteristics, and do not request regeneration for them.
-  When an imported existing model has no reliably identifiable semantic forward,
-  use `orientation.verdict="ambiguous"` with inspected evidence and rationale. This
-  is an accepted imported-asset result, not a request to generate a replacement.
-  This exception is limited to model-quality review; final scene review still
-  evaluates placement and physical/spatial defects.
-- Do not fail an unrequested incidental detail unless it changes required identity,
-  structure, semantics, function, or causes an evidenced physical/spatial defect.
-- Any clearly evidenced floating, penetration, instability, unusable scale,
-  obstruction, or explicit requirement violation blocks acceptance.
-- Depth-dependent physical findings require multiple views.
-- If evidence is insufficient, use inconclusive or request supplemental scene
-  evidence for actual occlusion.
-- A failed model-quality review supplies a fresh replacement prompt preserving valid
-  user intent; it is not appended feedback history.
+1. Read required runtime-node paths and parents.
+2. Read world bounds and imported transforms for every accepted model.
+3. Treat placement as the entity pivot; derive pivot-to-bottom and pivot-to-center.
+4. Ground objects on real supports and derive spacing from measured extents.
+5. Determine scale from measured bounds and scene relationships; never supply category-based default dimensions.
+6. Preserve imported rotation unless evidenced semantic direction requires a world
+   `+Y` heading delta.
+7. Check containment, circulation, access, occlusion, and interpenetration.
 
-The exact review form, enums, conditional front/orientation fields, and blocking
-evidence categories live only in `contracts.md`.
-
-## Orientation And Layout
-
-Every model is captured from all six Editor-world axes. Scene review uses the same
-six axes plus an elevated front three-quarter view.
-
-Up Axis is metadata, not a visual guess. Use Controller `sourceUpAxis`,
-`importedTransform`, and `editorWorldUpAxis`. Visual review may establish semantic
-`worldForwardAxis` after import.
-
-Before final Scene Plan submission:
-
-1. Read every `scenePlanningContext.runtimeNodes` entry and ensure the Plan creates
-   or preserves its exact path and parent.
-2. Read world bounds min/max/center/extent for every accepted model.
-3. Treat placement position as entity pivot, not bounds center.
-4. Derive pivot-to-bottom and pivot-to-center offsets from imported position and
-   measured bounds.
-5. Ground objects against their real support surface.
-6. Derive spacing from both objects' horizontal half-extents and intentional
-   clearance.
-7. Preserve imported scale and full imported rotation by default.
-8. Apply horizontal facing as a world `+Y` heading delta only when semantic direction
-   matters.
-9. Check support, containment, circulation, access, occlusion, scale, and
-   interpenetration across the whole plan.
-
-Axis-aligned bounds overlap is not conclusive penetration for curved, concave, nested,
-or intentionally contacting geometry. Use all scene views before judging physical
-validity.
+Axis-aligned bounds overlap alone does not prove penetration.
 
 ### Motion And Animation
 
-For a direction-sensitive moving model:
+For direction-sensitive motion, derive heading from velocity or trajectory tangent,
+apply it to an identity-transform parent/runtime owner, and preserve the model
+child's imported rotation and reviewed `worldForwardAxis`.
 
-- Read reviewed `worldForwardAxis` and current `importedTransform`.
-- Derive desired world heading from instantaneous velocity or trajectory tangent.
-- Compute only the heading delta from reviewed semantic front to motion direction.
-- Apply motion and heading to a dedicated identity-transform parent/runtime owner.
-- Preserve the model child's complete imported rotation.
+## Existing Scenes And Revision
 
-Never hardcode an unrelated fixed yaw, reset the child to identity, overwrite its
-full quaternion with heading-only Euler rotation, or invent a front for a model whose
-review established none.
+A runId is an execution record; it does not own permission to edit a scene. For new
+work in an existing project, inspect live scene/entity facts and use production
+modify. An empty default `Hi.usda` is a placeholder unless the start request
+explicitly names it as `target_scene_path` or inspection proves it has authored
+content. Preserve unrelated content.
 
-## Revision Workflow
+Linked revision is optional legacy inheritance for a completed parent delivery.
+Read parent scene hints included in the current `editor-revision-plan` Handoff instructions and confirm them against live state. Preserve user-modified content
+unless the user explicitly authorizes changing it.
 
-Every requested change to a completed managed scene uses a new revision run linked by
-`base_run_id`. Do not resume a terminal run and do not start production modify for
-that scene.
-
-Revision inherits unaffected accepted assets, evidence, paths, primitives, instances,
-and ownership. Use selective operations for requested additions, removals,
-regeneration, transforms, primitive changes, entity removal, or recomposition.
-
-Preserve user-modified content by default. Changing a target modified outside the
-parent workflow requires explicit user approval. The accepted
-`finalSceneSnapshot.scenePath` is authoritative for legacy handoff discrepancies.
-
-After revision asset work, submit a complete final Scene Plan. Keep every retained
-primitive in that Plan and omit only explicitly removed content. Use `contracts.md`
-for revision operations and `recovery.md` for stale/conflicting revision state.
-
-If a revision plan is rejected, preserve the same revision run and correct only that
-plan. Never bypass the Controller with direct `execute_script`, scene creation, or
-unmanaged primitive edits. Add a floor, wall, platform, or other structural primitive
-through `add_primitive`, then include the complete retained primitive set in the
-final Scene Plan.
-
-## Capability Boundaries
-
-Lighting, animation, and effects execute only through stable capabilities exposed by
-the connected Editor. Required unsupported work blocks. Optional unsupported work is
-reported in `unsupportedWork`. Do not replace missing capabilities with guessed
-`execute_script` APIs.
-
-Custom component declaration sync is separate from 3D production. Use
-`pico-cli editor sync component` without starting a production workflow.
+After revision asset work, submit a complete final Scene Plan. Add structural work
+through `add_primitive`, and include the complete retained primitive set. If a plan
+or final review fails, correct it within the same Run; never replace the Run merely
+to clear a rejection.
 
 ## Completion And Handoff
 
-Every successful production or revision run packages the accepted scene before
-cleanup. Do not call `pack_editor_bundle` as a second delivery step.
+Required unsupported capabilities block. Optional unsupported work is reported in
+`unsupportedWork`. Custom component declaration sync is separate and uses
+`pico-cli editor sync component`.
 
-Return the completed handoff to the calling app workflow:
+A successful managed Run packages before cleanup. Return:
 
 - Project and accepted scene paths.
-- Co-located `<bundleName>.bundle` and `<bundleName>.scenes.json`.
-- Runtime-node contracts.
-- Accepted orientation records.
-- Material/application results.
-- Warnings and unsupported optional work.
+- Co-located `<bundleName>.bundle`, `<bundleName>.scenes.json`, and provenance.
+- Managed Run/revision/fingerprint/gate proof and SHA-256 digests.
+- Runtime-node, orientation, material, warning, and unsupported-work results.
 
-The calling app workflow owns bundle loading, Kotlin integration, build,
-installation, launch, and runtime validation. A completed handoff is immutable;
-future authored changes start a revision.
+The calling app workflow owns loading, Kotlin integration, build, install, launch,
+and runtime validation. A completed handoff is immutable; further authored changes
+start a new managed Run against the live project. Direct CLI packaging is an
+unmanaged escape hatch and is never a completed Workflow delivery.

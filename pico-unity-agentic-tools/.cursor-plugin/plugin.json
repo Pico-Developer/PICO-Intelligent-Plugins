@@ -2,7 +2,7 @@
   "$schema": "https://cursor.com/schemas/cursor-plugin/plugin.json",
   "name": "pico-unity-agentic-tools",
   "description": "Agentic tools for PICO Unity development (skills and MCP). Helps AI agents assist with Unity project setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },

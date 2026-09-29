@@ -278,6 +278,13 @@ failure rather than a runtime surprise.
 | `pico.spatial.windowcontainer.volumebasepanel` | `"0"` Default (visible) / `"1"` None (hidden) | `"0"`   |
 | `pico.spatial.windowcontainer.defaultsize`     | 3D format `WxHxD` (e.g. `960x960x960`)        | —       |
 
+The `960x960x960` value above is a format example, not an authoritative default. Available PICO OS
+6.1 knowledge sources conflict between `960x960x960` and `1280x1280x1280`. Preserve an explicit
+project value; if the default matters, report the conflict and request a target template/Editor and
+runtime check or an SDK owner ruling instead of choosing either value. Volumetric sizes may use dp
+or meters. Convert between them only with `PhysicalLengthConverter`, and account for `worldScale`;
+do not use a fixed ratio.
+
 ## Common mistakes
 
 | Mistake                                                                         | Symptom                                                    |

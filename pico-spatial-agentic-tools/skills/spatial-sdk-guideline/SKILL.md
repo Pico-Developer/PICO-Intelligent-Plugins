@@ -1,6 +1,6 @@
 ---
 name: spatial-sdk-guideline
-description: Day-to-day PICO Spatial SDK 3D development guide (Android/Kotlin + Spatial ECS). Covers Stage/WindowContainer, ECS entities/components/systems, resources, materials/lighting, animation, physics, interaction, coordinates/units, and performance budgets.
+description: Focused PICO Spatial SDK API and diagnostic guide (Android/Kotlin + Spatial ECS). Covers container choices, ECS concepts, resources, rendering, interaction, coordinates/units, and performance constraints; routes Kotlin Entity scene delivery to Scene Builder.
 license: 'Apache-2.0'
 ---
 
@@ -8,25 +8,39 @@ license: 'Apache-2.0'
 
 ## Description and Goals
 
-Use this skill when building or debugging 3D content with **PICO Spatial SDK on PICO OS 6** (Android + Kotlin + Jetpack Compose + Spatial ECS).
+Use this skill for focused SDK API guidance, isolated implementation patterns, and non-deliverable diagnosis in **PICO Spatial SDK on PICO OS 6** (Android + Kotlin + Jetpack Compose + Spatial ECS).
+
+Route any requested edit that creates, loads, parents, transforms, arranges, places, or validates a Kotlin `Entity` hierarchy to `spatial-sdk-scene-builder`. This skill may provide the API facts that support that implementation, but it does not own the resulting scene change.
 
 Goals:
 
 - Pick the right container (**WindowContainer** vs **Stage**) and understand space-state constraints.
-- Build scenes with **ECS** (entities/components/systems) that are maintainable and performant.
-- Load resources correctly (**USD preferred**, **glTF/GLB supported**, **AssetBundle** workflow) and release them safely.
-- Make interaction actually work (**programmatic hit testing** needs `CollisionComponent`; **user interaction** needs `CollisionComponent + InteractableComponent`, plus targeting/gestures patterns).
+- Understand **ECS** (entities/components/systems) choices needed for maintainable, performant scene code.
+- Explain resource-loading options (**USD preferred**, **glTF/GLB supported**, **AssetBundle** workflow) and their lifecycle constraints.
+- Diagnose interaction prerequisites (**programmatic hit testing** needs `CollisionComponent`; **user interaction** needs `CollisionComponent + InteractableComponent`, plus targeting/gestures patterns).
 - Avoid common pitfalls (threading, coordinate-handedness, unit conversions, physics-world scoping).
 - Keep content within typical **performance budgets** for 90 fps.
 
 ## What This Skill Should Do
 
-When asked a concrete question, respond with:
+When asked a concrete SDK question or a diagnosis that does not itself require a Kotlin Entity scene edit, respond with:
 
-1. **Recommended approach** (what to use, where it lives, why).
-2. **Minimal implementation pattern** (small Kotlin snippet or pseudocode).
-3. **Checklist** to validate assumptions and catch common gotchas.
-4. Links to the most relevant curated pages under `reference/`, plus any deeper support retrieved via `pico-dev-knowledge` MCP when the question needs broader or version-specific lookup.
+1. **Project SDK evidence**: report the exact Spatial SDK BOM/version and the project file that declares it. Also report whether the nearest project `.pico-env.json` selects the matching major/minor knowledge line.
+2. **Recommended approach** (what to use, where it lives, why), explicitly stating whether every non-trivial or version-sensitive API is available in that project SDK.
+3. **Minimal implementation pattern** (small Kotlin snippet or pseudocode) that is compatible with the inspected project version.
+4. **Checklist** to validate assumptions and catch common gotchas.
+5. Links to the most relevant curated pages under `reference/`, plus any deeper support retrieved via `pico-dev-knowledge` MCP when the question needs broader or version-specific lookup.
+
+Do not skip project inspection merely because the user asks a short API question. Read the actual version declaration, including version-catalog indirection such as `gradle/libs.versions.toml`, before recommending an API. If no project is available or the exact BOM cannot be resolved, say that compatibility is unverified and ask for the build files or exact version instead of silently assuming the newest installed SDK.
+
+Treat the BOM and `.pico-env.json` as separate evidence:
+
+- The exact BOM controls which APIs the project can compile against.
+- The nearest project `.pico-env.json` selects the major/minor knowledge line. For example, BOM `6.0.x` must use knowledge line `6.0`, while BOM `6.1.x` must use `6.1`.
+- If the project selector is missing or mismatched, identify a **knowledge-context mismatch**. Do not present MCP or globally selected knowledge as authoritative for the project. Continue with version-matched project files, release notes, examples, or SDK artifacts; recommend aligning the project selector before a fresh Agent session uses MCP knowledge.
+- A matching knowledge line is necessary but not sufficient for patch-level API availability. Verify introductions, removals, and signatures against the exact BOM and, when code is changed, compile it.
+
+When the user explicitly asks about an API unavailable in the current BOM, do not show it as project-compatible code. Give a compatible alternative first. You may describe the minimum SDK upgrade separately, including the required BOM and matching knowledge selector, without silently changing the project's SDK target.
 
 For **model loading** answers, do not stop at the API call. Explicitly cover all of these points in the prose:
 
@@ -196,6 +210,53 @@ SpatialView(initial = { content, _ ->
 - Convert **full transforms** (position + rotation + scale) when moving across containers.
 - Convert units (dp/px ↔ meters) using the provided converters.
 
+### Pattern: Answer Volumetric sizing questions without inventing a contract
+
+Read [Coordinates and Units](reference/coordinates-and-units.md) before answering about a
+Volumetric WindowContainer's size, unit, range, or default. The answer must preserve all of these
+boundaries:
+
+- Volumetric sizes may be expressed in **dp or meters**. Do not present either unit as the only
+  supported choice.
+- Never use a fixed dp-to-meter ratio. Convert with `PhysicalLengthConverter` (for Compose, obtain
+  it through `LocalPhysicalLengthConverter.current`) and disclose that `worldScale` can affect the
+  observed physical result.
+- Treat `320 x 320 x 320` through `2700 x 2700 x 2700` as design guidance / an Editor-supported
+  authoring range, not as a proven runtime hard limit.
+- The available PICO OS 6.1 knowledge sources conflict on the default: one says
+  `960 x 960 x 960`, another says `1280 x 1280 x 1280`. Report the conflict explicitly; do not
+  select either value as authoritative. Ask for a target-version runtime/Editor check or an SDK
+  owner ruling before claiming a default.
+
+## Investigation Order
+
+Before proposing a new implementation strategy, gather knowledge in this order:
+
+1. Inspect the user's project-local files (build files, version catalogs, manifests, dependency declarations) to identify the exact Spatial SDK BOM, current implementation, and failure signal. Record the declaring file in the answer.
+2. Inspect the nearest project `.pico-env.json`. Compare its knowledge `version` / `agentVaultWorkspace` major-minor line with the BOM; do not silently fall back to a global selector when answering for a project.
+3. Read the most relevant skill instructions for workflow/routing guidance.
+4. Query `pico-dev-knowledge` MCP for non-trivial SDK/API facts, version-sensitive behavior, or cross-reference discovery only after checking its project version alignment.
+5. Read related bundled references and project-local examples that match the exact SDK version.
+6. Verify current behavior through code inspection, builds, logs, or runtime evidence.
+7. Inspect `source.jar` or SDK binaries only as last-resort source validation or exact-symbol checks.
+
+Do not start with `source.jar` when knowledge graph context, higher-level docs, examples, and project evidence are available. Do not replace an existing implementation strategy until the current one is proven incorrect.
+
+If `pico-dev-knowledge` is unavailable, continue with skill guidance, bundled references, and project evidence, and explicitly state that the MCP lookup could not be performed.
+
+## SDK Development Safety Rules
+
+- **Prefer ECS for 3D runtime behavior.** For non-trivial 3D content, scene state, animation, interaction, physics, anchors, or entity transforms, design around ECS entities/components/systems rather than using Compose or `SpatialView` recomposition as the primary 3D driver. Use `SpatialView(initial = { ... })` for one-time setup and attachment; keep per-frame or sensor-driven 3D changes inside ECS systems, SDK tracking callbacks, or explicit entity/component updates.
+- **Keep sensing and tracking paths low-latency.** When using `sense`, plane/world/mesh tracking, controller/hand/body/HMD pose data, or other high-frequency spatial input, avoid routing data through 2D UI state and back into 3D from `SpatialView.update`. Prefer direct ECS-side updates, coalesced component writes, or SDK callback-to-entity pipelines with minimal main-thread work.
+- **Lifecycle cleanup is mandatory.** Any code that starts tracking, registers listeners, opens containers, creates ECS entities, loads resources, or launches coroutines must define the matching cleanup path for disposal, app pause/stop, or container close.
+- **Surface and anchor work needs runtime evidence.** For plane, wall, table, anchor, room-geometry, or placement features, do not claim correctness from code alone. Verify with emulator/device capability checks, logs, screenshots/recordings, or clearly state that physical-device validation remains pending.
+- **Interaction requires both input and collision evidence.** For tap, raycast, grab, drag, rotate, scale, or controller interaction bugs, check input source/controller state, target transforms, collision/hit-test components, entity visibility, and coordinate space before replacing the interaction model.
+- **Entity and animation APIs are `@MainThread`.** Entity/component operations return to the main thread after async loading; animation playback, controller management, and timeline APIs are also main-thread-only. Offloading them to background threads causes silent corruption or crashes.
+- **`@ExperimentalSpatialApi` means unstable — disclose, opt-in, and guard.** APIs annotated with `@ExperimentalSpatialApi` may be renamed, changed, or removed in a future SDK version. Apps using them may be blocked from market publication. When recommending an experimental API, state it is experimental, require the caller to add `@OptIn(ExperimentalSpatialApi::class)`, wrap calls in try-catch to handle behavioral changes or unexpected exceptions gracefully, and note the market risk. Do not silently opt in or suppress the compiler error.
+- **Performance fixes require measurements.** For stutter, frame drops, startup latency, high CPU/GPU load, or scene complexity, prefer `pico-cli perf`, Perfetto Trace, log evidence, or reproducible measurements. Do not guess root causes from code structure alone.
+- **Asset changes need scale and budget checks.** When adding models, textures, lighting, particles, physics, or animations, consider units, bounding boxes, triangle/texture budgets, loading strategy, and device performance impact.
+- **SpatialUI should stay app-side and public.** Use public SpatialUI APIs, PicoTheme roles, built-in components, and documented modifiers. Do not depend on restricted design-system internals or replicate native shell behavior manually unless the user explicitly needs a custom component and accepts the trade-off.
+
 ## Pitfalls and Checks
 
 Use this as a pre-flight checklist:
@@ -204,11 +265,9 @@ Use this as a pre-flight checklist:
 - [ ] Stage rules: unbounded, **Full Space only**, **only one Stage at a time**, needs custom skybox/IBL, and `style` is not dynamically mutable.
 - [ ] Programmatic hit testing needs `CollisionComponent`; user interaction needs **both** `CollisionComponent` and `InteractableComponent`.
 - [ ] Gesture input: do not call multiple `detectSpatial*` recognizers in the same `pointerInput` block.
-- [ ] Entity/component work after loading returns to the **main thread**; animation APIs are also **@MainThread**.
 - [ ] Physics: all colliding bodies share the same physics world, and physical-response colliders use `COLLIDER_FULL` on both sides.
 - [ ] Coordinates: Stage/Entity/SpatialView are right-handed meters; View space is left-handed pixels.
 - [ ] SpatialView teardown is manual: entities are not auto-destroyed when the composable leaves composition.
-- [ ] Performance: avoid blocking the main thread; keep lights/transparency/physics/system queries under budget.
 
 ## References
 

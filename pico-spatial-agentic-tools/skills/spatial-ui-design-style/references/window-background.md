@@ -123,6 +123,7 @@ When the design requires a non-`Regular` glass style (e.g. `Thin`, `Thick`):
      ```kotlin
      WindowContainer(..., enableMaterialBackground = false) { ... }
      ```
+
 2. **Reapply explicitly** at the root with the chosen style:
 
    ```kotlin
@@ -222,21 +223,22 @@ everywhere (R5).
 
 ## Applies To
 
-| Container | Default-glass switch | Where to flip it |
-| --- | --- | --- |
-| `DefaultWindowContainer { ... }` | `Material.Regular` glass on (default) | Launcher `<activity>` manifest meta-data `pico.spatial.windowcontainer.materialbackground` |
-| `WindowContainer(...) { ... }` (any non-default container the app launches itself) | `Material.Regular` glass on (`enableMaterialBackground = true`, default) | DSL parameter `enableMaterialBackground` |
-| `Subwindow { ... }` | inherits the parent window-level material; do not paint solid over it | n/a |
-| `Stage { ... }` outermost overlay | follows the container the Stage is attached to | per-container |
-| `Augment(...)` | `Material.Regular` glass on (`enableMaterialBackground = true`, default) | DSL parameter `enableMaterialBackground` |
+| Container                                                                          | Default-glass switch                                                     | Where to flip it                                                                           |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `DefaultWindowContainer { ... }`                                                   | `Material.Regular` glass on (default)                                    | Launcher `<activity>` manifest meta-data `pico.spatial.windowcontainer.materialbackground` |
+| `WindowContainer(...) { ... }` (any non-default container the app launches itself) | `Material.Regular` glass on (`enableMaterialBackground = true`, default) | DSL parameter `enableMaterialBackground`                                                   |
+| `Subwindow { ... }`                                                                | inherits the parent window-level material; do not paint solid over it    | n/a                                                                                        |
+| `Stage { ... }` outermost overlay                                                  | follows the container the Stage is attached to                           | per-container                                                                              |
+| `Augment(...)`                                                                     | `Material.Regular` glass on (`enableMaterialBackground = true`, default) | DSL parameter `enableMaterialBackground`                                                   |
 
 ## Does NOT Apply To
 
-- Inner business cards / containers — `Modifier.background(fillPrimary)` on
-  a card is fine and recommended. The 16dp-rounded card pattern below is
-  expected:
+- Inner business cards / containers may own a surface only when the accepted
+  design assigns that surface to the card instead of its parent region. Keep
+  ordinary groups transparent and mark design-driven surfaces:
 
   ```kotlin
+  // design-style: design-surface featured-card
   Column(
       Modifier
           .clip(RoundedCornerShape(16.dp))
@@ -244,8 +246,8 @@ everywhere (R5).
   ) { /* card content */ }
   ```
 
-  Cards may use `backgroundMaterial(...)` to introduce glass *inside* a
-  page; R4 only governs the window/container root.
+  Do not place this card inside another app-authored filled/material layout.
+  R4 governs the window/container root; R10 governs content surfaces.
 
 ## Why "No Solid Over Glass"
 
@@ -254,7 +256,7 @@ beneath and collapses the visual effect — the glass would still be
 processed but never seen. It also nullifies vibrant linkage
 (`systemColorScheme(...)` + `Color.withVibrant`), because vibrant tinting
 is only visible through a translucent surface. Picking exactly one
-background — glass *or* solid — keeps both the rendering pipeline and
+background — glass _or_ solid — keeps both the rendering pipeline and
 the design intent coherent.
 
 ## Verify (Updated Semantics)

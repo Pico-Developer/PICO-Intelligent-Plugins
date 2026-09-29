@@ -52,6 +52,13 @@ import com.pico.spatial.ui.graphics.Vibrant
 
 > **Common failure**: importing only `foundation.vibrant.Vibrant` and forgetting `graphics.Vibrant` causes `Unresolved reference: Vibrant` on `Color.Vibrant`.
 
+### Rule 4: Hover animation builders come from SpatialUI
+
+Inside `Modifier.spatialHoverEffect {}`, import `tween` and `spring` from
+`com.pico.spatial.ui.foundation.hover`. Do not use the same-named
+`androidx.compose.animation.core` builders in this DSL; they return incompatible
+Compose animation specs.
+
 ---
 
 ## 2. Complete Import Lookup Table
@@ -76,6 +83,8 @@ import com.pico.spatial.ui.graphics.Vibrant
 | `SpatialView`                                                             | `com.pico.spatial.ui.foundation.content.SpatialView`                                     |
 | `SpatialModelView` / `Source` / `Resizability`                            | `com.pico.spatial.ui.foundation.content.*`                                               |
 | `spatialHoverEffect`                                                      | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect`                                |
+| Spatial Hover `spring`                                                    | `com.pico.spatial.ui.foundation.hover.spring`                                            |
+| Spatial Hover `tween`                                                     | `com.pico.spatial.ui.foundation.hover.tween`                                             |
 | `disableSpatialHoverEffect`                                               | `com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect`                         |
 | `tooltip`                                                                 | `com.pico.spatial.ui.foundation.tooltip`                                                 |
 | `Augment` / `AugmentContentAlignment`                                     | `com.pico.spatial.ui.foundation.window.*`                                                |

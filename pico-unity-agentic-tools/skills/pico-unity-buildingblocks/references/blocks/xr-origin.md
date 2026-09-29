@@ -74,7 +74,7 @@ pico_xr_status()                                              → xr_origin=ok
 ```
 
 No `pico_xr_*` call creates the Origin GameObject directly — the next block
-action (e.g. `pico_xr_vst(enable)`) invokes `EnsureXROrigin()` internally.
+action (e.g. `pico_xr_vst(action=enable)`) invokes `EnsureXROrigin()` internally.
 
 ## Notes — single-active-camera invariant
 
@@ -104,7 +104,7 @@ Observability: `pico_xr_status` returns `data.camera`:
 | `managedDisabled` | foreign cameras the MCP layer is holding disabled    |
 | `single`          | `true` when exactly one active camera remains        |
 
-Note: `disable`-ing a block (e.g. `pico_xr_vst(disable)`) does **not**
+Note: `disable`-ing a block (e.g. `pico_xr_vst(action=disable)`) does **not**
 auto-restore foreign cameras — as long as the agent XR Origin and its Main
 Camera remain in the scene, the invariant must still hold. Restore is an
 explicit user action (menu item or Ctrl+Z).

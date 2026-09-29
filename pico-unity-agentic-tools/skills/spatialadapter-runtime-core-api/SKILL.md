@@ -10,6 +10,10 @@ license: 'Apache-2.0'
 
 Use this skill when you need the core `SpatialAdapterRuntime` API surface in the Spatial Adapter runtime package. Prefer the Unity-facing entry points first and treat low-level native bridge calls as implementation details unless you are extending the runtime itself.
 
+## Compatibility and Scope
+
+Confirm Spatial mode from the saved `mode`, installed package, and scene evidence before implementation; ask if they conflict. Verify `ByteDance.PICO.SpatialAdapter` signatures and native return contracts against the installed package. API explanations are read-only. Before runtime execution or scene changes, verify the running Editor and the required tool; if unavailable, report the blocker rather than claiming execution. Wait for successful compilation after script writes and save the intended scene after authorized scene changes.
+
 ## Trigger Keywords
 
 - `Spatial Adapter`
@@ -39,11 +43,11 @@ Use this skill when you need the core `SpatialAdapterRuntime` API surface in the
 
 ## Reference
 
-Read `reference.md` in this folder for the full public API map, return conventions, fields, helper types, and payload structs.
+Read [reference.md](reference.md) for the full public API map, return conventions, fields, helper types, and payload structs.
 
 ## Common Mistakes
 
 - Calling runtime registration or sync APIs before `SpatialAdapterRuntime.Instance` exists.
-- Treating non-zero `int` return values as success. In this API, `0` generally means success.
+- Applying native status-code conventions to resource IDs. Status-code calls generally use `0` for success, but `RegisterDynamicTexture()` returns an asset ID and uses `-1` for failure.
 - Assuming backend work happens immediately. Several operations are queued and applied later.
 - Expecting `UpdateMaterialDynamicTexture()` to honor `parameterName`. The current implementation routes by material instance ID only.

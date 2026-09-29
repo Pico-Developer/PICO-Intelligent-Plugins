@@ -15,9 +15,13 @@ Agents may read this guidance while operating inside a user's own project direct
 ## How to Use This Guidance
 
 - When the user asks to install PICO CLI or configure PICO development tools for the first time, read and follow `docs/pico-cli-installation-guide.md` before running setup. This bootstrap guide is available before plugin Skills are installed.
-- Route PICO Spatial SDK projects to `pico-spatial-agentic-tools`.
-- Route PICO Unity projects to `pico-unity-agentic-tools`.
+- Route PICO Spatial SDK projects to
+  [`pico-spatial-agentic-tools`](pico-spatial-agentic-tools/AGENTS.md).
+- Route PICO Unity projects to [`pico-unity-agentic-tools`](pico-unity-agentic-tools/AGENTS.md).
+- Treat [`pico-general-agentic-tools`](pico-general-agentic-tools/AGENTS.md) as the shared companion
+  plugin installed with either platform. Route platform-neutral PICO knowledge queries to its
+  `knowledge-query` Skill; users do not select this plugin as a separate development platform.
 - Select the most specific installed skill from the plugin that matches the user's project platform and request.
 - Load skill instructions and bundled references through the host/plugin mechanism rather than by assuming local paths in the user's project.
 - Keep implementation, build, install, launch, and verification work scoped to the user's project unless explicitly asked to inspect or maintain the plugin itself.
-- For setup/update issues, prefer `pico-cli setup`, `pico-cli plugin update`, and the plugin audit workflow over manual edits to host plugin state.
+- For setup/update issues, prefer `pico-cli setup`, `pico-cli plugin update`, and `pico-cli plugin doctor` over manual edits to host plugin state.

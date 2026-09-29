@@ -64,6 +64,9 @@ is guarded by `ENABLE_PICO_XR_SDK` and has **no OpenXR branch**.
 >   (domain reload finished).
 > - **Phase 2** — call `enable` again; now the type is loaded, so the tool
 >   mounts and configures the driver.
+> - Record this as transition `plane:PlaneDetectionManager`. If the same
+>   transition repeats after settle and one retry, stop because no progress was
+>   made.
 
 ## Inspector config (PlaneDetectionManager)
 

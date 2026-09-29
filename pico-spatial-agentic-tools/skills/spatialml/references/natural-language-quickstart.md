@@ -6,7 +6,7 @@ runs supported commands, edits the app, and explains any confirmation or manual 
 
 ## One-Time Preparation
 
-1. Install Node.js 18 or newer and an AI coding assistant supported by `pico-cli`, such as Claude
+1. Install Node.js 20 or newer and an AI coding assistant supported by `pico-cli`, such as Claude
    Code, Codex, Cursor, GitHub Copilot, or Trae CLI.
 2. Install `pico-cli` with `npm install -g @picoxr/pico-cli`.
 3. From the intended project directory, run `pico-cli setup` and select the applicable PICO plugin and
@@ -25,7 +25,8 @@ project. Explain anything I need to install or confirm.
 
 A good request names four things in ordinary language:
 
-1. **Parent SDK** when known: Kotlin Spatial SDK, Unity, or an existing Native OpenXR project.
+1. **Parent SDK**: Kotlin Spatial SDK. Unity requests belong to PICO Unity Agentic Tools' `spatialml`
+   skill.
 2. **Input**: VST/passthrough camera, an image, depth, microphone/audio, or another tensor source.
 3. **Inference goal**: detect, classify, segment, recognize, estimate pose, or run a particular
    LiteRT/TFLite model.
@@ -41,23 +42,11 @@ PICO emulator or on a connected device, fix crashes from the logs, and show me a
 any choice or confirmation in beginner-friendly language.
 ```
 
-```text
-In this existing PICO Unity project, add on-device pose estimation from the camera and use the result
-to drive an avatar. Find and import the closest Pipeline Zoo package through the Unity SDK importer,
-then build and verify the app. Do not replace the PICO Unity SDK that is already installed.
-```
-
-```text
-This is an existing Native OpenXR PICO app. Add a SpatialML pipeline that classifies microphone audio
-with my model.tflite and shows the current label. Inspect the model contract first and tell me clearly
-if model inspection or package verification is not available yet.
-```
-
 If the SDK is unknown, the user can say:
 
 ```text
 I am new to PICO development. I want an app that recognizes household objects from the passthrough
-camera and labels them. Help me choose between Kotlin Spatial SDK and Unity, then create the first
+camera and labels them. Use Kotlin Spatial SDK, then create the first
 runnable version and explain what you are doing as we go.
 ```
 
@@ -65,10 +54,10 @@ runnable version and explain what you are doing as we go.
 
 The assistant translates the natural-language request into this workflow:
 
-1. Inspect the workspace and environment. Infer the parent SDK when possible.
+1. Inspect the Kotlin Spatial SDK workspace and environment.
 2. Reduce the feature to `input -> inference -> output` and surface only decisions that materially
    affect the app, such as SDK choice, model choice, or whether results must be read back to app code.
-3. Apply the owning SDK's app-creation gate before changing SpatialML. A feature-bearing new Kotlin
+3. Apply the Kotlin SDK app-creation gate before changing SpatialML. A feature-bearing new Kotlin
    app goes through `spatial-design-to-app`; when the user supplied no executable design, its
    `pico-spatial-app-designer` gate produces and accepts one first. Onboarding is only a scaffold
    substep, except for an explicitly featureless parent scaffold.
@@ -77,7 +66,7 @@ The assistant translates the natural-language request into this workflow:
    authoring, or package-scoped execution is needed and doctor reports that it is missing.
 5. Search the `picoxr` Pipeline Zoo for an exact package or the closest reusable topology before
    considering custom work.
-6. Install/import with the owning SDK and load through that SDK's package loader.
+6. Install the package with the Kotlin SDK workflow and load it through the Kotlin package loader.
 7. Add the minimum application code and scene/UI needed to present the result.
 8. Build, install, launch, inspect logs, and capture runtime evidence. Camera, sensor, hardware
    acceleration, permissions, and rendering behavior need emulator/device evidence; a host-only test
@@ -93,18 +82,9 @@ choice, authorization, unavailable dependency, or manual SDK/editor action.
   `spatial-app-onboarding` only to create the scaffold. Direct onboarding is reserved for an
   explicitly featureless parent scaffold. Pipeline packages load with
   `SpatialMLSession.loadPipelinePackageFromAssets(...)`.
-- **Unity:** SpatialML is added only after the PICO Unity SDK is present. New Unity/PICO SDK setup uses
-  the separately installed PICO Unity Agentic Tools plugin's explicit `/pico-unity-init` workflow.
-  Before this handoff, inspect the live skill inventory. If Unity was explicitly requested and the
-  skill is unavailable, report `BLOCKED` with plugin installation and host-restart guidance. If the
-  SDK is undecided in an empty workspace, disclose that Unity is unavailable and offer Kotlin instead;
-  never switch silently. An initialized SDK repair uses the Unity plugin's
-  `pico-unity-package-manager`, not `/pico-unity-init`. Pipeline installation finishes only through
-  the Unity SDK importer and its generated `SpatialMLPipelineZooAsset`.
-- **Native OpenXR:** start from an existing PICO OpenXR project. Pipeline packages load through the
-  Native samples' `SecureMrUtils::LoadModelPackagePipelinesFromAssets(...)` utility path.
-
-SpatialML is not a standalone project type, and WebSpatial is not one of its parent SDKs.
+- **Unity:** hand the complete request to PICO Unity Agentic Tools' `spatialml` skill. If that plugin is
+  unavailable, report `BLOCKED` with installation and host-restart guidance.
+  SpatialML is not a standalone project type, and WebSpatial is not its parent SDK.
 
 ## Terms a Beginner May See
 

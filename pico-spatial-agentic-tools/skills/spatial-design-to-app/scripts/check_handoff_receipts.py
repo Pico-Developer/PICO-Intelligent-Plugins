@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Handoff-receipt checker for spatial-design-to-app.
 
-`spatial-design-to-app` generates code directly from design facts and does not
-persist intermediate workflow JSON. Two receipts survive, because both record a
-decision made *outside* this skill that cannot be re-derived from the code:
+`spatial-design-to-app` consumes the designer's persisted `design-spec.json`
+directly and does not create another intermediate workflow JSON. The checker
+keeps three handoff artifacts honest:
 
+- `intent-brief.md` — proves an `intent_only` request was expanded into a
+  non-empty feature brief before the Designer started.
 - `design_escalation_receipt.json` — proves the mandatory
   `pico-spatial-app-designer` pass actually happened and passed for a no-visual
-  request. Without it, "I designed it myself" is indistinguishable from
-  "a designer reviewed it".
+  request. A user-provided executable package instead uses the explicit
+  `user_package_passed` route result and a staged `design-spec.json`.
 - `onboarding_handoff.json` — proves `spatial-app-onboarding` returned a
   scaffold-only project for a `new_project` run, so onboarding did not quietly
   implement product UI that belongs to this skill.
@@ -18,13 +20,15 @@ Everything else is verified against the generated Kotlin / AndroidManifest by
 
 Usage:
     python3 -m scripts.check_handoff_receipts --target ./myapp \\
-        --input-mode intent_only --generation-mode new_project --visual-asset false
+        --input-mode intent_only --generation-mode new_project --visual-asset false \
+        --design-gate-result designer_passed
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -39,9 +43,11 @@ VALID_INPUT_MODES = {
     "incremental_patch",
 }
 VALID_GENERATION_MODES = {"existing_module", "new_project"}
+USER_PACKAGE_INPUT_MODES = {"product_doc", "hybrid"}
 
 DESIGN_ESCALATION_RECEIPT = "design_escalation_receipt.json"
 ONBOARDING_HANDOFF = "onboarding_handoff.json"
+INTENT_BRIEF = "intent-brief.md"
 
 # Modes that carry no visual asset of their own. `hybrid` depends on whether the
 # caller actually supplied a Figma URL / screenshot / mockup.
@@ -84,14 +90,45 @@ def requires_design_escalation(input_mode: str, visual_asset: bool) -> bool:
     return input_mode == "hybrid" and not visual_asset
 
 
+def validate_intent_brief(scratch_dir: Path, input_mode: str) -> None:
+    if input_mode != "intent_only":
+        return
+
+    brief_path = scratch_dir / INTENT_BRIEF
+    if not brief_path.is_file():
+        raise SystemExit(
+            f"[receipt-check] Missing required file: {brief_path}. "
+            "intent_only app generation requires a feature brief before the Designer starts."
+        )
+    if not brief_path.read_text(encoding="utf-8").strip():
+        raise SystemExit(f"[receipt-check] Intent brief must be non-empty: {brief_path}")
+
+    _print_ok("Intent Brief", brief_path)
+
+
 def validate_design_escalation_receipt(
     scratch_dir: Path,
     input_mode: str,
     visual_asset: bool,
+    design_gate_result: str,
 ) -> None:
-    required = requires_design_escalation(input_mode, visual_asset)
     receipt_path = scratch_dir / DESIGN_ESCALATION_RECEIPT
 
+    if design_gate_result == "user_package_passed":
+        if visual_asset:
+            raise SystemExit(
+                "[receipt-check] user_package_passed is only valid for a no-visual design package"
+            )
+        if input_mode not in USER_PACKAGE_INPUT_MODES:
+            raise SystemExit(
+                "[receipt-check] user_package_passed requires input_mode=product_doc or hybrid"
+            )
+        design_spec_path = scratch_dir / "design-spec.json"
+        _ensure_dict(_load_json(design_spec_path), "User Design Package design-spec.json")
+        _print_ok("User Design Package", design_spec_path)
+        return
+
+    required = requires_design_escalation(input_mode, visual_asset)
     if not required:
         if receipt_path.exists():
             receipt = _ensure_dict(_load_json(receipt_path), "Design Escalation Receipt")
@@ -153,12 +190,25 @@ def validate_design_escalation_receipt(
     pre_gates = _ensure_dict(receipt["pre_gates"], "Design Escalation Receipt.pre_gates")
     _require_keys(
         pre_gates,
-        ["designDocComplete", "postBuildVerdict"],
+        [
+            "designDocComplete",
+            "designSpecValid",
+            "previewMatchesSpec",
+            "postBuildVerdict",
+        ],
         "Design Escalation Receipt.pre_gates",
     )
     if pre_gates["designDocComplete"] is not True:
         raise SystemExit(
             "[receipt-check] Design Escalation Receipt.pre_gates.designDocComplete must be true"
+        )
+    if pre_gates["designSpecValid"] is not True:
+        raise SystemExit(
+            "[receipt-check] Design Escalation Receipt.pre_gates.designSpecValid must be true"
+        )
+    if pre_gates["previewMatchesSpec"] is not True:
+        raise SystemExit(
+            "[receipt-check] Design Escalation Receipt.pre_gates.previewMatchesSpec must be true"
         )
     if pre_gates["postBuildVerdict"] != "pass":
         raise SystemExit(
@@ -198,6 +248,7 @@ def validate_onboarding_handoff(
             "product_ui_implemented",
             "template",
             "package",
+            "package_source",
             "entry_points",
             "build_passed",
             "launch_checked",
@@ -229,7 +280,27 @@ def validate_onboarding_handoff(
         raise SystemExit(
             "[receipt-check] Onboarding Handoff.template must be planar, volumetric, or stage"
         )
-    _require_non_empty(handoff["package"], "Onboarding Handoff.package")
+    package_name = handoff["package"]
+    _require_non_empty(package_name, "Onboarding Handoff.package")
+    if not re.fullmatch(
+        r"[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+",
+        package_name,
+    ):
+        raise SystemExit("[receipt-check] Onboarding Handoff.package is not a valid package name")
+    package_source = handoff["package_source"]
+    if package_source not in {"user_provided", "generated_default"}:
+        raise SystemExit(
+            "[receipt-check] Onboarding Handoff.package_source must be "
+            "user_provided or generated_default"
+        )
+    if package_source == "generated_default" and not re.fullmatch(
+        r"com\.example\.[a-z][a-z0-9_]*\.p[a-f0-9]{8}",
+        package_name,
+    ):
+        raise SystemExit(
+            "[receipt-check] Generated Onboarding Handoff.package must use "
+            "com.example.<app-slug>.p<8-lowercase-hex-characters>"
+        )
     entry_points = handoff["entry_points"]
     if not isinstance(entry_points, list) or not entry_points:
         raise SystemExit("[receipt-check] Onboarding Handoff.entry_points must be a non-empty list")
@@ -242,9 +313,7 @@ def validate_onboarding_handoff(
     if not isinstance(handoff["launch_checked"], bool):
         raise SystemExit("[receipt-check] Onboarding Handoff.launch_checked must be a boolean")
     if handoff["launch_checked"] is False:
-        _require_non_empty(
-            handoff.get("launch_check_note"), "Onboarding Handoff.launch_check_note"
-        )
+        _require_non_empty(handoff.get("launch_check_note"), "Onboarding Handoff.launch_check_note")
     if handoff["resume_required"] is not True or handoff["resume_skill"] != "spatial-design-to-app":
         raise SystemExit(
             "[receipt-check] Onboarding Handoff must set resume_required=true and "
@@ -267,6 +336,12 @@ def main(argv: list[str] | None = None) -> int:
         default="false",
         help="Whether the request carried a Figma URL, screenshot, or mockup",
     )
+    parser.add_argument(
+        "--design-gate-result",
+        choices=["designer_passed", "user_package_passed"],
+        default="designer_passed",
+        help="Accepted no-visual design path selected before app generation",
+    )
     args = parser.parse_args(argv)
 
     target = Path(args.target).expanduser().resolve()
@@ -276,12 +351,19 @@ def main(argv: list[str] | None = None) -> int:
     scratch_dir.mkdir(parents=True, exist_ok=True)
     visual_asset = args.visual_asset == "true"
 
-    validate_design_escalation_receipt(scratch_dir, args.input_mode, visual_asset)
+    validate_intent_brief(scratch_dir, args.input_mode)
+    validate_design_escalation_receipt(
+        scratch_dir,
+        args.input_mode,
+        visual_asset,
+        args.design_gate_result,
+    )
     validate_onboarding_handoff(scratch_dir, args.input_mode, args.generation_mode)
 
     print(
         f"[receipt-check] SUCCESS input_mode={args.input_mode} "
-        f"generation_mode={args.generation_mode} visual_asset={visual_asset}"
+        f"generation_mode={args.generation_mode} visual_asset={visual_asset} "
+        f"design_gate_result={args.design_gate_result}"
     )
     return 0
 

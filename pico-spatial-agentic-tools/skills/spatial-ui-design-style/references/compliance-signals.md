@@ -13,39 +13,32 @@ SpatialUI D2C checklist items into grep-able patterns. Used by `../scripts/verif
 | Type            | Pattern                                                    | Rule                                   |
 | --------------- | ---------------------------------------------------------- | -------------------------------------- |
 | MUST appear     | `PicoTheme(`                                               | At least one occurrence in app sources |
-| MUST NOT appear | `MaterialTheme(`                                           | Material theme leakage                 |
+| MUST NOT appear | `MaterialTheme(...)` / `MaterialTheme { ... }` (including fully qualified calls) | Material theme leakage; whitespace and line breaks before the call delimiter are covered; comments and literals are ignored |
 | MUST NOT appear | `MaterialTheme\.colorScheme` / `MaterialTheme\.typography` | Use `PicoTheme.*`                      |
 
-### R1b — Design colors MUST drive `PicoTheme` (REQUIRED when design evidence exists)
+### R1b — Preserve native `ColorScheme`; isolate custom colors
 
 When the caller declares authoritative design colors — via
-`verify-design-style.sh --design-color <slot>=<#hex>` (repeatable), or via
+`verify-design-style.sh --design-color <token>=<#hex>` (repeatable), or via
 `facts.visual_tokens.theme_overrides[]` / `facts.visual_tokens.semantic_colors[]`
 in a legacy `.scratch/evidence_packet.json` — the following become hard gates:
 
-| Type                                         | Pattern / evidence                                                                                        | Rule                                                                                                                              |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| MUST appear                                  | `PicoTheme(... colorScheme = ...)`                                                                        | A design-driven app must inject a custom scheme; plain `PicoTheme {}` is not sufficient                                           |
-| MUST appear                                  | Explicit assignments for all 16 public `ColorScheme` roles in the custom scheme                           | The final system color scheme must be complete; omitted copy parameters are not accepted                                          |
-| MUST appear                                  | Every exact design hex as a Kotlin color literal in app source                                            | No declared brand/accent/semantic value may silently fall back to the stock PICO palette                                          |
-| MUST appear for declared `ColorScheme` slots | Exact `<slot> = Color(<design value>)`, directly or through a named token, for any of the 16 public roles | The declared design value must override its matching `ColorScheme` role; placing the same HEX elsewhere does not satisfy the rule |
-| Allowed                                      | Adaptive roles explicitly assigned as `<role> = system.<role>`                                            | Preserve system Vibrant behavior while keeping the complete theme contract visible                                                |
+| Type            | Pattern / evidence                                                 | Rule                                                                                         |
+| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| MUST NOT appear | `PicoTheme(colorScheme = ...)`, `ColorScheme(...)`, or `systemColorScheme(...).copy(...)` | Native SpatialUI roles, including `fill*`, must not be redefined |
+| MUST NOT appear | A `--design-color` whose token name is a native `ColorScheme` role | Custom colors need app-owned names and cannot masquerade as overrides                         |
+| MUST appear     | Every exact custom design hex as a Kotlin color literal            | No declared app-owned color may be dropped                                                    |
+| Allowed         | Plain `PicoTheme { ... }` and `PicoTheme.colorScheme.<role>`       | Built-in components retain the unchanged system Vibrant palette                               |
+| Allowed         | Named app token with `fixed-figma-color` evidence                  | Custom brand/decorative colors remain available without mutating the framework color contract |
 
 The verifier normalizes six-digit design values such as `#FF6B4A` to Kotlin
 ARGB form `0xFFFF6B4A`. Custom brand slots still require the exact value to be
 present in the theme/token layer even when they are not native `ColorScheme`
 properties.
 
-The caller must pass the complete app-owned color inventory. This includes
-surface/fill colors, primary and secondary text, divider/border colors, semantic
-states, and custom brand/decorative colors. Passing only prominent brand colors
-is not a valid R1b invocation. Convert CSS `rgba(...)` tokens to `#AARRGGBB`.
-Explicitly documented environment-only simulation colors are not app-owned.
-Completeness is checked whenever authoritative design colors are supplied. The
-16 required role names are `fillPrimary`, `fillSecondary`, `fillTertiary`,
-`fillLight`, `labelPrimaryLight`, `labelPrimary`, `labelSecondary`,
-`labelTertiary`, `labelQuaternary`, `lightenHover`, `lightenPressed`, `error`,
-`alert`, `passable`, `interaction`, and `dividerLine`.
+The caller passes only app-owned custom colors. Native role names such as
+`fillPrimary`, `labelPrimary`, `interaction`, and `error` are reserved and
+rejected as custom token names. Convert CSS `rgba(...)` values to `#AARRGGBB`.
 
 ## R2 — Built-in design components first (RECOMMENDED, soft check)
 
@@ -102,16 +95,16 @@ Scope: outermost `Box` inside `DefaultWindowContainer { ... }`,
 
 ### R4b — View-level material shape
 
-`backgroundMaterial(...)` receives no shape parameter and does not inherit the
-shape from a later `border`. Every view-level material modifier chain must call
-`.clip(shape)` before `.backgroundMaterial(...)`.
+`backgroundMaterial(...)` receives no shape parameter. Every rounded view-level
+material modifier chain must call `.clip(shape)` before
+`.backgroundMaterial(...)`; a later border is neither required nor a substitute
+for clipping.
 
-| Type              | Pattern / evidence                                                                   | Rule                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Required          | `.clip(<shape>)` occurs before `.backgroundMaterial(...)` in the same modifier chain | Material pixels, hover bounds, and border use the intended shape                    |
-| Required          | One shared shape value for `.clip(shape)` and `.border(..., shape)`                  | Prevent radius drift between material and border                                    |
-| Forbidden         | `.backgroundMaterial(...)` with no earlier `.clip(...)`                              | Material remains rectangular, even if a later border uses `RoundedCornerShape(...)` |
-| Allowed exception | `// design-style: rectangular-material <reason>`                                     | The design explicitly requires a rectangular material surface                       |
+| Type              | Pattern / evidence                                                                   | Rule                                                          |
+| ----------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Required          | `.clip(<shape>)` occurs before `.backgroundMaterial(...)` in the same modifier chain | Material pixels and hover bounds use the intended shape       |
+| Forbidden         | `.backgroundMaterial(...)` with no earlier `.clip(...)`                              | Material remains rectangular                                  |
+| Allowed exception | `// design-style: rectangular-material <reason>`                                     | The design explicitly requires a rectangular material surface |
 
 ## R5 — Theme-role routing (no hardcoded color / typography)
 
@@ -136,13 +129,16 @@ it apply to grayscale text/fill roles that have named PICO tokens.
 | Forbidden         | `TextStyle\(fontSize\s*=`                                                                       | Hardcoded typography                                                     |
 | Forbidden         | `\.alpha[ \t]*\([ \t]*0\.3f[ \t]*\)`                                                            | Hardcoded disabled alpha — use `LocalDisableAlpha.current`               |
 
-## R6 — Indication & haptics shared interactionSource
+## R6 — Indication & optional haptics
 
-| Type                                                                                       | Pattern                                                                                                                                        | Rule                                                                          |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Required when custom `.clickable(...)` or `.clickable { ... }` exists                      | `indication\s*=\s*LocalIndication\.current`                                                                                                    | PicoIndication routing                                                        |
-| MUST appear in the same file when custom `.clickable(...)` or `.clickable { ... }` is used | `controllerHapticFeedback`                                                                                                                     | SpatialUI haptic routing; must share the clickable `MutableInteractionSource` |
-| Inspect                                                                                    | two distinct `remember { MutableInteractionSource() }` in same Composable, one feeding `clickable`, another feeding `controllerHapticFeedback` | Likely desync — should share one source                                       |
+R6 is guidance, not a verifier admission check. The concise `clickable`
+overload reads `LocalIndication.current` by default, and
+`controllerHapticFeedback` is optional.
+
+| Type    | Pattern                                                                                                                                        | Rule                                                                                      |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Inspect | `indication\s*=\s*null` on an ordinary click action                                                                                            | Prefer the default indication unless custom state audio or another explicit behavior needs it |
+| Inspect | two distinct `remember { MutableInteractionSource() }` in same Composable, one feeding `clickable`, another feeding `controllerHapticFeedback` | When optional haptics are used, share the clickable's interaction source                  |
 
 ## R7 — Library-private tokens MUST NOT be imported
 
@@ -158,8 +154,7 @@ judgement.
 
 | Type      | Pattern                                                                              | Rule                                                                     |
 | --------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| Forbidden | `import\s+androidx\.compose\.material3(\.                                            | $)`                                                                      | Material3 package import; prefer SpatialUI design built-ins                           |
-| Forbidden | `import\s+androidx\.compose\.material(\.                                             | $)`                                                                      | Material v1 package import; prefer SpatialUI design built-ins                         |
+| Forbidden | `androidx.compose.material` / `androidx.compose.material3` imports or fully qualified references | Material and Material3 themes, components, and other package members are forbidden; comments and literals are ignored |
 | Forbidden | `import com\.pico\.spatial\.ui\.design\.AlertDialog`                                 | `AlertDialog` lives in `design.windows`                                  |
 | Inspect   | `collectAsState\(\)`                                                                 | Prefer `collectAsStateWithLifecycle()` for ViewModel state               |
 | Inspect   | `key = { index }` / `key = { it.hashCode() }`                                        | Lazy keys should use stable item IDs                                     |
@@ -174,42 +169,45 @@ judgement.
 | Inspect   | `Text("✕"                                                                            | "×"                                                                      | "x"                                                                                   | "X")`        | Prefer `IconButton` + vector icon for close actions                          |
 | Inspect   | placeholder image URLs                                                               | Bind data from `uiState` / repository rather than hardcoded placeholders |
 
-## R9 — Resolved text foregrounds
+## R10 — Content surface discipline
 
-`PicoTheme` provides the active `ColorScheme`, but it does not provide
-`LocalContentColor`. Unlike CSS, a foreground color is not inherited from an
-ordinary parent `Box`, `Row`, or `Column`.
+Structural `layout` and `domain_visual` regions are transparent. App-authored
+borders are forbidden on content containers. When a design spec is supplied,
+app-authored material is also forbidden, and every app-authored background or
+content `Card` must map exactly once to a bounded content node whose
+`appearance` declares a fill.
 
-| Type      | Signal                                                                                   | Rule                                                                                                                      |
-| --------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Forbidden | App-authored `Text(...)` with neither a `color = ...` argument nor an inheritance marker | Text can reach `BasicText` with `Color.Unspecified` and render black on dark glass                                        |
-| Required  | `color = PicoTheme.colorScheme.label*` or another intentional semantic state role        | Ordinary-surface text resolves its foreground explicitly                                                                  |
-| Exception | `// design-style: inherited-content-color <provider>` immediately before or on the call  | The direct SpatialUI component slot or explicit `LocalContentColor` provider supplies a deliberate state-aware foreground |
+| Type      | Pattern / evidence                                                                                          | Rule                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Forbidden | `.border(...)` or `BorderStroke(...)` in app Kotlin source                                                  | Do not separate content with app-authored borders                 |
+| Forbidden | `.backgroundMaterial(...)` when `--design-spec` is supplied                                                 | Material is not part of the design or restoration contract       |
+| Required  | `// design-style: design-surface <node-id>` immediately before an app surface call                          | Makes every generated background traceable to the accepted design |
+| Forbidden | A surface marker naming a node without `appearance.fill`                                                    | Code added a surface that the design did not declare              |
+| Forbidden | One surface node ID used by multiple background calls                                                       | One design fill was expanded into multiple implementation surfaces |
+| Forbidden | `.background(...)` or content `Card(...)` without a valid marker when `--design-spec` is supplied           | Code added an untraceable surface                                 |
 
-The exception must name the provider, for example `Button`, `ButtonChip`,
-`SegmentItem`, `AlertDialog`, or `CompositionLocalProvider`. It is not a blanket
-file-level opt-out.
+Library implementation sources are outside the verifier scope, so borders and
+focus indicators owned internally by standard SpatialUI controls are not
+reported.
 
 ## Severity
 
-| Severity  | Meaning                   | Example                                                                                             |
-| --------- | ------------------------- | --------------------------------------------------------------------------------------------------- |
-| `error`   | Hard violation — must fix | R1 missing PicoTheme; R1b design colors not injected; R3 hoverable; R4 stacking; R5 hardcoded color |
-| `warning` | Likely violation — review | R2 custom Button; R6 split interactionSource                                                        |
-| `info`    | Stylistic — recommended   | R2 missing design import in a UI-only module                                                        |
+| Severity  | Meaning                   | Example                                                                                                                 |
+| --------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `error`   | Hard violation — must fix | R1 missing PicoTheme; R1b native color role override or missing custom color; R3 hoverable; R4 stacking; R5 hardcoded color; R10 content border |
+| `warning` | Likely violation — review | R2 custom Button                                                                                                        |
+| `info`    | Stylistic — recommended   | R2 missing design import in a UI-only module                                                                            |
 
 ## Suggested Reviewer Prompt Fragment
 
 ```
 You are reviewing PICO Spatial UI Compose code for compliance with the
-spatial-ui-design-style skill. Apply the four highest-priority rules:
-1. PicoTheme wraps the entry tree (R1). When a design deliverable exists, the
-   app restores its coordinated theme: it builds a custom ColorScheme from the
-   design's exact primary/accent + color-matched semantic values and injects it
-   with PicoTheme(colorScheme = ...). Custom colors are explicitly allowed — a
-   design value with no matching PICO role must be carried verbatim (named brand
-   token or annotated fixed literal), never approximated with the nearest role.
-   Plain PicoTheme {} or stock semantic values are a hard failure (R1b).
+spatial-ui-design-style skill. Apply the highest-priority rules:
+1. PicoTheme wraps the entry tree (R1). Keep its native ColorScheme unchanged:
+   do not construct `ColorScheme(...)` or call
+   `systemColorScheme(...).copy(...)`. Custom colors are allowed only as named
+   app-owned tokens or annotated fixed literals and must not replace `fill*`,
+   `label*`, interaction, status, hover/pressed, or divider roles (R1b).
 2. Prefer com.pico.spatial.ui.design.* built-ins; custom only when no built-in fits (R2).
 3. Custom hover MUST use Modifier.spatialHoverEffect — never `hoverable + scale` (R3).
 4. Window / container root background: every PICO window container ships with
@@ -224,11 +222,16 @@ spatial-ui-design-style skill. Apply the four highest-priority rules:
    different glass, or `// design-style: opaque-root` + Modifier.background(<role>)
    for an opaque root. Stacking backgroundMaterial(...) + .background(...) on
    the same chain is forbidden (R4).
-Also flag: hardcoded colors / typography (R5), missing LocalIndication (R6),
-DimensionTokens imports (R7), and migrated D2C checklist regressions such as
-Material3 component imports, invalid padding overloads, unstable lazy keys,
-manual close glyphs, hardcoded placeholder image URLs, and suspicious modifier
-ordering (R8). Require every Text foreground to resolve explicitly, or carry a
-nearby `design-style: inherited-content-color <provider>` marker for a verified
-SpatialUI slot (R9). Cite specific file:line.
+Also flag: hardcoded colors / typography (R5), DimensionTokens imports (R7),
+and migrated D2C checklist regressions such as Material3 component imports,
+invalid padding overloads, unstable lazy keys, manual close glyphs, hardcoded
+placeholder image URLs, and suspicious modifier ordering (R8). Treat haptics
+as optional; when present, confirm they share the clickable interaction source
+(R6). Do not require every `Text` to spell out a color. Prefer component-owned
+state colors and slot inheritance; when code customizes state colors, consider
+the effective foreground and background together and avoid obvious
+dark-on-dark, light-on-light, or white-on-light combinations. Keep structural
+`layout` and `domain_visual` regions transparent, reject app-authored content
+borders, and require every app surface to map exactly once to a surface-owning
+design node when `design-spec.json` exists (R10). Cite specific file:line.
 ```

@@ -46,9 +46,10 @@ Write this file under the generated project target:
   "scaffold_only": true,
   "product_ui_implemented": false,
   "template": "planar",
-  "package": "com.example.demo",
+  "package": "com.example.demo.p1234abcd",
+  "package_source": "generated_default",
   "entry_points": [
-    "app/src/main/java/com/example/demo/Main.kt",
+    "app/src/main/java/com/example/demo/p1234abcd/Main.kt",
     "app/src/main/AndroidManifest.xml"
   ],
   "build_passed": true,
@@ -70,7 +71,8 @@ Write this file under the generated project target:
 | `scaffold_only`          | Must be `true`.                                                                       |
 | `product_ui_implemented` | Must be `false`; product UI belongs to `spatial-design-to-app`.                       |
 | `template`               | One of `planar`, `volumetric`, or `stage`, mapped from the container decision.        |
-| `package`                | Final Android package / namespace used by the scaffold.                               |
+| `package`                | Final Android application ID/package used by the scaffold.                            |
+| `package_source`         | `user_provided` or `generated_default`; must match the upstream identity decision.    |
 | `entry_points`           | Non-empty list of generated entry files that `spatial-design-to-app` should preserve. |
 | `build_passed`           | Must be `true` before handoff.                                                        |
 | `launch_checked`         | Boolean; `true` only when install/launch was actually checked.                        |
@@ -85,6 +87,8 @@ Verification must fail when:
 - `.scratch/onboarding_handoff.json` is missing for a `new_project` run
 - `scaffold_only` is not `true`
 - `product_ui_implemented` is not `false`
+- `package` / `package_source` is missing, invalid, or a generated default does
+  not match `com.example.<app-slug>.p<8-lowercase-hex-characters>`
 - `build_passed` is not `true`
 - `resume_skill` is not `spatial-design-to-app`
 

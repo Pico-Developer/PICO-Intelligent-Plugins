@@ -1,6 +1,6 @@
 ---
 name: spatial-emulator-usage
-description: PICO emulator and device operation workflow. Invoke for starting/stopping the PICO emulator, installing or launching APKs/apps on the emulator or current device, checking devices, moving files, capturing screenshots/recordings, collecting logcat/emulator logs, or cleaning up emulator resources.
+description: PICO emulator and device operation workflow. Invoke for starting/stopping the PICO emulator, installing or launching APKs/apps on the emulator or current device, diagnosing startup crashes or flash exits, checking devices, moving files, capturing screenshots/recordings, collecting logcat/emulator logs, or cleaning up emulator resources.
 license: 'Apache-2.0'
 ---
 
@@ -25,7 +25,7 @@ When triggered, the agent should:
 - verify the environment before claiming success
 - verify screenshot artifacts exist on the host before claiming capture succeeded
 - explain blockers clearly when the machine or device state prevents progress
-- tell the user when a device-scoped command is auto-starting a managed emulator so the wait does not look like a hang
+- when no device is online, tell the user to run `pico-cli emulator start` explicitly before retrying a device-scoped command
 - avoid destructive cleanup unless the user explicitly asked for it
 
 ## When To Use This Skill
@@ -50,6 +50,14 @@ Do not use this skill as the primary skill when the request is mainly:
 In those cases, use the more specific skill first and bring this one in only if the work reaches a real emulator/device operation step.
 
 ## Core Rules
+
+### 0. Run the environment preflight first
+
+Before the first `pico-cli` command in a Host session:
+
+1. Reuse the latest successful `pico-env-doctor` result only when the workspace, target Host, and tooling are unchanged, no setup/update/install/start command has run since, and no new failure signal exists.
+2. Otherwise activate `pico-env-doctor` and continue only after it reports a healthy result.
+3. Do not substitute `pico-cli emulator doctor`, `device list`, or `emulator list` for this gate; those commands are task-specific checks that run after the environment preflight.
 
 ### 1. Prefer host execution for emulator startup
 
@@ -99,6 +107,20 @@ If startup reports `HVF error: HV_DENIED`:
 ### 2. Use the real CLI surface
 
 Always use the real `pico-cli` command names that exist in the repository. Do not invent wrapper commands or undocumented flags.
+
+### 2.1 Recover from an unavailable AVD
+
+Before starting a named AVD, use `pico-cli emulator list --format json` to
+confirm that the requested name is currently available.
+
+- If the requested AVD is available, start that exact name.
+- If it is unavailable, do not call `emulator start` with the unavailable name.
+- Use the `availableAvds` values from the structured failure result to choose a
+  compatible AVD and retry the original start workflow.
+- Prefer a candidate matching the requested version or platform. If several
+  candidates remain and no deterministic choice is possible, ask the user to
+  choose one.
+- If no AVD is available, create or install one before retrying.
 
 Preferred command families:
 
@@ -191,10 +213,11 @@ pico-cli emulator start --bundle-version <major.minor> --format json -y
 Use these for environment validation and emulator lifecycle control:
 
 - `pico-cli emulator doctor`
-  - Checks whether Android Studio / SDK / emulator prerequisites are present
+  - Checks PICO SDK and emulator prerequisites
+  - Android Studio is not an emulator doctor check; install or inspect it only for an Android Studio plugin workflow
   - Use first when setup health is unknown
 - `pico-cli emulator setup`
-  - Guides installation/setup flow
+  - Reports prerequisite state and guides the user to `doctor --fix`, `emulator install`, or `emulator create`; it does not perform provisioning itself
   - Use when prerequisites are missing and the user wants help fixing the machine
 - `pico-cli emulator list`
   - Lists available AVDs
@@ -241,8 +264,8 @@ Use these when the task is about the currently connected emulator/device rather 
 - `pico-cli device battery`
 - `pico-cli device props`
 - `pico-cli shell [commands...]`
-  - If no device is online but a managed AVD already exists, the CLI may start that emulator first and then continue
-  - If no managed AVD exists, prefer returning the missing-device error directly instead of implying the CLI can bootstrap one implicitly
+  - If no device is online, run `pico-cli emulator start` explicitly, wait for it to become ready, then retry the shell command
+  - Do not imply that `pico-cli shell` bootstraps a managed AVD implicitly
   - Do not use `pico-cli shell input tap x y` for volumetric windows or spatial containers; it only injects 2D screen coordinates and is not a reliable path to enter gameplay or other spatial states
 
 Examples:
@@ -307,7 +330,7 @@ Capture guidance:
 
 Important options:
 
-- `pico-cli capture screenshot -o, --out <path>`
+- `pico-cli capture screenshot --out <path>`
 
 Examples:
 
@@ -423,15 +446,26 @@ Then:
 
 ### Scenario 6: "Clean up what the CLI created"
 
-Use:
+First inspect the managed resources without deleting anything:
 
 ```bash
 pico-cli emulator list --managed-only --format json
-pico-cli emulator stop
+pico-cli emulator status --format json
+pico-cli emulator delete-image --format json
+```
+
+Present the exact CLI-created AVDs, downloaded bundles, and caches proposed for deletion, then ask
+the user to confirm that concrete scope. A broad request such as "clean up the emulator" is intent
+to inspect and propose cleanup, not authorization to bypass this confirmation. Only after the user
+confirms may the agent run. The confirmation-required result from the read-only `delete-image`
+preview is expected; use its `data.targets` as the bundle/cache scope:
+
+```bash
+pico-cli emulator stop --adb-device <id>
 pico-cli emulator delete --avd <name> -y
 ```
 
-Only if the user explicitly asks to remove downloaded emulator bundles too:
+Only include downloaded emulator bundles when the confirmed scope explicitly names them:
 
 ```bash
 pico-cli emulator delete-image -y
@@ -441,7 +475,9 @@ pico-cli emulator delete-image -y
 
 ### Destructive commands
 
-Treat these as destructive and confirm intent unless the user explicitly requested them:
+Treat these as destructive. Show the concrete target set and obtain confirmation before using a
+non-interactive confirmation flag such as `-y`, even when the user's initial request asked for
+general cleanup:
 
 - `pico-cli emulator delete`
 - `pico-cli emulator delete-image`

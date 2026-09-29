@@ -51,7 +51,7 @@ DefaultWindowContainer {
 
 1. Is the modifier attached to the **direct child** of `WindowContainer` / `DefaultWindowContainer`?
 2. Is `resizeType` set to `ContainerResizeType.ContentSize`?
-3. Is `pico.spatial.windowcontainer.resizetype` configured correctly in the manifest? (`0 = Disabled`, `1 = User`, `2 = ContentSize`)
+3. Is `pico.spatial.windowcontainer.resizetype` configured correctly in the manifest? (`0 = Automatic`: system-selected, currently defaults to `ContentMinSize`; `1 = ContentMinSize`: minimum size only; `2 = ContentSize`: minimum and maximum sizes)
 4. Is another modifier such as `fillMaxSize()` overriding the constraint result?
 
 ## Imports

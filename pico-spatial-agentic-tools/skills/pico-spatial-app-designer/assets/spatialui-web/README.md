@@ -8,7 +8,6 @@ by design tokens lifted verbatim from the Kotlin source.
 
 ```
 spatialui-web/
-├── index.html          # Live component gallery / preview page
 └── js/
     ├── tokens.js        # ColorTokens, ColorScheme, Dimension, TypeScale (from *Tokens.kt)
     ├── base.js          # SuiElement base class + shared helpers
@@ -131,14 +130,3 @@ SpatialPopup attributes:
   `true`.
 - `clipping-enabled` optionally constrains either container to the viewport;
   the SDK-compatible default is unclipped.
-
-## Preview
-
-Open `index.html` in any modern browser, or serve the folder:
-
-```bash
-cd spatialui-web && python3 -m http.server 8000
-# → http://localhost:8000
-```
-
-The gallery renders every component with interactive states and logs events inline.
