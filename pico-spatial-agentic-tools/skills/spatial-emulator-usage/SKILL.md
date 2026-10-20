@@ -1,6 +1,6 @@
 ---
 name: spatial-emulator-usage
-description: PICO emulator and device operation workflow. Invoke for starting/stopping the PICO emulator, installing or launching APKs/apps on the emulator or current device, diagnosing startup crashes or flash exits, checking devices, moving files, capturing screenshots/recordings, collecting logcat/emulator logs, or cleaning up emulator resources.
+description: PICO emulator and device operation workflow. Invoke for starting/stopping the PICO emulator, installing or launching APKs/apps on the emulator or current device, diagnosing startup crashes or flash exits, checking devices, moving files, capturing recordings, collecting logcat/emulator logs, or cleaning up emulator resources.
 license: 'Apache-2.0'
 ---
 
@@ -23,7 +23,7 @@ When triggered, the agent should:
 - prefer the high-level `pico-cli` commands over raw `adb` when the CLI already covers the workflow
 - choose the smallest command sequence that solves the user's problem
 - verify the environment before claiming success
-- verify screenshot artifacts exist on the host before claiming capture succeeded
+- verify recording artifacts exist on the host before claiming capture succeeded
 - explain blockers clearly when the machine or device state prevents progress
 - when no device is online, tell the user to run `pico-cli emulator start` explicitly before retrying a device-scoped command
 - avoid destructive cleanup unless the user explicitly asked for it
@@ -36,7 +36,7 @@ Use this skill for requests like:
 - "Check whether the emulator is installed correctly"
 - "Create an AVD for the PICO emulator"
 - "Install, launch, stop, or uninstall an APK on the current emulator/device"
-- "Collect logcat, crash clues, screenshots, or emulator logs"
+- "Collect logcat, crash clues, recordings, or emulator logs"
 - "Push or pull files from the current emulator/device"
 - "Check battery, props, device info, or connected devices"
 - "Clean up CLI-created emulator instances safely"
@@ -48,6 +48,9 @@ Do not use this skill as the primary skill when the request is mainly:
 - SDK version upgrade or migration
 
 In those cases, use the more specific skill first and bring this one in only if the work reaches a real emulator/device operation step.
+
+For screenshot requests, use `pico-cli-screenshot`; this skill does not choose
+between flat and spatial screenshot modes.
 
 ## Core Rules
 
@@ -96,7 +99,7 @@ If startup reports `HVF error: HV_DENIED`:
 6. Poll `pico-cli emulator status --format json` and use its
    `data.adbOnline=true` field only to confirm that ADB is online. The status
    JSON does not contain `sys.boot_completed`.
-7. After ADB is online, run `pico-cli shell getprop sys.boot_completed` for the
+7. After ADB is online, run `pico-cli shell getprop sys.boot_completed --device "$DEVICE_ID"` for the
    same target. Resume the user's original workflow only when that command
    returns `1`. If the same `emulator start --format json` response already has
    `data.bootCompleted=true`, it may be used as the ready signal directly.
@@ -148,6 +151,9 @@ Selection priority:
 4. automatic selection by the CLI
 
 When multiple devices may exist, prefer passing `--device <id>` explicitly instead of relying on implicit selection.
+After selecting a target, bind its exact returned identifier as `DEVICE_ID` and preserve it for the
+whole workflow. Every later device-scoped `shell`, `app`, `files`, `capture`, and `log` command must
+pass `--device "$DEVICE_ID"`; rediscover and replace it only when the chosen device disconnects.
 
 ### 3.5 Spatial interaction limitation
 
@@ -188,6 +194,17 @@ Do not delete emulator bundles, caches, or AVDs just to "reset everything" unles
 
 ## Command Map
 
+### Stable result contract
+
+Use the pico-cli tool-result envelope rather than parsing Primer output directly.
+Keep reading data.avds[].name and iniPath for instance selection,
+data.processRunning / data.adbOnline for status, and data.avd,
+data.adbDeviceId, data.bundleVersion, and data.bootCompleted after start.
+A PARTIAL start result is not ready: inspect diagnostics and poll the same target;
+do not start another instance automatically. Emulator start is delegated to Primer;
+native-only executable, port, wipe, kernel, extra-argument, and log-path overrides
+are not supported. `--watch` and custom-name creation remain available.
+
 ### SDK Version Handoff
 
 When `spatial-sdk-update` supplies a selected SDK `major.minor` line, treat
@@ -196,12 +213,13 @@ that line as an explicit emulator bundle requirement. Do not allow
 installed or latest bundle.
 
 ```bash
-pico-cli emulator install <major.minor> --source <source> -y
-pico-cli emulator create --bundle-version <major.minor> -y
-pico-cli emulator start --bundle-version <major.minor> --format json -y
+pico-cli emulator install --version <major.minor> -y
+pico-cli emulator create --version <major.minor> -y
+pico-cli emulator start --version <major.minor> --format json -y
 ```
 
-- Omit `--source <source>` unless the handoff explicitly requires a source.
+- The CLI selects the download source automatically based on build channel and
+  host region.
 - Verify the returned `bundleVersion` matches the selected `major.minor` line
   after normalizing both values to `major.minor`. For example, returned
   `0.11.0` matches selected `0.11`; returned `0.12.0` does not.
@@ -228,14 +246,19 @@ Use these for environment validation and emulator lifecycle control:
 - `pico-cli emulator start`
   - Starts a chosen AVD and can download the emulator bundle if missing
   - Use when the user needs a runnable emulator session
+  - Keep using pico-cli for boot readiness, device selection, custom launch options and watch mode
+  - To create another instance, use pico-cli emulator start --version <major.minor> --new-instance --format json -y
+  - Use `--version <major.minor>` to pin the emulator bundle; it matches an installed bundle first and downloads it when missing
 - `pico-cli emulator status`
   - Checks process and adb visibility
   - Use before start/stop if state is unclear
 - `pico-cli emulator stop`
   - Stops the running emulator
 - `pico-cli emulator delete`
-  - Deletes CLI-created PICO AVDs only
+  - Deletes CLI-created PICO AVDs; a running target is stopped before deletion, so require authorization for both effects
   - Prefer `--avd <name>` for precise cleanup
+- `pico-cli emulator log [avd] --last`
+  - Read the latest Primer launch log directly; omit `avd` to target the current running emulator or the sole managed AVD. Use dump-logs for an exported evidence bundle
 - `pico-cli emulator dump-logs`
   - Collects emulator-related logs for crash/debug analysis
 - `pico-cli emulator delete-image`
@@ -247,7 +270,7 @@ Common examples:
 ```bash
 pico-cli emulator doctor --format json
 pico-cli emulator list --managed-only --format json
-pico-cli emulator create --avd Pico_Emulator_0_11 --source auto -y
+pico-cli emulator create --avd Pico_Emulator_0_11 -y
 pico-cli emulator start --avd Pico_Emulator_0_11 --format json -y
 pico-cli emulator status --format json
 pico-cli emulator dump-logs --out /tmp/pico-cli-sim-logs
@@ -275,7 +298,7 @@ pico-cli device list --format json
 pico-cli device info --format json
 pico-cli device battery --format json
 pico-cli device props --filter pico --format plain
-pico-cli shell getprop ro.product.model
+pico-cli shell getprop ro.product.model --device "$DEVICE_ID"
 ```
 
 ### App Operations
@@ -294,11 +317,11 @@ Use these after the target emulator/device is online:
 Examples:
 
 ```bash
-pico-cli app install app/build/outputs/apk/debug/app-debug.apk
-pico-cli app info com.example.spatialdemo --format json
-pico-cli app launch com.example.spatialdemo --activity .platform.LaunchActivity
-pico-cli app logcat --lines 200 --level E
-pico-cli app watch-crash com.example.spatialdemo --start --interval 2
+pico-cli app install app/build/outputs/apk/debug/app-debug.apk --device "$DEVICE_ID"
+pico-cli app info com.example.spatialdemo --format json --device "$DEVICE_ID"
+pico-cli app launch com.example.spatialdemo --activity .platform.LaunchActivity --device "$DEVICE_ID"
+pico-cli app logcat --lines 200 --level E --device "$DEVICE_ID"
+pico-cli app watch-crash com.example.spatialdemo --start --interval 2 --device "$DEVICE_ID"
 ```
 
 Important:
@@ -318,28 +341,34 @@ Use these for moving assets, inspecting runtime files, and collecting visual evi
 - `pico-cli files rm <remote>`
 - `pico-cli files cat <remote>`
 - `pico-cli files stat <remote>`
-- `pico-cli capture screenshot`
+- `pico-cli capture record`
 
 Capture guidance:
 
 - use `pico-cli capture screenshot` when the user needs a single visual proof point
+- use `pico-cli capture record` when the user needs time-based interaction, animation, or progression evidence
 - prefer an explicit `--out <path>` so the artifact location is predictable and easy to report back
 - prefer an explicit `--device <id>` when more than one device or emulator may be connected
-- after capture, verify the screenshot file exists on the host before saying the artifact was collected
-- if the target UI is volumetric/spatial, warn that `pico-cli capture screenshot` may return a black image because adb `screencap` does not guarantee compositor output from spatial containers
+- do not overwrite an existing capture artifact unless the user explicitly requests `--replace`
+- after recording, verify the recording file exists on the host before saying the artifact was collected
+- screenshot mode selection and ADB fallback are defined by `pico-cli`; this
+  skill only supplies emulator lifecycle context
 
 Important options:
 
 - `pico-cli capture screenshot --out <path>`
+- `pico-cli capture record --device <id> --out <path> --time <seconds>`
+- `pico-cli capture record --replace` only after the caller has explicitly approved overwriting the output
 
 Examples:
 
 ```bash
-pico-cli files mkdir /sdcard/Download/demo-assets
-pico-cli files push ./local.png /sdcard/Download/demo-assets/local.png
-pico-cli files ls /sdcard/Download/demo-assets -l
-pico-cli files stat /sdcard/Download/demo-assets/local.png --format json
-pico-cli capture screenshot --out ./artifacts/screen.png
+pico-cli files mkdir /sdcard/Download/demo-assets --device "$DEVICE_ID"
+pico-cli files push ./local.png /sdcard/Download/demo-assets/local.png --device "$DEVICE_ID"
+pico-cli files ls /sdcard/Download/demo-assets -l --device "$DEVICE_ID"
+pico-cli files stat /sdcard/Download/demo-assets/local.png --format json --device "$DEVICE_ID"
+pico-cli capture screenshot --out ./artifacts/screen.png --device "$DEVICE_ID"
+pico-cli capture record --out ./artifacts/flow.mp4 --time 15 --device "$DEVICE_ID"
 ```
 
 ### Logs and Raw ADB Escape Hatch
@@ -357,9 +386,9 @@ Prefer `pico-cli log` or `pico-cli app logcat` before any lower-level fallback. 
 Examples:
 
 ```bash
-pico-cli log --lines 150 --tag AndroidRuntime --level E
-pico-cli device props --filter ro.build.version.release
-pico-cli app logcat --lines 200 --level W
+pico-cli log --lines 150 --tag AndroidRuntime --level E --device "$DEVICE_ID"
+pico-cli device props --filter ro.build.version.release --device "$DEVICE_ID"
+pico-cli app logcat --lines 200 --level W --device "$DEVICE_ID"
 ```
 
 ## Scenario Playbooks
@@ -399,15 +428,16 @@ the current session.
 Use:
 
 ```bash
-pico-cli app install <apk>
-pico-cli app launch <package> [--activity <activity>]
-pico-cli app logcat --lines 200 --level E
+DEVICE_ID=<selected-device-id>
+pico-cli app install <apk> --device "$DEVICE_ID"
+pico-cli app launch <package> [--activity <activity>] --device "$DEVICE_ID"
+pico-cli app logcat --lines 200 --level E --device "$DEVICE_ID"
 ```
 
 If the user wants visible evidence:
 
 ```bash
-pico-cli capture screenshot --out <path>
+pico-cli capture screenshot --out <path> --device "$DEVICE_ID"
 ```
 
 Then:
@@ -420,29 +450,14 @@ Then:
 Use:
 
 ```bash
-pico-cli app watch-crash <package> --start
-pico-cli app logcat --lines 300 --level E
+DEVICE_ID=<selected-device-id>
+pico-cli app watch-crash <package> --start --device "$DEVICE_ID"
+pico-cli app logcat --lines 300 --level E --device "$DEVICE_ID"
 pico-cli emulator dump-logs --out <dir>
-pico-cli capture screenshot --out <path>
 ```
 
-Use screenshot in this scenario when logs alone are not enough to show the failure mode.
-
-### Scenario 5: "Capture screenshot evidence"
-
-Use:
-
-```bash
-pico-cli device list --format json
-pico-cli emulator status --format json
-pico-cli capture screenshot --device <id> --out <path>
-```
-
-Then:
-
-- confirm which emulator/device was targeted
-- report the exact local artifact path
-- do not claim success unless the command completed and the artifact exists on disk
+If visual evidence is required, hand off to `pico-cli-screenshot` with the
+selected device context.
 
 ### Scenario 6: "Clean up what the CLI created"
 
@@ -498,11 +513,8 @@ Before running it:
 
 ### `emulator start` caution
 
-Before using heavy options such as `--wipe-data`, `--watch`, custom `--artifact-url`, or custom `--args`:
-
-- make sure the user actually needs them
-- explain the tradeoff briefly
-- prefer the default start path first
+Before using `--watch`, make sure continuous recovery is actually needed and explain
+that it keeps the command active. Use the standard one-shot Primer start path first.
 
 ### Emulator download patience
 

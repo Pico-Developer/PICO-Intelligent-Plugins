@@ -41,7 +41,7 @@ pico-cli perf <resource> <action> [options]
 | simple perf | `simple-perf.data`          | simpleperf sampling results, used for analyzing hotspot functions and call stacks; enabled only when `--simple-perf-script` is provided |
 | summary     | `collector-summary.yaml`    | Meta-information of this capture, output paths, file sizes, warnings, and limitations                                                   |
 
-Internally, the script calls `pico-cli perf live start/stop` and `pico-cli perf trace record/stop`. If simpleperf is enabled, it also starts simpleperf sampling through the specified app profiler script and pulls `perf.data` after stopping.
+Internally, the script calls `pico-cli perf live start/stop` and `pico-cli perf trace record/stop`. These are daemon-managed operations, so the script uses the daemon-owned toolchain rather than passing custom executable paths. If simpleperf is enabled, it also starts simpleperf sampling through the specified app profiler script and pulls `perf.data` after stopping.
 
 #### Parameter Description
 
@@ -114,13 +114,14 @@ If `--simple-perf-script` is not provided, `collector-summary.yaml` will mark si
 pico-cli perf trace record [options]
 ```
 
-| Parameter                  | Default Value                | Description                                                                  |
-| -------------------------- | ---------------------------- | ---------------------------------------------------------------------------- |
-| `-t, --duration <seconds>` | `60`                         | Capture duration in seconds                                                  |
-| `-o, --output <path>`      | trace file in temp directory | Output trace path                                                            |
-| `-p, --pbtx <name\|path>`  | `default`                    | PBTX preset name or path to custom `.pbtx` file                              |
-| `--detach`                 | `false`                      | Start daemon-managed detached recording and return a trace record session ID |
-| `--port <port>`            | `9500`                       | Daemon port for `--detach` mode                                              |
+| Parameter                  | Default Value                | Description                                                                                                    |
+| -------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `-t, --duration <seconds>` | `60`                         | Capture duration in seconds                                                                                    |
+| `-o, --output <path>`      | trace file in temp directory | Output trace path                                                                                              |
+| `-p, --pbtx <name\|path>`  | `default`                    | PBTX preset name or path to custom `.pbtx` file                                                                |
+| `--adb <path>`             | resolved toolchain path      | Foreground recording only; `--detach` rejects custom adb, so configure the daemon toolchain before starting it |
+| `--detach`                 | `false`                      | Start daemon-managed detached recording and return a trace record session ID                                   |
+| `--port <port>`            | `9500`                       | Daemon port for `--detach` mode                                                                                |
 
 Common examples:
 
@@ -282,6 +283,8 @@ When `--app` is not specified, output the list of foreground App package names; 
 
 `trace load`, `trace query`, and `trace decode` all depend on the perf daemon. Start it before loading a trace and stop it after completion.
 
+The daemon is a local control plane: it listens on loopback and pico-cli supplies its local authentication token automatically. Use the `pico-cli perf daemon`, `trace`, `session`, and `live` commands to operate it; do not call its HTTP endpoint directly or expose it through port forwarding. The daemon resolves its own adb and trace-processor paths when it starts. Daemon-managed `live start`, detached `trace record`, and `trace load` do not accept custom executable paths; configure the daemon toolchain before starting it instead.
+
 | Command                              | Description                            |
 | ------------------------------------ | -------------------------------------- |
 | `pico-cli perf daemon start`         | Start daemon using default port `9500` |
@@ -295,14 +298,14 @@ When `--app` is not specified, output the list of foreground App package names; 
 pico-cli perf trace load <traceFile> [options]
 ```
 
-| Parameter                          | Default Value           | Description                                  |
-| ---------------------------------- | ----------------------- | -------------------------------------------- |
-| `<traceFile>`                      | None                    | Absolute path to trace file, mandatory       |
-| `--shell <path>`                   | `trace_processor_shell` | Path to trace processor shell                |
-| `-p, --port <port>`                | `9500`                  | Daemon port                                  |
-| `--metrics-config <path>`          | None                    | Custom metrics configuration JSON            |
-| `--rules-config <path>`            | None                    | Custom rules configuration JSON              |
-| `--spatial-diagnose <true\|false>` | `false`                 | Whether to enable spatial app rule diagnosis |
+| Parameter                          | Default Value           | Description                                                                                                  |
+| ---------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `<traceFile>`                      | None                    | Absolute path to trace file, mandatory                                                                       |
+| `--shell <path>`                   | `trace_processor_shell` | Daemon-managed default only; a custom path is rejected, so configure the daemon toolchain before starting it |
+| `-p, --port <port>`                | `9500`                  | Daemon port                                                                                                  |
+| `--metrics-config <path>`          | None                    | Custom metrics configuration JSON                                                                            |
+| `--rules-config <path>`            | None                    | Custom rules configuration JSON                                                                              |
+| `--spatial-diagnose <true\|false>` | `false`                 | Whether to enable spatial app rule diagnosis                                                                 |
 
 After loading, the session will be alive for reuse when the daemon is active. The recommended loading method for Spatial analysis:
 
@@ -403,6 +406,7 @@ In other words, the script does not replace the analysis capabilities of `pico-c
 
 - In multi-device scenarios, use `--device`, `--serial`, `PICO_CLI_DEVICE`, or `ANDROID_SERIAL` to clearly identify the target device and avoid capturing the wrong device.
 - Ensure the daemon is started before `trace load`, `trace query`, and `trace decode`.
+- Keep daemon access inside `pico-cli perf`; do not substitute direct HTTP calls, port forwarding, or a manually managed token for the CLI session flow.
 - Do not directly invoke `trace_processor_shell` during normal analysis.
 - If you want to suppress Node.js experimental warnings, set `NODE_NO_WARNINGS=1` before executing `pico-cli perf ...`.
 - Use `pico-cli perf <resource> <action> --help` to view help for any sub-command.

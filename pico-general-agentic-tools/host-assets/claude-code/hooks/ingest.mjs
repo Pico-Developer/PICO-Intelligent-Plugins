@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
-import { runAgentHookWrapper } from './runtime.mjs';
+export const PICO_AGENT_HOOK_FAILURE_MODE = 'non-blocking';
 
-await runAgentHookWrapper({ host: "claude-code", wrapperUrl: import.meta.url, stage: process.argv[2] });
+try {
+  const { runAgentHookWrapper } = await import('./runtime.mjs');
+  await runAgentHookWrapper({ host: "claude-code", wrapperUrl: import.meta.url, stage: process.argv[2] });
+} catch {
+  // Telemetry is observational and must never block the Host operation.
+}

@@ -6,9 +6,37 @@ license: 'Apache-2.0'
 
 # Debug SpatialML in Unity
 
-Use this workflow in an existing PICO Unity project. Route Kotlin Spatial SDK work to the Spatial
-plugin's `spatialml-debugging` skill. Use `spatialml` for general graph construction/package operations.
+Use this workflow in an existing PICO Unity project. Use this plugin's `spatialml` for general
+graph construction/package operations.
 Do not reinitialize an existing Unity project just to debug its pipelines.
+
+## Kotlin requests require an external owner
+
+Kotlin Spatial SDK debugging is outside this Unity distribution. It requires **PICO Spatial Agentic
+Tools** (`pico-spatial-agentic-tools`), which is not installed by Unity setup. Both plugins name their
+debugging skill `spatialml-debugging`, so the name alone does not establish Kotlin support.
+
+Before handing off a Kotlin request, resolve `pico-spatial-agentic-tools:spatialml-debugging` through
+the current host's skill/plugin catalog and load that owner's instructions. If the host flattens
+skill names, verify the owning plugin from its metadata or installed source. Once available, hand
+over the complete request, Kotlin project path, and collected evidence; stop this Unity workflow.
+
+If the Spatial plugin or its debugging skill cannot be resolved and loaded, report `BLOCKED`:
+Kotlin Spatial SDK debugging is unsupported by the available Unity distribution. Name the missing
+`pico-spatial-agentic-tools:spatialml-debugging` capability. Use `BLOCKED` as a user-facing handoff
+label in your response, not as a CLI `tool_status`; this skill-level check does not produce a CLI
+Tool Result envelope or process exit code. Give this recovery path:
+
+1. Configure PICO Spatial Agentic Tools for the actual Kotlin project and selected agent host/scope
+   using the [PICO CLI Installation and Setup Guide](https://github.com/Pico-Developer/PICO-Intelligent-Plugins/blob/main/docs/pico-cli-installation-guide.md).
+   Run guided `pico-cli setup` from that Kotlin project and select the Spatial SDK platform.
+2. Start a new session from the Kotlin project or restart the configured agent host, then verify
+   that its catalog exposes the Spatial plugin's debugging skill before resuming the request.
+
+Do not substitute this Unity skill, change a Unity project's platform, initialize Unity, or run
+Unity readback/device instructions for the Kotlin request. An installed-plugin record without a
+loadable skill in the current session is not a completed handoff. Ordinary Unity debugging does
+not require the Spatial plugin.
 
 ## Probe a Unity global output
 

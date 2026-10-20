@@ -103,19 +103,28 @@ handling, or pySpatialML installation and delegation details.
 | Verify a Pipeline Zoo package     | `pico-cli spatialml pipeline verify`         | Delegates package validation to installed pySpatialML 0.5.0 or newer.               |
 | Inspect or visualize LiteRT model | `pico-cli spatialml model inspect/visualize` | Delegates model metadata and visualization to installed pySpatialML 0.5.0 or newer. |
 
-## Raw ADB Escape Hatch
+## Low-level ADB-backed command family
 
-Use `pico-cli adb ...` only when the higher-level family does not expose the operation or the user explicitly needs raw ADB behavior.
+Use `pico-cli adb ...` only when the higher-level family does not expose the operation. This is a
+low-level ADB-backed family, but its subcommands do not all have the same contract:
 
-Common raw escape hatches:
+True passthrough subcommands expose the corresponding low-level operation and preserve the
+native ADB argument surface:
 
-- `pico-cli adb devices`
 - `pico-cli adb shell`
-- `pico-cli adb pull` / `pico-cli adb push`
+- `pico-cli adb push`
 - `pico-cli adb install` / `pico-cli adb uninstall`
-- `pico-cli adb logcat`
 - `pico-cli adb forward` / `pico-cli adb reverse`
-- `pico-cli adb getprop` / `pico-cli adb setprop`
-- `pico-cli adb root`
+
+`pico-cli adb logcat` is hybrid: structured logcat options use the CLI wrapper, while arguments
+after the passthrough boundary are forwarded to native `adb logcat`.
+
+`pico-cli adb devices`, `pico-cli adb getprop`, `pico-cli adb setprop`, and `pico-cli adb root`
+are structured ADB-backed wrappers. They expose CLI-defined options and output rather than being
+raw passthrough commands.
+
+`pico-cli adb pull` is not a raw passthrough. It is a staged no-clobber wrapper with explicit
+`--replace` behavior. Use its documented `<remote> [local]` arguments and wrapper options. If
+native `adb pull` flags are required, run plain `adb pull` directly instead.
 
 Prefer `pico-cli device`, `pico-cli files`, `pico-cli app`, or `pico-cli log` before raw ADB when those families cover the workflow.

@@ -4,15 +4,15 @@
     "name": "PICO Immersive Pte. Ltd."
   },
   "metadata": {
-    "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-    "version": "0.6.0",
+    "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, SDK migration compatibility checks, and PICO CLI device workflows.",
+    "version": "0.6.1",
     "pluginRoot": "."
   },
   "plugins": [
     {
       "name": "pico-spatial-agentic-tools",
-      "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, store submission checks, and PICO CLI device workflows.",
-      "version": "0.6.0",
+      "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, SDK migration compatibility checks, and PICO CLI device workflows.",
+      "version": "0.6.1",
       "author": {
         "name": "PICO Immersive Pte. Ltd."
       },
@@ -44,7 +44,7 @@
     {
       "name": "pico-unity-agentic-tools",
       "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity PICO Spatial setup, Spatial Adapter runtime APIs, PICO XR building blocks, Unity OpenXR setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "PICO Immersive Pte. Ltd."
       },
@@ -79,7 +79,7 @@
     {
       "name": "pico-general-agentic-tools",
       "description": "Cross-platform agentic tools shared by PICO Spatial and Unity development workflows. Provides platform-agnostic skills such as knowledge-graph querying and PICO CLI utilities.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "PICO Immersive Pte. Ltd."
       },

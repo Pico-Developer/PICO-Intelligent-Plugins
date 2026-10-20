@@ -69,21 +69,43 @@ registered `spatialml` skill, whether the package is the whole request or one st
    The install command installs the unmodified repository package; it does not accept a local derived
    package. Keep the base as a known-good comparison and do not overwrite the source repository.
 
-6. Record the original and replacement model contracts:
+6. **Produce an explicit old-vs-new tensor contract comparison as a mandatory deliverable.**
+   Before changing any code, table every contract field for the original model and the replacement:
 
-   - input count, names, shape/layout, dtype, quantization, color order, resize, and normalization;
-   - output count, names, shape, dtype, quantization, and semantic meaning;
-   - coordinate system, box encoding, class/score representation, anchors, and NMS expectations.
+   | Field                       | Original (base package model) | Replacement | Impact |
+   | --------------------------- | ----------------------------- | ----------- | ------ |
+   | Input count                 |                               |             |        |
+   | Input name(s)               |                               |             |        |
+   | Input shape (layout)        |                               |             |        |
+   | Input dtype                 |                               |             |        |
+   | Input quantization/encoding |                               |             |        |
+   | Input normalization         |                               |             |        |
+   | Output count                |                               |             |        |
+   | Output name(s)              |                               |             |        |
+   | Output shape(s)             |                               |             |        |
+   | Output dtype                |                               |             |        |
+   | Output quantization         |                               |             |        |
+   | Output semantic meaning     |                               |             |        |
+
+   Populate every row with concrete values obtained from model metadata, `spatialml model inspect`,
+   or authoritative documentation. If a field cannot be determined, write "unknown" and state whether
+   the gap blocks correctness — do not assume compatibility or fill guessed values.
+
+   **Do not claim "compatible", "same format", or "similar" without citing the exact row values
+   that prove it.** Equal shapes do not prove equal semantics. A match in one row does not imply
+   a match in another.
+
+   Tie every preprocessing, post-processing, tensor binding, constant, and downstream branch change
+   to a specific difference in this table. For each change, state:
+
+   - which row drives the change;
+   - the old value, the new requirement, and the minimum operator/substitution that satisfies it;
+   - whether the change is additive (new processing), replacive (different algorithm), or removable
+     (obsolete branch).
 
    Identify the smallest replacement boundary. Reuse compatible acquisition, preprocessing,
-   scheduling, coordinate conversion, and rendering operators. Update every affected preprocessing,
-   post-processing, tensor binding, constant, and downstream branch. Equal shapes do not prove equal
-   semantics.
-
-   For example, a face-detection package may be the best base for pet detection when its camera input,
-   image transforms, detection decoding, coordinate mapping, and box rendering are reusable. Replace
-   the detector, adapt normalization and output decoding, and remove face-landmark branches unless the
-   replacement supplies compatible outputs.
+   scheduling, coordinate conversion, and rendering operators only when the relevant rows are
+   confirmed identical — do not assume output compatibility from similar task names.
 
 7. Follow the Kotlin SDK result and use its adapter-resolved app assets path.
 
@@ -105,6 +127,15 @@ registered `spatialml` skill, whether the package is the whole request or one st
 
 9. Run representative input and verify output coordinates, classes, scores, and rendering on the
    target SDK or device.
+
+### Before claiming completion
+
+Before marking the task as complete, present the tensor contract comparison table from step 6 as a
+visible deliverable in the final summary. The comparison must be explicit — no vague
+"compatible/same format" claims, no omitted rows. If any row could not be populated with a concrete
+value, state why and whether the gap blocks correctness. Every preprocessing, post-processing,
+tensor binding, and downstream change must be cross-referenced to a specific difference in the
+table, with the old value, new requirement, and replacement operator or deletion identified.
 
 ## SDK Package Loader Is Mandatory
 

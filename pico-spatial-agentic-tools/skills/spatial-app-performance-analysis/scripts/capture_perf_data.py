@@ -11,7 +11,6 @@ import argparse
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Any
 
 
 FAST_PERF_NAME = "fast-perf.json"
@@ -91,7 +90,7 @@ class CollectorManager:
         return proc.returncode, output
 
     def start_live(self):
-        cmd = build_pico_perf_command(self.pico_cli, "live", "start", "--app", self.app_package)
+        cmd = build_pico_perf_command(self.pico_cli, "live", "start", "--package", self.app_package)
         if self.serial:
             cmd.extend(["--device", self.serial])
         code, output = self.run_command_capture(cmd)
@@ -127,10 +126,7 @@ class CollectorManager:
         if code != 0:
             raise RuntimeError(f"pico-cli perf trace record failed, exit code={code}")
 
-        m = re.search(
-            r"Detached recording session started:\s*([0-9a-fA-F-]+)",
-            output
-        )
+        m = re.search(r"Detached recording session started:\s*([0-9a-fA-F-]+)", output)
         if m:
             self.trace_session_id = m.group(1)
             print(f"[INFO] trace session id = {self.trace_session_id}")
@@ -150,7 +146,7 @@ class CollectorManager:
             "-r",
             "--call-graph dwarf",
             "-o",
-            str(self.simple_perf_path)
+            str(self.simple_perf_path),
         ]
 
         print(f"\n[RUN] {' '.join(str(x) for x in cmd)}")
@@ -413,7 +409,9 @@ class CollectorManager:
         self.validation_warnings = warnings
         return ok
 
-    def write_summary_yaml(self, capture_id: str, capture_time: str, duration: int, cli_version: str):
+    def write_summary_yaml(
+        self, capture_id: str, capture_time: str, duration: int, cli_version: str
+    ):
         def perf_entry(path: Path):
             if not path.exists():
                 return {"path": None, "size_kb": None}
@@ -421,7 +419,11 @@ class CollectorManager:
 
         fast_perf = perf_entry(self.fast_perf_path)
         trace_perf = perf_entry(self.trace_perf_path)
-        simple_perf = perf_entry(self.simple_perf_path) if self.simple_perf_enabled else {"path": None, "size_kb": None}
+        simple_perf = (
+            perf_entry(self.simple_perf_path)
+            if self.simple_perf_enabled
+            else {"path": None, "size_kb": None}
+        )
         complete = bool(
             self.fast_perf_path.exists()
             and self.fast_perf_path.stat().st_size > 0
@@ -550,7 +552,7 @@ def yaml_value(value):
         return "null"
     text = str(value)
     if any(ch in text for ch in [":", "#", "\\", '"']) or not text or text != text.strip():
-        return '"' + text.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
     return text
 
 
@@ -563,29 +565,21 @@ def parse_args():
         description="Start and stop three performance collectors together."
     )
     parser.add_argument(
-        "--app",
-        required=True,
-        help="Target app package name, e.g. com.example.galaxian"
+        "--app", required=True, help="Target app package name, e.g. com.example.galaxian"
     )
     parser.add_argument(
-        "--serial",
-        default=None,
-        help="ADB/device serial confirmed by the pre-run check"
+        "--serial", default=None, help="ADB/device serial confirmed by the pre-run check"
     )
     parser.add_argument(
         "--simple-perf-script",
         default=None,
-        help="Optional path to app_profiler.py; if omitted or invalid, simpleperf collection is skipped"
+        help="Optional path to app_profiler.py; if omitted or invalid, simpleperf collection is skipped",
     )
     parser.add_argument(
-        "--output-root",
-        default=".",
-        help="Root directory for generated perf-data-xxxx folder"
+        "--output-root", default=".", help="Root directory for generated perf-data-xxxx folder"
     )
     parser.add_argument(
-        "--python-cmd",
-        default="python",
-        help="Python executable used to run profiler script"
+        "--python-cmd", default="python", help="Python executable used to run profiler script"
     )
     parser.add_argument(
         "--pico-cli",
@@ -600,7 +594,7 @@ def parse_args():
         "--duration",
         type=float,
         default=None,
-        help="Auto-stop after N seconds; unit is seconds. If omitted, stop manually with Ctrl+C or SIGTERM"
+        help="Auto-stop after N seconds; unit is seconds. If omitted, stop manually with Ctrl+C or SIGTERM",
     )
     return parser.parse_args()
 
@@ -610,14 +604,27 @@ def print_result(output_dir, ok):
     print(f"[RESULT] output directory: {output_dir}")
     print(f"[RESULT] summary yaml    : {output_dir / SUMMARY_YAML_NAME}")
     if ok:
-        print("The acquisition processes have been completed and the results have been saved to separate directories.")
+        print(
+            "The acquisition processes have been completed and the results have been saved to separate directories."
+        )
     else:
-        print("The collection has ended, but some output has not been detected. Please check the console log.")
+        print(
+            "The collection has ended, but some output has not been detected. Please check the console log."
+        )
 
 
-def finalize_capture(mgr: CollectorManager, output_dir: Path, capture_id: str, capture_time: str, duration: int, cli_version: str):
+def finalize_capture(
+    mgr: CollectorManager,
+    output_dir: Path,
+    capture_id: str,
+    capture_time: str,
+    duration: int,
+    cli_version: str,
+):
     ok = mgr.verify_outputs()
-    mgr.write_summary_yaml(capture_id=capture_id, capture_time=capture_time, duration=duration, cli_version=cli_version)
+    mgr.write_summary_yaml(
+        capture_id=capture_id, capture_time=capture_time, duration=duration, cli_version=cli_version
+    )
     print_result(output_dir, ok)
     return ok
 

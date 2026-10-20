@@ -35,6 +35,22 @@ The recommended path is `pico-cli setup`. If you manually inspect or import this
 - Trae CLI: local marketplace installation driven by `pico-cli setup` / `pico-cli plugin update`
 - OpenCode V2: no plugin manifest; `pico-cli setup` writes Skills into the OpenCode configuration
 
+To update the Trae CLI marketplace records explicitly, choose the required resource scope:
+
+```bash
+# Update the global Trae CLI marketplace record.
+pico-cli plugin update --agent-tool traecli --scope global
+
+# Update the current project's local Trae CLI marketplace record.
+pico-cli plugin update --agent-tool traecli --scope local --project .
+```
+
+`--scope global|local` is required. It explicitly selects the target scope; omitting it is not
+allowed. `--project` selects the project for local scope; if it is omitted, local scope uses the
+exact current working directory. The local example above keeps `--project .` to make that target
+explicit. `--platform` is an optional filter only and cannot replace `--scope`. The command only
+reads records from the explicitly selected scope.
+
 Hosts should import this directory as the plugin root and resolve `skills/` using the relative paths defined in the host manifest.
 
 See `AGENTS.md` for agent guidance.

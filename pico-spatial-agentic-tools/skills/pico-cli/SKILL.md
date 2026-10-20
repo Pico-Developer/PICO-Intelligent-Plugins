@@ -38,7 +38,8 @@ Use this skill for requests like:
 
 Prefer the most specific skill once the user's intent is clear:
 
-- Use `spatial-emulator-usage` when the task is to operate an emulator or connected device end-to-end: create/start/stop emulator, inspect devices, install/launch APKs, push/pull files, collect screenshots/logcat, or clean up emulator resources.
+- Use `spatial-emulator-usage` when the task is to operate an emulator or connected device end-to-end: create/start/stop emulator, inspect devices, install/launch APKs, push/pull files, collect logcat, or clean up emulator resources.
+- Use `pico-cli-screenshot` for screenshot capture; it first loads `pico-cli-device-target` to distinguish real PICO hardware from an emulator.
 - Use `spatial-app-performance-analysis` for `pico-cli perf`, Perfetto Trace capture/load/query, frame drops, jank, high CPU/GPU load, slow startup, or rendering-pipeline diagnosis.
 - Use `spatial-app-onboarding` for `pico-cli project create` or first Spatial SDK project scaffolding.
 - Use `spatial-sdk-guideline`, `spatial-ui-*`, or migration skills when the request is about app code, SDK APIs, UI implementation, or Gradle migration rather than CLI usage.
@@ -47,10 +48,10 @@ Prefer the most specific skill once the user's intent is clear:
   verifying a reusable Pipeline Zoo package. Load `spatialml-commands.md` only when exact CLI syntax
   is needed.
 
-If a request starts as generic `pico-cli` help but becomes an emulator/device
-execution workflow, hand off to `spatial-emulator-usage`. A request that is
-already clearly about a multi-step emulator/device workflow may trigger
-`spatial-emulator-usage` directly without first loading this skill.
+If a request starts as generic `pico-cli` help but becomes an emulator
+lifecycle or app install/launch workflow, hand off to
+`spatial-emulator-usage`. A request that is already clearly about emulator
+lifecycle may trigger that skill directly without first loading this skill.
 
 ## Core Workflow
 

@@ -1,6 +1,6 @@
 ---
 name: spatialml
-description: Create, extend, author, validate, or debug SpatialML-enabled Kotlin Spatial SDK apps, and route Unity SpatialML work to PICO Unity Agentic Tools. Use for SpatialML, SecureMR, OpenMR, custom pipeline/package, Pipeline Zoo, operator selection, LiteRT/TFLite inference, VST/camera-to-model graphs, 2D-to-3D placement, Spatial output, tensor synchronization, or readback/debugging in a PICO app. Also use when spatial input implicitly feeds ML detection, classification, segmentation, pose estimation, recognition, or model-driven tracking. Covers Kotlin SDK sequencing, setup/doctor diagnosis, pySpatialML delegation, SDK knowledge retrieval, implementation workflows, package loading, validation, authoring, and pipeline versus whole-app debugging.
+description: 'Create, extend, author, and validate SpatialML features in Kotlin Spatial SDK apps; route Unity implementation to PICO Unity Agentic Tools. Use for SpatialML/SecureMR/OpenMR setup, custom pipelines/packages, Pipeline Zoo, operator selection, LiteRT/TFLite inference, camera-to-model graphs, tensor synchronization, and protected or readback output implementation. Includes concrete model inspection: input/output names, dtypes, shapes, quantization, and metadata. Also use for spatial input feeding detection, classification, segmentation, pose estimation, recognition, or model-driven tracking. For runtime service logs, zero/stale tensors, global probes, debug flags, or readback permission failures, start with spatialml-debugging; return here for identified graph/package edits. Do not activate for pure VST display, camera configuration without inference, or whole-app crash/log collection.'
 license: 'Apache-2.0'
 ---
 
@@ -11,6 +11,10 @@ a separate project type and this skill must not replace Kotlin SDK setup. Unity
 SpatialML is owned by the PICO Unity Agentic Tools plugin, not by this workflow.
 
 ## Recognize SpatialML Intent
+
+Runtime service logs, zero/stale outputs, global tensor probes, debug-flag changes, and readback
+permission failures start with `spatialml-debugging`, including requests that also mention tensor
+mappings or execution order. Resume this skill when diagnosis identifies a graph or package edit.
 
 Activate this workflow for either explicit SpatialML artifacts or an implicit spatial-inference
 feature. An implicit feature normally combines: a PICO/spatial app, sensor or tensor input, an ML
@@ -46,13 +50,43 @@ Kotlin SDK, SpatialML, Pipeline Zoo, application, and verification steps.
   `pico-spatial-app-designer` when the user did not provide an executable design. Onboarding may run
   only as that workflow's scaffold substep. Direct `spatial-app-onboarding` is reserved for an
   explicitly featureless parent scaffold.
-- Restate the requested experience as `input -> inference -> output`, call out any unresolved model or
-  privacy/readback decision in plain language, then execute as much of the workflow as the environment
-  and current capabilities allow.
 - Explain confirmations, manual steps, and unavailable capabilities when they occur. Do not
   make beginners copy internal command sequences merely to advance the workflow.
 - End with build/run evidence from the Kotlin SDK, emulator, or device, or state exactly what remains
   unverified and why.
+
+### Mandatory Preflight
+
+Before any setup, build, install, file mutation, delegated execution (`pyspatialml`, `pico-cli`), or
+SpatialML package work, emit exactly one user-visible progress message in the following compact
+template. This preflight is the first output you produce after minimal read-only project inspection
+(classification: Kotlin vs Unity, SDK version from project files). You must not begin implementation,
+mutation, or delegated commands before this message is complete.
+
+**Allowed before the preflight:** read-only project inspection needed solely to classify the platform
+(Kotlin Spatial SDK vs Unity) and detect the project root. Do not inspect model files, write files,
+or call pyspatialml/pico-cli/subprocesses during this classification step.
+
+**Template:**
+
+```text
+[SpatialML Preflight]
+  Request: <one-line summary of what the user wants>
+  Platform: <Kotlin Spatial SDK | Unity | empty workspace>
+  Input -> Inference -> Output:
+    Input:   <VST camera | microphone | depth | mesh | custom tensor | other>
+    Model:   <model file name or "unresolved — will search Pipeline Zoo | will adapt | TBD">
+    Output:  <bounding box | class label | mask | pose | depth map | custom>
+  Model status: <found in project | from Pipeline Zoo | needs adaptation | not yet selected>
+  Privacy/Readback: <inference-only | readback needed — tensor capture enabled | readback undecided>
+```
+
+Fill every slot with concrete values from the request. Use `TBD` or `undecided` only when the request
+truly does not supply the information; never leave a slot blank. If a model file is specified in the
+project, confirm it exists. If privacy/readback is undecided, flag it as a decision the user must make
+before production deployment.
+
+After the preflight, proceed through `Route The Request` below to choose the correct sub-workflow.
 
 ## Route The Request
 
@@ -75,6 +109,14 @@ Kotlin SDK, SpatialML, Pipeline Zoo, application, and verification steps.
   `spatialml doctor` sequence.
 - For custom package validation or model inspection, use the registered `spatialml pipeline verify`,
   `spatialml model inspect`, and `spatialml model visualize` commands.
+- For inspecting a concrete `.tflite`/LiteRT model — including requesting input/output tensor names,
+  dtypes, shapes, quantization, or metadata — use the registered CLI command `pico-cli spatialml model
+inspect model.tflite --format json` as the first path. Do not inspect the model file directly via
+  pip-installed ad hoc Python scripts, handwritten FlatBuffer parsers, or direct
+  `tflite_runtime`/`ai_edge_litert` library imports. pySpatialML (resolved through pico-cli) owns
+  LiteRT metadata reading; if `PSM_TOOL_UNAVAILABLE` is returned, install or update
+  `pyspatialml-pico` via `uv tool install` and retry. This rule applies even when the user does not
+  mention `pico-cli` or `spatialml` and only asks about model TIO details.
 - For implementing, reviewing, or debugging an SDK graph—including camera-to-model flow, operator
   selection, LiteRT inference, 2D-to-3D projection, Spatial output, pipeline ordering, and
   readback—read `references/implementation-workflows.md` before changing code.
@@ -114,7 +156,8 @@ Kotlin SDK's creation workflow before step 1:
      did not provide an executable design, its `pico-spatial-app-designer` gate must produce and
      accept one before implementation. Use `spatial-app-onboarding` only as its scaffold substep.
      Direct onboarding is allowed only when the requested parent scaffold is explicitly featureless.
-     Existing apps continue through their normal project workflow.
+     For an existing Android/Kotlin application without the Spatial SDK, follow the returned
+     `porting-android-app` handoff to integrate the parent SDK while preserving the app.
 3. Run `pico-cli spatialml setup --project <project> --format json`.
 4. Run `pico-cli spatialml doctor --project <project> --format json` and address its next action.
 
@@ -171,6 +214,11 @@ substitute.
 - Do not generate QNN `.serialized.bin`/`.serialized.json` context binaries.
 - Do not use Docker conversion scripts or choose between QNN 2.29 and 2.37.
 - Do not expose `litert compile` or add an NPU AOT path.
+- For model metadata inspection (tensor names, dtypes, shapes, quantization), always start with
+  `pico-cli spatialml model inspect <model.tflite> --format json`. Never inspect a `.tflite` file
+  by writing an ad hoc Python script (`pip install ... && python -c ...`), opening the FlatBuffer
+  with a handwritten parser, or directly importing `tflite_runtime`/`ai_edge_litert` as a substitute
+  for the delegated command.
 - Treat pySpatialML's in-Python TFLite pipeline runtime as portable across supported Mac, Windows, and
   Linux hosts.
 - Do not use a successful host run as proof of device-only behavior such as hardware-delegate

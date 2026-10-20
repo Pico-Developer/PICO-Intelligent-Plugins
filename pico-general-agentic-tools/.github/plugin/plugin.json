@@ -1,7 +1,7 @@
 {
   "name": "pico-general-agentic-tools",
   "description": "Cross-platform agentic tools shared by PICO Spatial and Unity development workflows. Provides platform-agnostic skills such as knowledge-graph querying and PICO CLI utilities.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },

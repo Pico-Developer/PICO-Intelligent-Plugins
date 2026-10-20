@@ -242,7 +242,17 @@ Use status consistently:
 - `SUCCESS`: checked areas are healthy.
 - `PARTIAL`: CLI is usable, but some optional/module checks warned or were
   skipped.
-- `FAILED`: a blocking runtime/setup issue prevents normal use.
+- `FAILED`: at least one check reported `error`. This does not by itself prove
+  the app cannot build, install, or run.
+
+Never infer "the app cannot run" from the top-level status alone. Read
+`data.checks[]` and identify which check carries `error`, then judge whether that
+check is on the path the user's task actually needs (runtime, SDK/Primer,
+Android SDK, emulator/device, Editor) or is project setup only.
+`project.context.doctor` is project setup: it reports whether the Agent Host
+loads PICO AGENTS routing for this project, is always a `warn` when incomplete,
+and never blocks build, install, or launch. Plugin doctor reports the same gap as
+the non-blocking `PLUGIN_PROJECT_CONTEXT_INCOMPLETE` finding.
 
 When reading plain doctor output, use the bracketed labels as the action signal:
 
@@ -347,19 +357,22 @@ and external builds ship under different scopes and registries, so a public
 `npm view`/`npm install` run against an internal install compares to, or
 installs, the wrong build and can break the environment.
 
-1. **Prefer the CLI's own read-only doctor path.** If the installed CLI exposes
+1. **Prefer the CLI's own diagnostic doctor path.** If the installed CLI exposes
    `pico-cli doctor`, run it before repair commands. It reports the installed
    version/distribution and available module doctors, but it does **not** yet
    perform a live latest-version lookup — its `cli.version` check reads the
-   cached self-update result. First refresh that cache with the read-only
+   cached self-update result. First refresh that cache with
    `pico-cli update --check`, then run `pico-cli doctor` so its version check
    reflects the latest data instead of reporting a skipped/stale
-   ("No fresh pico-cli update check is cached") result. Treat the output as
-   diagnosis and routing guidance; `update --check` does not install anything,
-   so only run an install/update command after the output or the user's request
-   makes that action explicit:
+   ("No fresh pico-cli update check is cached") result. `update --check` is
+   non-installing but stateful: it performs network/process work and writes the
+   update cache; when a scope is supplied it may also prepare plugin-update
+   state. In a strictly read-only context, obtain Host write authorization first
+   or skip this refresh and report that the cached result may be stale. Treat the
+   output as diagnosis and routing guidance, and only run an installing/applying
+   update command after the output or the user's request makes that action explicit:
    ```bash
-   pico-cli update --check --format json    # refresh the version cache (read-only)
+   pico-cli update --check --format json    # non-installing; writes update cache
    pico-cli doctor --format json --platform <spatial|unity>
    ```
    Run doctor from the target project directory and assert the platform needed
@@ -436,16 +449,17 @@ be run and why it is needed, but do not execute it.
 
 Use this mapping:
 
-| Plugin doctor finding            | Explicit action                                                                                                                     |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PLUGIN_SETUP_REQUIRED`          | Run the reported `pico-cli setup` command so knowledge, platform dependencies, and plugin state are initialized together.           |
-| `PLUGIN_NOT_INSTALLED`           | Run the reported `pico-cli plugin install` command for the missing Host in the existing setup scope.                                |
-| `PLUGIN_REPAIR_REQUIRED`         | Run the reported `pico-cli plugin install` command to reconcile the same-platform env-recorded resources.                           |
-| `PLUGIN_UPDATE_AVAILABLE`        | Run the reported `pico-cli plugin update` command.                                                                                  |
-| `PLUGIN_PLATFORM_MISMATCH`       | Run setup and review the complete Host/platform plan; plugin lifecycle commands do not switch platforms.                            |
-| `PLUGIN_SOURCE_HANDOFF_REQUIRED` | Run setup to review and authorize the source-to-release handoff.                                                                    |
-| `PLUGIN_UPDATE_UNKNOWN`          | Keep current resources unchanged and retry doctor later, or run an explicit update when network access is available and authorized. |
-| `PLUGIN_HEALTHY`                 | No mutation.                                                                                                                        |
+| Plugin doctor finding               | Explicit action                                                                                                                     |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `PLUGIN_SETUP_REQUIRED`             | Run the reported `pico-cli setup` command so knowledge, platform dependencies, and plugin state are initialized together.           |
+| `PLUGIN_NOT_INSTALLED`              | Run the reported `pico-cli plugin install` command for the missing Host in the existing setup scope.                                |
+| `PLUGIN_REPAIR_REQUIRED`            | Run the reported `pico-cli plugin install` command to reconcile the same-platform env-recorded resources.                           |
+| `PLUGIN_PROJECT_CONTEXT_INCOMPLETE` | Non-blocking. Only project AGENTS routing is missing; run `pico-cli doctor --fix` or the reported `plugin install` when authorized. |
+| `PLUGIN_UPDATE_AVAILABLE`           | Run the reported `pico-cli plugin update` command.                                                                                  |
+| `PLUGIN_PLATFORM_MISMATCH`          | Run setup and review the complete Host/platform plan; plugin lifecycle commands do not switch platforms.                            |
+| `PLUGIN_SOURCE_HANDOFF_REQUIRED`    | Run setup to review and authorize the source-to-release handoff.                                                                    |
+| `PLUGIN_UPDATE_UNKNOWN`             | Keep current resources unchanged and retry doctor later, or run an explicit update when network access is available and authorized. |
+| `PLUGIN_HEALTHY`                    | No mutation.                                                                                                                        |
 
 Current lifecycle command shapes are:
 

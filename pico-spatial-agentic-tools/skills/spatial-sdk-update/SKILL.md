@@ -108,7 +108,7 @@ Goal: Quickly fill core gaps, resolve the most urgent build and compatibility is
 - **[Must] Upgrade Gradle, AGP, and Kotlin (keep versions consistent)**: PICO OS 6 and newer Spatial SDK versions generally require a modern Android toolchain. If Gradle sync fails, upgrade the project to a compatible combo (e.g., **AGP 8.x** with the matching Gradle wrapper), and set **Kotlin** to a version compatible with your AGP + Android Studio (do not guess a major jump). Ensure the **Compose Compiler** configuration matches the Kotlin version (use the official Compose–Kotlin compatibility table).
   - **SDK levels**: Keep `compileSdk = 35` and typically `targetSdk = 35` for PICO OS 6 projects. Note: upgrading `targetSdk` to 35 may introduce standard Android behavioral changes (e.g., edge-to-edge enforcement or stricter foreground service permissions); address these if the user encounters related issues.
   - **minSdk**: Do **not** blindly force `minSdk = 35`. Keep it aligned with the project baseline / template / business constraints, and only raise it if the user explicitly targets that requirement.
-- **[Must] Remove Conflicting UI Dependencies (Compose)**: If the project uses **SpatialUI** components, you must exclude native AndroidX Jetpack Compose conflicting dependencies (e.g., `androidx.compose.ui:ui`, `ui-graphics`, `ui-text`, `androidx.compose.foundation:foundation`) using `exclude` or `configurations.all { resolutionStrategy { ... } }` in the module's `build.gradle.kts`.
+- **[Must] Resolve Compose dependency conflicts when present**: After upgrading the Spatial SDK BOM, run Gradle sync or dependency resolution. Add Compose exclusions (e.g., `androidx.compose.ui:ui`, `ui-graphics`, `ui-text`, `androidx.compose.foundation:foundation`) only when dependency-resolution evidence identifies a concrete conflict with SpatialUI's bundled Compose artifacts. Do not add exclusions as an unconditional step; include only the conflicting modules identified by the evidence.
 - **[Must] Upgrade the Spatial SDK version at the right source of truth (BOM / Version Catalog)**:
   - Use the target version selected from the Maven repository in Phase 0 (default newest compatible, or the user-pinned version verified to exist). Do not introduce a version that was not confirmed available.
   - If the project uses **Version Catalog** (has `gradle/libs.versions.toml`), update the single version key (commonly `spatialBom`) and keep dependencies on `implementation(platform(libs.spatial.bom))`.
@@ -131,8 +131,8 @@ Goal: Eliminate all `unresolved reference` and `Deprecated` errors encountered a
   - **UI and Spatial Container Migration**: In spatial apps, developers are used to older interfaces for container control. In the new version, prioritize migrating to declarative Compose components and unified engine entry points like `SpatialApp`.
   - **Gesture and Control Refactoring**: Methods within click logic (e.g., `TapGestureDetector`) have `@Deprecated` markers. You must search for `pointerInput` and corresponding replacement methods to handle user taps or drags.
 - **[Must] Reverse Engineer Replacements from Errors**:
-  - If "class not found" errors occur, analyze the PICO SDK error messages (such as `ReplaceWith` deprecation warnings) to infer the new API.
-  - Proactively search for similar interfaces in the project, or use global `grep` in the SDK's `source.jar` or `dependencies` cache to locate alternative names.
+  - If "class not found" or "unresolved reference" errors occur, follow the Investigation Order defined in `spatial-sdk-guideline`: check project evidence and deprecation messages first, then query `pico-dev-knowledge` for the replacement API, then inspect bundled references and examples.
+  - Only fall back to `source.jar` or dependency-cache `grep` when the preceding steps cannot resolve the replacement. Do not start with `source.jar` when knowledge graph context, skill references, and project evidence are available.
 - **[Must] Remove Internally Restricted APIs (@RestrictTo)**:
   - Interfaces marked with `@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)` are **strictly forbidden from being used by the application side**. If legacy code accesses interfaces that are now restricted, those calls must be decisively removed or replaced with alternative official public APIs.
 
@@ -156,7 +156,7 @@ Goal: ensure the matching Spatial Editor and PICO Emulator are available after t
     ```
   - If Spatial Editor for the target `major.minor` line is already installed and usable, record the detected path/version and do not download it again. Otherwise install or refresh it:
     ```bash
-    pico-cli editor install --editor-version <major.minor>
+    pico-cli editor install --editor-version <major.minor> --yes
     ```
   - Activate `spatial-emulator-usage` with the selected SDK `major.minor` line and any user-required source. The handoff must require `pico-cli emulator install <major.minor>` and pass `--bundle-version <major.minor>` to every create/start command. It owns emulator doctor/install and returns the usable bundle/AVD/version or the exact host/artifact blocker. Do not duplicate those commands here.
   - Use explicit sources such as global or CN only when the user or environment requires them, and pass that requirement into the handoff.

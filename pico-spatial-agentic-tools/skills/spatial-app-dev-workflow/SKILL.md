@@ -1,6 +1,6 @@
 ---
 name: spatial-app-dev-workflow
-description: 'Runs iterative behavior-only feature work in an existing PICO Spatial SDK app when visible UI and spatial structure stay unchanged, including search/filter/data/business logic, interaction behavior, SDK/ECS integration, and crash or functional fixes. This is the primary workflow when an existing Editor .bundle and .scenes.json handoff must be integrated or loaded into the app. Route visible-control, layout, design-fidelity, panel-hierarchy, and container/window-model changes to spatial-design-to-app.'
+description: 'Runs iterative behavior-only feature work in an existing PICO Spatial SDK app when visible UI and spatial structure stay unchanged, including search/filter/data/business logic, interaction behavior, SDK/ECS integration, and crash or functional fixes. This is the primary workflow when an existing Editor .bundle and .scenes.json handoff can be integrated without changing the current container/window model. Route visible-control, layout, design-fidelity, panel-hierarchy, attachment/lifecycle, and container/window-model changes to spatial-design-to-app.'
 license: 'Apache-2.0'
 allowed-tools: 'Bash(pico-cli *) Bash(adb *) Bash(./gradlew *) Bash(git *) Read Edit Write'
 ---
@@ -11,8 +11,11 @@ Use this skill for **post-onboarding development** in an existing PICO Spatial S
 It continues from the project state left by `spatial-app-onboarding`: an existing scaffold and project-specific `AGENTS.md`. Verify current behavior through the normal development loop; an earlier runnable handoff does not establish that the app still builds or launches.
 
 Use `spatial-design-to-app` instead when the request adds or removes visible
-controls or alters layout, visual fidelity, panel hierarchy, or the
-container/window model. Do not chain the two workflows by default.
+controls or alters layout, visual fidelity, panel hierarchy, attachment or
+lifecycle relationships, or the container/window model. This workflow may read
+the current structure and requested difference only to classify that boundary;
+once a change is identified, stop this behavior-only route and hand off to
+`spatial-design-to-app`. Do not chain the two workflows by default.
 
 The operating rhythm is:
 
@@ -41,6 +44,7 @@ Apply this gate only before environment-dependent execution; purely static code 
 
 1. Reuse the latest successful `pico-env-doctor` result only within the same Host session when the workspace, target Host, and tooling are unchanged, no setup/update/install/start command has run since, no new failure signal exists, and the user has not requested re-verification.
 2. Otherwise activate `pico-env-doctor` before running any `pico-cli` command or querying `pico-dev-knowledge` MCP. Continue only after a healthy result; if it reports a blocker, stop the dependent execution and report that blocker.
+   Do not treat a top-level `FAILED` alone as proof that the app cannot build or run: read `data.checks[]` and stop only for an `error` on the path this task needs. An incomplete `project.context.doctor` is a non-blocking project-setup warning.
 3. After the gate passes, keep task-specific implementation in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `spatial-emulator-usage`, then resume here with its evidence or blocker.
 
 ## 0. Start From the Onboarding Handoff
@@ -52,7 +56,7 @@ Before changing code:
 3. Identify package name, main launch activity, generated template/container type, and existing run commands from `AGENTS.md` or Gradle/manifest files.
 4. Confirm the current user request is a follow-up feature/fix inside this project. If the directory is empty or not a Spatial SDK app, route to `spatial-app-onboarding` instead of using this workflow.
 5. Preserve the existing scaffold and visible baseline unless the user explicitly asks for a migration.
-6. If editor-authored content already exists as co-located `.bundle` and `.scenes.json` files, consume that handoff without reopening the editor.
+6. If editor-authored content already exists as co-located `.bundle` and `.scenes.json` files, consume that handoff without reopening the editor only when integration preserves the app's current container/window model. If integration changes visible controls, layout, panel hierarchy, attachment/lifecycle, or the container/window model, classify and hand off as described below.
    Keep both files under `app/src/main/assets/` for a Spatial app. Configure Gradle `androidResources.noCompress` to include `bundle`; the built APK still needs the check below.
 7. Detect new 3D model asset generation before classifying runtime ownership. When the current task needs one or more new 3D model assets, activate `spatial-editor` first. Override this default only when the user explicitly says not to use Spatial Editor; Kotlin integration, an empty asset directory, or an eventual runtime-controlled Entity is not an implicit opt-out.
 8. Classify each remaining 3D step by ownership: Kotlin/Spatial SDK Entity implementation, editor-authored content, or both. Do not infer Editor ownership merely because code-created Entities form a visible scene, and do not infer Kotlin ownership merely because Editor-authored content will later be used by the app.
@@ -90,13 +94,29 @@ Prefer incremental edits over rewrites:
 - Use `spatial-sdk-guideline` references before writing nontrivial ECS, resource loading, interaction, physics, animation, or coordinate conversion code.
 - Keep snippets idiomatic for the existing Kotlin/Compose style.
 
-### Revisit window structure only when the increment changes it
+### Classify visible and structural changes before implementation
 
-When a request adds or separates a panel/window, changes its attachment or lifecycle, or requires independent placement, read the existing window declarations and apply `../spatial-design-to-app/references/structure-decisions.md` (Part 2 — Window model) before writing that region.
+Before editing, compare the request with the current visible controls, layout,
+panel hierarchy, attachment/lifecycle relationships, and container/window
+declarations. This is a read-only routing check: inspect only the relevant
+project files and `../spatial-design-to-app/references/structure-decisions.md`
+(Part 2 — Window model). Do not choose or implement the new structure here.
 
-Record the existing and chosen window models plus the concrete requirement that justifies the change. A request to show settings "in a new window" alone does not establish independent lifecycle or placement requirements. Use the shared rules to distinguish an auxiliary panel from a genuinely independent window; ask only when a missing fact would change that choice.
+If any of those visible or structural facts must change, stop the current
+behavior-only implementation route and hand off to `spatial-design-to-app`.
+Include the current model, the requested difference, the files that establish
+the current structure, and any unresolved placement or lifecycle requirement in
+the handoff. The design workflow owns the resulting structure decision and its
+implementation/validation flow.
 
-Continue the current increment after this bounded decision. A changed window model cannot use the `incremental_patch` exemption that skips Decide. Ordinary edits within the existing panel keep its window model and do not require this review or a full design-to-app run.
+A request for a "new window" is structural even when independent placement or
+lifecycle is ambiguous. Record that ambiguity for `spatial-design-to-app`
+instead of selecting a `Subwindow` or additional `WindowContainer` here.
+
+Continue in this workflow only when the increment preserves all of those facts.
+Examples include search/filter/data/business-logic changes and integration of an
+existing Editor bundle into a known existing runtime container without changing
+its visible controls, layout, hierarchy, attachments, lifecycle, or window model.
 
 ## 2. Build Before Runtime Verification
 

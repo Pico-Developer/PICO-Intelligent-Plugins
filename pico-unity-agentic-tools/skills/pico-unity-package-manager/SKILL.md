@@ -49,6 +49,24 @@ The underlying C# layer is **idempotent**:
   `status=skipped` with a `warning` — DO NOT treat as failure; treat as
   "need to install the package first."
 
+### MCP tool pre-check
+
+Before any package call, inspect the AI IDE/CLI tool registry and compute the
+tools required by the current package workflow:
+
+- Read-only `list`, `info`, and `list_samples` require `pico_xr_package` only.
+- Mutating `add`, `remove`, `update`, and `import_sample` require both
+  `pico_xr_package` and `pico_xr_status`; the latter is required by the
+  post-write settle loop if the mutation returns `status=ok`.
+- An `info` pre-check in an "ensure installed" workflow may run with only
+  `pico_xr_package`. If it determines that a write is needed, verify that
+  `pico_xr_status` is visible before the first mutation.
+
+Compute `missing_tools = required_tools - visible_tools`. If `missing_tools` is
+not empty, STOP and report the exact missing tool names. Do not start the
+available prefix of a partial workflow, and do not mutate a package when the
+settle tool is absent.
+
 ## 2. Result envelope
 
 Every call returns a `PXR_MCP_Result`:
@@ -187,6 +205,22 @@ first-enable `status=skipped`, `data.recompiling=true` import transition does.
 
 ### 4.5 Update or repair a package
 
+Before classifying a request as **post-init package repair**, inspect
+`$PROJECT_ROOT/.pico-cli/config.json`:
+
+- If the file parses and `pico_unity_init_completed` is exactly `true`, the
+  project is initialized under this contract and the repair may continue.
+- If the file does not exist, or the field is absent or not `true`, STOP before
+  any package mutation, report that initialization is incomplete, and ask the
+  developer to explicitly invoke `/pico-unity-init` to continue or resume the
+  one-time initialization. Never invoke that manual-only workflow automatically.
+- If the file is malformed JSON, STOP and report the parse error. Do not
+  overwrite it or run a post-init repair.
+
+Config existence alone does not mean initialization completed. This gate
+applies only when a workflow claims to be post-init repair; it does not block
+ordinary package operations that do not depend on initialization state.
+
 ```
 1. For a registry package, call:
      pico_xr_package(action=update, packageName=P, version=V?)
@@ -205,50 +239,58 @@ first-enable `status=skipped`, `data.recompiling=true` import transition does.
        that exact captured Git URL there is the supported repair.
      - For any other Git dependency, the user must supply a different immutable
        tag or commit; call pico_xr_package(action=add, identifier=<new Git URL>)
-       and apply the normal result handling above. Re-adding the same moving URL
-       (for example, the same `#main` or `#develop` reference) returns
-       `status=already_present`; it is a no-op and does not refresh
-       `Packages/packages-lock.json`.
+       and apply the normal result handling above. Re-adding the same moving Git
+       URL (for example, the same `#main` or `#develop` reference) may return
+       `status=already_present`; treat that result as a no-op that does not
+       refresh `Packages/packages-lock.json`.
      - Never remove the package, hand-edit `Packages/manifest.json` or
        `Packages/packages-lock.json`, or claim that a lock was refreshed
-       without a changed identifier.
+       without verification.
 ```
 
-### 4.6 Repair an initialized official PICO Unity SDK Git dependency
+### 4.6 Guarded refresh of an initialized official PICO Unity SDK
 
-Use this procedure after initialization when SpatialML setup, doctor, or Pipeline Zoo reports that
-the resolved `com.bytedance.pico.xr` package is incomplete or lacks
-`SpatialMLPipelineZooImporterCli`. Do not route this case back to `/pico-unity-init`; its guard
-intentionally stops when `.pico-cli/config.json` already exists.
+Use this procedure only after the completion gate in §4.5 passes and either the
+developer explicitly requests a refresh or an already-authorized SDK-dependent
+workflow reports concrete stale/missing capability evidence. An unknown version
+alone is not permission to mutate the project.
 
 ```
-1. Run the Unity MCP connection pre-check. The project must be open and the bridge ready.
-2. Read Packages/manifest.json and capture the exact value of com.bytedance.pico.xr.
-3. Classify that value without rewriting it:
-     - recognized official PICO-Unity-SDK Git URL whose ref is known to be a moving branch (the
-       shipped default is https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/XR#main)
+1. Run the Unity MCP connection pre-check. The project must be open and the
+   bridge ready before any package mutation.
+2. Read Packages/manifest.json and capture the exact value of
+   com.bytedance.pico.xr without rewriting it.
+3. Classify the captured value:
+     - recognized official PICO-Unity-SDK Git URL whose ref is a known moving
+       branch (the shipped default is
+       https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/XR#main)
        → continue.
-     - pinned commit or tag, local/file dependency, embedded package, registry version, or any
-       custom/unrecognized source, or a Git ref whose branch status is uncertain → report BLOCKED,
-       show the current value, and ask the developer for the explicit target identifier. Do not
-       replace it automatically.
+     - pinned commit or tag, local/file dependency, embedded package, registry
+       version, custom/unrecognized source, or branch-uncertain Git ref
+       → report BLOCKED, show the current value, and ask the developer for an
+       explicit target identifier. Do not replace it automatically.
 4. call pico_xr_package(action=add, identifier=<the exact captured Git URL>)
      - status=error           → relay summary + error and STOP.
-     - status=skipped         → relay summary + warning, report BLOCKED, and ask the developer.
+     - status=skipped         → relay summary + warning, report BLOCKED, and STOP.
      - status=ok              → run the post-write settle loop.
-     - status=already_present → relay the summary; if the expected SDK capability is still absent,
-                                report BLOCKED instead of looping the same request.
-5. Rerun the operation that exposed the stale SDK:
-     - pico-cli spatialml setup --project <unity-project> --format json
-     - pico-cli spatialml doctor --project <unity-project> --format json
-     - or the original pico-cli spatialml pipeline install command.
-6. Confirm SpatialMLPipelineZooImporterCli is now available before reporting the repair complete.
+     - status=already_present → relay the summary; do not settle or retry the
+                                same request.
+5. Verify the requested outcome:
+     - rerun the original SDK-dependent operation or capability probe; for
+       SpatialML this may be setup, doctor, or the original Pipeline Zoo install;
+       or
+     - for an explicit refresh-only request, read the resolved package/lock
+       metadata and report the resolved revision as evidence.
+   If the expected capability/target is still absent, report BLOCKED instead of
+   looping the same package request.
 ```
 
-Re-adding the exact moving Git URL is the refresh operation: Unity Package Manager resolves the
-branch again and updates its lock. Do not substitute generic
-`pico_xr_package(action=update, packageName=com.bytedance.pico.xr)` for this Git repair, and do not
-remove the package first.
+Re-adding the exact recognized official moving Git URL is the guarded refresh
+operation: the MCP implementation passes it to Unity Package Manager
+`Client.Add`. Do not substitute generic
+`pico_xr_package(action=update, packageName=com.bytedance.pico.xr)`, do not
+remove the package first, and never route this post-init repair back to
+`/pico-unity-init`.
 
 ## 5. Identifier hints
 
@@ -259,9 +301,8 @@ remove the package first.
   the C# layer's `SplitIdentifier` recognises `git@` prefixes and won't
   mistake them for `name@version`.
 - Prefer an immutable tag or commit when changing an installed Git dependency
-  outside the official PICO Unity SDK repair in §4.6. For those dependencies, a
-  moving branch reference such as `#main` is not a refresh instruction, and
-  re-adding the same URL is an idempotent no-op under this tool contract.
+  outside the guarded official PICO Unity SDK repair in §4.6. A moving branch
+  reference such as `#main` is not a general refresh instruction.
 - Common reverse-DNS names for PICO workflows:
   - `com.unity.xr.interaction.toolkit` — XRI
   - `com.unity.xr.hands` — XR Hands
@@ -294,6 +335,8 @@ Typed `skipped` rules:
 
 ## 7. Anti-patterns (DO NOT)
 
+- DO NOT start a package mutation unless both `pico_xr_package` and
+  `pico_xr_status` passed the MCP tool pre-check.
 - DO NOT skip the post-write settle loop on mutating calls. The next MCP call
   will fail because the bridge is offline during domain reload.
 - DO NOT call `pico_xr_package(action=add)` followed by `import_sample` in the
@@ -318,6 +361,6 @@ Typed `skipped` rules:
 - DO NOT automatically replace pinned, local, embedded, registry, custom, unrecognized, or
   branch-uncertain PICO SDK sources during repair. Require an explicit target from the developer.
 - DO NOT route an initialized project to `/pico-unity-init` for SDK repair.
-- For Git dependencies outside the official PICO Unity SDK repair in §4.6, do not present the same
-  moving Git URL as a package repair. An `already_present` result means no change was made; wait for
-  an explicit refresh operation or use a user-supplied different immutable tag or commit.
+- Outside the guarded official PICO Unity SDK repair in §4.6, do not present the
+  same moving Git URL as a package repair. An `already_present` result means no
+  change was made; require a user-supplied different immutable tag or commit.
