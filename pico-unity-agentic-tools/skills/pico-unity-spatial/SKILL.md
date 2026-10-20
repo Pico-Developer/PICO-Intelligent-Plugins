@@ -33,7 +33,7 @@ Use this skill when the user says any of:
 
 For explicit PICO XR feature orchestration, use the PICO XR workflow instead. A shared feature term such as hands or spatial mesh does not by itself authorize switching a configured Spatial project to another mode.
 
-For Unity OpenXR or cross-mode auditing, migration, builds, and diagnostics, use [develop-pico-unity-apps](../develop-pico-unity-apps/SKILL.md). For concrete Spatial Adapter APIs, use the topic skills below instead of the general setup flow.
+This published plugin does not ship a broad cross-mode SDK snapshot skill. For Unity OpenXR or cross-mode auditing, migration, builds, and diagnostics, inspect the project and installed packages, then select an available specific workflow instead of routing to an absent general skill. For concrete Spatial Adapter APIs, use the topic skills below instead of the general setup flow.
 
 ## Default Route
 

@@ -117,7 +117,7 @@ Use the validated dependency snapshot retained by Stage A to determine every pac
    - Version < 6.0.0 → ask: "The detected PICO Unity SDK (XR) version `xxx` is below 6.0.0. Upgrade to 6.0.0?"
      - Choose "No" → exit initialization immediately. If the developer declines any blocking change, exit with the original manifest unchanged; do not write config or alter any other project file.
      - Choose "Yes" → plan to replace all three SDK dependency keys with the values in B.3.2.
-   - Version cannot be determined → plan no change and report: "PICO SDK XR is present but its version is unknown; upgrade skipped. To force a refresh, manually change the `#ref`."
+   - Version cannot be determined → plan no change, preserve the existing SDK address and ref, continue initialization, and report: "PICO SDK XR is present but its version is unknown; upgrade skipped. Initialization completes before any repair handoff. After initialization completes and the Unity Editor/MCP bridge are running, route an explicit refresh request to `pico-unity-package-manager`." Do not tell the developer to change the `#ref`, `Packages/manifest.json`, or `Packages/packages-lock.json` manually.
 
 This phase is read-only: do not write AI Assistant or MCP Extensions first and defer the SDK decision.
 
@@ -236,16 +236,16 @@ rm -rf "$TMP_TPL"
 **Fallback method (used when the clone fails)**: call the `pico-cli` local template generator.
 
 ```bash
-pico-cli project create --template <template> --name pico --package com.example.app
+pico-cli project create --sdk-type unity --template <template> --dir "$PROJECT_ROOT" --name pico --package com.example.app
 ```
 
-`<template>` is taken from the form's `mode` value:
+`<template>` must use the canonical Unity template value mapped from the form's `mode`:
 
-- `mode = picoxr` → `--template picoxr`
-- `mode = openxr` → `--template openxr`
+- `mode = picoxr` → `--template PICOXR`
+- `mode = openxr` → `--template OpenXR`
 - `mode = picospatial` → `--template PICOSpatial`
 
-Run in `$PROJECT_ROOT`. The command generates a complete Unity project structure (`Assets/`, `Packages/manifest.json`, `ProjectSettings/`, `UserSettings/`, etc.).
+The explicit `--sdk-type unity` keeps the fallback independent of the platform recorded by `pico-cli setup`, and `--dir "$PROJECT_ROOT"` targets the intended project from any working directory. The command generates a complete Unity project structure (`Assets/`, `Packages/manifest.json`, `ProjectSettings/`, `UserSettings/`, etc.).
 
 > ⚠️ If the `pico-cli` command is also not found, tell the developer to install/configure `pico-cli` first (outside the scope of this skill); if both methods fail, have the developer confirm network or CLI status and re-run this skill.
 

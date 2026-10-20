@@ -68,19 +68,33 @@ invent MCP names or SDK methods.
    live CLI, knowledge, or device execution. Use available pico-cli help to select app/device
    diagnostics; do not invent a SpatialML tensor-dump command. ADB commands below operate on the
    chosen device after its environment is ready.
-2. Explain that enabling the property enables service logging **and a device-wide readback permission
-   bypass**. Use an authorized development device and controlled data. Existing task authorization
-   suffices; do not add a repeated confirmation gate. Keep logs/tensor exports local unless sharing
-   is authorized.
-3. Record serial, build fingerprint, app/SDK build, runtime mode, service PIDs, and the current
-   `debug.pico.spatialml.debug` value. Replace `SERIAL` in every command. Enable debugging and read
-   back the property. Check command failures rather than assuming the write worked.
+2. Record serial, build fingerprint, app/SDK build, runtime mode, service PIDs, and the current
+   `debug.pico.spatialml.debug` value. Replace `SERIAL` in every command. Check command failures rather
+   than assuming reads worked.
 
 ```text
 adb devices -l
 adb -s SERIAL shell getprop ro.build.fingerprint
 adb -s SERIAL shell ps -A
 adb -s SERIAL shell getprop debug.pico.spatialml.debug
+```
+
+3. Immediately before every command that sets `debug.pico.spatialml.debug` to `1`, emit this
+   user-visible disclosure as its own progress message:
+
+```text
+[SpatialML debug disclosure]
+Enabling debug.pico.spatialml.debug also enables a device-wide tensor readback permission/AppOps
+bypass. Use it only on an authorized development device with controlled data. I will disable the
+property and verify that it is off during cleanup.
+```
+
+The disclosure must appear before the property changes; a warning after `setprop`, only in the
+final summary, or only in hidden reasoning does not satisfy this gate. Existing task authorization
+suffices, so do not add another confirmation prompt. Keep logs and tensor exports local unless
+sharing is authorized. After the disclosure, the next state-changing action may enable the property:
+
+```text
 adb -s SERIAL shell setprop debug.pico.spatialml.debug 1
 adb -s SERIAL shell getprop debug.pico.spatialml.debug
 ```

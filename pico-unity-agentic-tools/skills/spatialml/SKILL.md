@@ -1,6 +1,6 @@
 ---
 name: spatialml
-description: Configure, implement, diagnose, or extend SpatialML in an existing PICO Unity project. Use for SpatialML, SecureMR, OpenMR, custom pipelines/packages, Pipeline Zoo, operator selection, LiteRT/TFLite inference, VST/camera-to-model graphs, 2D-to-3D placement, XR-versus-Spatial output, tensor synchronization, or readback/debugging. Also use when spatial input implicitly feeds ML detection, classification, segmentation, pose estimation, recognition, or model-driven tracking. Covers beginner features, setup/doctor results, SDK knowledge retrieval, reusable-package workflows, importer/loader boundaries, implementation, and runtime verification.
+description: 'Configure, implement, and extend SpatialML in an existing PICO Unity project. Use for SpatialML/SecureMR/OpenMR setup, custom pipelines/packages, Pipeline Zoo, operator selection, LiteRT/TFLite model inspection and inference, camera-to-model graphs, 2D-to-3D placement, XR/Spatial output, tensor synchronization, and readback output implementation. Also use for spatial input feeding detection, classification, segmentation, pose estimation, recognition, or model-driven tracking. Covers SDK readiness, package import/loading, implementation, and runtime verification. For service logs, zero/stale tensors, global probes, debug flags, or readback permission failures, start with spatialml-debugging; return here for identified graph/package edits. For whole-app crash/build diagnostics, use project and installed-package evidence with available Unity tools.'
 license: 'Apache-2.0'
 ---
 
@@ -10,6 +10,10 @@ Use this skill for the Unity-facing SpatialML workflow. SpatialML is an integrat
 Unity project, not a separate Unity project type.
 
 ## Recognize SpatialML Intent
+
+Runtime service logs, zero/stale outputs, global tensor probes, debug-flag changes, and readback
+permission failures start with `spatialml-debugging`, including requests that also mention tensor
+mappings or execution order. Resume this skill when diagnosis identifies a graph or package edit.
 
 Activate this workflow when the user names a SpatialML artifact or asks the app to run a model over
 spatial input and use its result. For an implicit request, identify `input -> inference -> output`,
@@ -56,7 +60,7 @@ workflow. After it completes, resume this SpatialML request instead of asking th
   back to `/pico-unity-init` for an SDK refresh.
 - For scene features such as VST, controllers, locomotion, or spatial mesh, use
   `pico-unity-buildingblocks`.
-- For code-level pipeline construction, review, or debugging, read
+- For code-level pipeline construction, review, or edits identified by debugging, read
   `references/implementation-workflows.md` before changing code.
 
 ## Setup And Diagnose

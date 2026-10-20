@@ -8,7 +8,6 @@ Agentic tools for PICO Unity development (skills, commands, and MCP). Helps AI a
   - `pico-unity-init` — initialize a PICO Unity project once, record `mode` as `picoxr`, `openxr`, or `picospatial`, install the required packages, open the project with Android as the target, and then set `pico_unity_init_completed: true` in `.pico-cli/config.json`. **Manual trigger only** (`/pico-unity-init`); ordinary setup or development requests do not activate it automatically. Later explicit invocations skip initialization when that marker is present.
   - `pico-unity-buildingblocks` — orchestrate PICO XR building blocks (XR Origin, VST/Passthrough, Controller, Locomotion, Spatial Mesh, Plane, Hand tracking) in a running Unity Editor via the `pico_xr_*` MCP tools, with MCP pre-check, dependency resolution, domain-reload waits, and scene saving.
   - `pico-unity-package-manager` — manage Unity Package Manager packages and their samples through the `pico_xr_package` MCP tool (`list` / `info` / `add` / `remove` / `update` / `list_samples` / `import_sample`), including guarded post-init repair of recognized official PICO Unity SDK moving Git references, while waiting for the Editor to finish recompiling after every mutating action. These are the exact action tokens; user intents such as "install", "query", "list-samples", and "import-sample" map to `add`, `info`, `list_samples`, and `import_sample`.
-  - `develop-pico-unity-apps` — develop, configure, migrate, debug, and optimize XR and spatial apps with PICO Unity SDK 6.0.0: audit a Unity project (read-only inspection script), select among PICO XR / Unity OpenXR / PICO Spatial modes, implement features (controllers, hands, eye/body tracking, passthrough, anchors, spatial mesh, foveated rendering, compositor layers, haptics, spatial camera/input/UI), migrate legacy PICO namespaces, configure Android builds/permissions, and diagnose build/rendering/tracking/device/performance problems.
   - `pico-unity-spatial` — guide PICO Spatial setup, Shared Space / Full Space, spatial UI, Play-to-PICO, and feature discovery; route concrete runtime work to the narrower Spatial Adapter skills.
   - `spatialadapter-runtime-overview` — discover the Spatial Adapter runtime API surface and choose a topic skill.
   - `spatialadapter-scene-setup` — inspect or create the active scene's SpatialCamera without duplicates.
@@ -18,11 +17,12 @@ Agentic tools for PICO Unity development (skills, commands, and MCP). Helps AI a
   - `spatialadapter-components-api` — work with native text, video, hover, grounding shadows, collider payloads, and canvas sorting.
   - `spatialadapter-runtime-core-api` — work with runtime initialization, resource registration, mesh synchronization, and dynamic textures.
   - `spatialml` — configure, implement, author, validate, diagnose, and extend SpatialML in an existing PICO Unity project, including pySpatialML-backed package/model tooling, Pipeline Zoo workflows, camera-to-model inference, operator selection, 2D-to-3D placement, XR/Spatial output, synchronization, and readback grounded in the SDK knowledge graph.
+  - `spatialml-debugging` — capture Unity service logs and inspect global tensor outputs; Kotlin debugging requires the separate Spatial plugin and a verified handoff.
 - **MCP** (`.mcp.json`) — wires the PICO development knowledge graph through `pico-cli knowledge:server`. Unity Editor tools are provided by the project's Unity MCP bridge rather than this manifest.
 
 ## Spatial Workflow
 
-Choose the narrowest Spatial Adapter skill for a concrete API or scene task; use `pico-unity-spatial` for general Spatial setup and `develop-pico-unity-apps` for cross-mode audits, migration, builds, and diagnostics. Check the saved `mode` against installed packages and scene evidence before changing modes.
+Choose the narrowest Spatial Adapter skill for a concrete API or scene task, and use `pico-unity-spatial` for general Spatial setup. This published plugin intentionally does not ship a broad cross-mode SDK snapshot skill; check the saved `mode` against installed packages and scene evidence, then select an available specific skill.
 
 The Spatial Adapter references describe `ByteDance.PICO.SpatialAdapter`; verify the installed package's version and signatures before generating code. Scene editing needs a running Unity Editor and an available scene-editing tool. The scene-setup example uses `Unity_RunCommand`; if unavailable, report that limitation and use manual Editor steps rather than claiming the scene was changed.
 
@@ -84,7 +84,18 @@ Apache-2.0
 
 ## SpatialML service debugging
 
-Use `spatialml-debugging` (`skills/spatialml-debugging/`) for verbose service log capture,
+Use `spatialml-debugging` (`skills/spatialml-debugging/`) in Unity projects for verbose service log capture,
 operator failure diagnosis, and explicit global tensor inspection. The workflow checks the actual
 SDK and service mode, correlates execution with values, and disables all debug flags afterward.
 It explains the service readback permission bypass and resource cleanup.
+
+Kotlin Spatial SDK debugging requires the separate **PICO Spatial Agentic Tools** plugin
+(`pico-spatial-agentic-tools`) and its `spatialml-debugging` skill. Unity setup does not install this
+plugin. The agent verifies the owning plugin and loads its skill before handing off a Kotlin
+request; if unavailable, it reports `BLOCKED` instead of applying Unity instructions.
+
+To enable Kotlin debugging, follow the [PICO CLI Installation and Setup Guide](https://github.com/Pico-Developer/PICO-Intelligent-Plugins/blob/main/docs/pico-cli-installation-guide.md):
+run guided `pico-cli setup` from the Kotlin project, select the Spatial SDK platform and intended
+agent host/scope, then start a new session from that project or restart the configured host. Verify
+that `pico-spatial-agentic-tools:spatialml-debugging` can be loaded before resuming. Keep existing
+Unity project configuration intact; the Spatial plugin is not required for Unity debugging.

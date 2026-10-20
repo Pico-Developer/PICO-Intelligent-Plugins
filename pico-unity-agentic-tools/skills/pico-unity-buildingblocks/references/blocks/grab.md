@@ -48,6 +48,21 @@ Trigger words: pick up / grab / grasp / drag / grabbable / pickup / interactable
   adds/removes an interaction-manager host + interactable components; it does NOT
   copy any `.cs` driver.
 
+### Interactor gate (required for a working Grab request)
+
+- Use the initial `pico_xr_status` snapshot to check
+  `r.data.controller.installed` and `r.data.hand.installed` before calling
+  `pico_xr_grab`.
+- If neither input block is installed, **STOP before calling `pico_xr_grab`** and
+  ask: **"Controller Grab or Hand Grab?"** Do not silently choose an input path.
+- When the request already specifies controller or hand, enable that input block
+  first. Take a fresh `pico_xr_status` snapshot and continue only after the
+  selected input block reports installed.
+- An explicit request to provision only the shared interaction broker, or only
+  attach `XRGrabInteractable` for later setup, may bypass this gate. In that
+  narrow case, report that the result is incomplete/inert; it **must not be
+  reported as working Grab**.
+
 ## Cheatsheet
 
 ### Enable Grab (interaction broker)

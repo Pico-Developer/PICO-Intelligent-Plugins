@@ -69,24 +69,42 @@ block-level action runs, then performs the action, then reports back.
 
 ## 2. Step 0 — MCP connection pre-check (MANDATORY)
 
-Before ANY `pico_xr_*` call, verify that the AI IDE/CLI actually sees the
-Unity MCP tools:
+Before ANY `pico_xr_*` call, verify that the AI IDE/CLI sees every tool needed
+by the current workflow. Do not treat one visible `pico_xr_*` tool as proof
+that the registry is complete.
 
 ```
-1. In your own tool registry, list MCP tools whose name starts with `pico_xr_`.
-2. If you find ≥ 1 such tool → continue with Step 1.
-3. If you find 0 → STOP and reply to the user with the warning below; do NOT
-   proceed and do NOT attempt to call any tool.
+1. Resolve the requested action and every feature block it directly names.
+2. Initial read-only gate:
+     required_tools = {pico_xr_status} + every directly called feature tool
+   For a composite grab workflow, this includes pico_xr_grab plus the requested
+   pico_xr_controller or pico_xr_hand input tool.
+3. Compute missing_tools = required_tools - visible_tools.
+   If missing_tools is not empty, STOP and use the warning below. Do not call
+   any PICO MCP tool.
+4. Run the step-A pico_xr_status snapshot. For ENABLE / CONFIGURE, expand
+   required_tools before the first mutation:
+     - add pico_xr_package when the snapshot shows that XR Origin package/sample
+       dependency work is required;
+     - add pico_xr_vst when Spatial Mesh / Plane must enable VST first;
+     - retain every feature tool used by a composite workflow.
+5. Recompute missing_tools. If it is not empty, STOP before mutation and use
+   the warning below. Never execute the available prefix of a partial workflow.
 ```
+
+`status` / `disable` skip dependency resolution, so they require only
+`pico_xr_status` plus the directly called feature tools. The package manager has
+its own read-versus-write tool-set rules; apply them whenever this workflow
+delegates dependency work.
 
 ### Warning template (verbatim, adjust language to the user)
 
 > ⚠ **Unity MCP connection issue**
 >
-> I cannot find the PICO XR MCP tools (`pico_xr_vst`, `pico_xr_controller`,
-> `pico_xr_locomotion`, `pico_xr_spatial_mesh`, `pico_xr_plane`, `pico_xr_hand`,
-> `pico_xr_grab`, `pico_xr_package`, `pico_xr_status`) in my MCP tool list. The Unity MCP bridge is either not
-> running or the PICO MCP Extensions are not exposed.
+> I cannot complete this workflow because these required PICO XR MCP tools are
+> missing from my tool list: `<missing_tools>`. No mutation was attempted. The
+> Unity MCP bridge may be disconnected, or part of the PICO MCP Extensions tool
+> set may not be exposed.
 >
 > Please:
 >
@@ -260,8 +278,8 @@ immediately unless the result explicitly reports one of these reloads.
 
 - DO NOT skip Step 0 (MCP pre-check). It costs nothing and saves the user
   a confusing failure trace.
-- DO NOT call `pico_xr_*` tools when Step 0 found 0 tools — there is
-  nothing to call.
+- DO NOT start a partial workflow when Step 0 reports any `missing_tools`.
+  Stop before mutation and report the exact missing tool names.
 - DO NOT chain a mutating `pico_xr_package` call directly with another
   `pico_xr_*` call without the settle loop. The Editor will be reloading.
 - DO NOT resolve dependencies for `disable` / `status` actions. They are

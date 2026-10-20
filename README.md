@@ -67,19 +67,21 @@ For non-interactive or host-specific setup, pass explicit options:
 
 ```bash
 # PICO Spatial SDK. Pass any --agent-tool value from the list above.
-pico-cli setup --agent-tool claude-code --platform spatial --scope global --yes
+pico-cli setup --agent-tool claude-code --region row --platform spatial --scope global --yes
 
 # Several hosts at once, or every host available on this machine.
-pico-cli setup --agent-tool codex traecli --platform spatial --scope global --yes
-pico-cli setup --agent-tool all --platform spatial --scope global --yes
+pico-cli setup --agent-tool codex traecli --region row --platform spatial --scope global --yes
+pico-cli setup --agent-tool all --region row --platform spatial --scope global --yes
 
 # PICO Unity
-pico-cli setup --agent-tool claude-code --platform unity --scope global --yes
-pico-cli setup --agent-tool all --platform unity --scope global --yes
+pico-cli setup --agent-tool claude-code --region row --platform unity --scope global --yes
+pico-cli setup --agent-tool all --region row --platform unity --scope global --yes
 
 # Project-local setup
-pico-cli setup --agent-tool claude-code --platform unity --scope local --project /absolute/path/to/project --yes
+pico-cli setup --agent-tool claude-code --region row --platform unity --scope local --project /absolute/path/to/project --yes
 ```
+
+`--region` selects where downloads and services are routed: `cn` for the Chinese mainland, `row` for the rest of the world, or `us` for the United States. Non-interactive setup requires it until a region has been saved by an earlier setup.
 
 `global` installs user-level plugin resources that can be used across projects and is also the default when `--yes` is used without `--scope`. `local` writes project-scoped context, skills, and MCP configuration for the directory passed with `--project`, or for the current directory when `--project` is omitted.
 
@@ -91,6 +93,7 @@ Hosts differ in how setup delivers the plugin:
 - Trae CLI and CodeBuddy Code: setup adds this repository as a local marketplace and installs or upgrades the plugin from that marketplace.
 - Qoder CLI, Antigravity CLI, and Grok CLI: setup installs or updates the plugin from a prepared local bundle. Grok installs it as a trusted plugin so its Skills and MCP servers activate.
 - OpenCode V2: setup writes Skills and MCP configuration into the OpenCode configuration you already use, rather than installing a host plugin.
+- Trae IDE: there is no dedicated `--agent-tool` value. Run project-local setup with `--agent-tool traecli --scope local`; Trae IDE reads the resulting `.trae/skills` and `.trae/mcp.json`. PICO Hooks are not available in Trae IDE yet. See the [installation guide](docs/pico-cli-installation-guide.md#trae-ide) for the required Trae IDE settings.
 
 ### Manual Codex MCP configuration
 

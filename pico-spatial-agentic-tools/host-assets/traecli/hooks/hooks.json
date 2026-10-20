@@ -2,11 +2,12 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|exec_command|shell_command",
+        "matcher": "^(?:Bash|exec_command|shell_command|(?:mcp__(?:pico-spatial-editor|pico_spatial_editor)__)?(?:start_editor_workflow|start_3d_generation_workflow))$",
         "hooks": [
           {
             "type": "command",
-            "command": "pico-cli workflow capture-context traex --integration pico-spatial-agentic-tools",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/traecli/hooks/capture-context.mjs\" traex",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\traecli\\hooks\\capture-context.mjs\" traex",
             "timeout": 10
           }
         ]

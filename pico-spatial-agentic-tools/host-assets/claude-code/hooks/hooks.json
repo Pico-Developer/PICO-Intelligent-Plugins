@@ -2,11 +2,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "^(?:Bash|exec_command|shell_command|(?:mcp__(?:pico-spatial-editor|pico_spatial_editor)__)?(?:start_editor_workflow|start_3d_generation_workflow))$",
         "hooks": [
           {
             "type": "command",
-            "command": "pico-cli workflow capture-context claude-code --integration pico-spatial-agentic-tools",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/host-assets/claude-code/hooks/capture-context.mjs\" claude-code",
             "timeout": 10
           }
         ]

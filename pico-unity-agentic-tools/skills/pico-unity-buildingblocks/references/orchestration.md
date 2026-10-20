@@ -161,6 +161,19 @@ B. For ENABLE / CONFIGURE actions, resolve dependencies (skip for DISABLE/STATUS
          (Grab reuses the SAME XRI dependency as XR Origin — the
           com.unity.xr.interaction.toolkit package + `Starter Assets` sample —
           so B.1 already covers it; there is no EXTRA package to install here.
+          INTERACTOR GATE (MANDATORY for a working Grab request): inspect the
+          initial status snapshot before calling `pico_xr_grab`. If neither
+          `r.data.controller.installed` nor `r.data.hand.installed` is true,
+          STOP before calling `pico_xr_grab` and ask the user to choose
+          "Controller Grab or Hand Grab?" Do not silently choose or enable an
+          input path. After the user chooses (or when the original request
+          already names controller/hand), enable that input block first, take a
+          fresh `pico_xr_status` snapshot, and continue only after the selected
+          input block reports installed. The only exception is an explicit
+          request to provision just the shared interaction broker or to attach
+          `XRGrabInteractable` for later setup; honor that narrower request, but
+          clearly report that the result is incomplete/inert and must not be
+          reported as working Grab.
           Grab is DECOUPLED from hand vs controller: it does NOT re-show the
           controller module and does NOT add interactors to controller nodes.
           Whether a hand or controller is visible — and that a visible
