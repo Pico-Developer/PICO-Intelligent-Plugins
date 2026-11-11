@@ -127,6 +127,7 @@ it apply to grayscale text/fill roles that have named PICO tokens.
 | Forbidden         | `Color\(0x[0-9A-Fa-f]{6,8}\)` without `// design-style: fixed-figma-color ...` on the same line | Hardcoded color                                                          |
 | Allowed exception | `Color(0x...) // design-style: fixed-figma-color <source>`                                      | Explicit Figma / screenshot fixed color for non-root decorative fidelity |
 | Forbidden         | `TextStyle\(fontSize\s*=`                                                                       | Hardcoded typography                                                     |
+| Warn              | `Text(... style = PicoTheme.typography.<titleLarge-or-larger-token> ...)`                       | Explicit app text reaches or exceeds the 20sp `titleLarge` ceiling; confirm design source and necessity |
 | Forbidden         | `\.alpha[ \t]*\([ \t]*0\.3f[ \t]*\)`                                                            | Hardcoded disabled alpha — use `LocalDisableAlpha.current`               |
 
 ## R6 — Indication & optional haptics
@@ -182,7 +183,10 @@ content `Card` must map exactly once to a bounded content node whose
 | Forbidden | `.border(...)` or `BorderStroke(...)` in app Kotlin source                                                  | Do not separate content with app-authored borders                 |
 | Forbidden | `.backgroundMaterial(...)` when `--design-spec` is supplied                                                 | Material is not part of the design or restoration contract       |
 | Required  | `// design-style: design-surface <node-id>` immediately before an app surface call                          | Makes every generated background traceable to the accepted design |
+| Required  | `// design-style: design-part node=<node-id> part=<part-id>` before a background for `domain_visual.parts`  | Maps subregion backgrounds to an accepted design part             |
 | Forbidden | A surface marker naming a node without `appearance.fill`                                                    | Code added a surface that the design did not declare              |
+| Forbidden | A part marker naming a missing part or a part with no base/state fill                                        | Code added a subregion surface that the design did not declare    |
+| Forbidden | Adding unsupported design nodes such as `kind: visual`                                                      | Compose must not rewrite the accepted design to justify code      |
 | Forbidden | One surface node ID used by multiple background calls                                                       | One design fill was expanded into multiple implementation surfaces |
 | Forbidden | `.background(...)` or content `Card(...)` without a valid marker when `--design-spec` is supplied           | Code added an untraceable surface                                 |
 
@@ -235,3 +239,5 @@ dark-on-dark, light-on-light, or white-on-light combinations. Keep structural
 borders, and require every app surface to map exactly once to a surface-owning
 design node when `design-spec.json` exists (R10). Cite specific file:line.
 ```
+
+R5b excludes a custom surface title only with a valid accepted textRole: surface_title node, unique immediately preceding surface-title marker, and exact matching typography token. Unknown or reused markers and absent design specs grant no exemption. Other R5 constraints still apply.

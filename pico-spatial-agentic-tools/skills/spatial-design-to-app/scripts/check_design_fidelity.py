@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -18,10 +20,20 @@ from typing import Any
 DESIGN_REQUIRED_INPUT_MODES = {"intent_only", "product_doc"}
 NODE_FIELDS = (
     "kind",
+    "purpose",
+    "designNotes",
+    "parts",
+    "visualStates",
+    "regions",
+    "textBehavior",
     "component",
     "rendererKey",
     "content",
     "assetId",
+    "role",
+    "trigger",
+    "relationship",
+    "presentation",
     "props",
     "bindings",
     "events",
@@ -33,6 +45,7 @@ NODE_FIELDS = (
     "accessibilityLabel",
 )
 ACTION_FIELDS = (
+    "purpose",
     "type",
     "transitionId",
     "binding",
@@ -90,6 +103,8 @@ def keyed_projection(
 
 
 def build_contract(spec: dict[str, Any]) -> dict[str, Any]:
+    if spec.get("schemaVersion") != "write-spec-draft-1":
+        raise ValueError("Unsupported design schemaVersion; expected write-spec-draft-1")
     data_cases = spec.get("dataCases")
     return {
         "initialStateId": spec.get("initialStateId"),
@@ -125,6 +140,10 @@ def required_design_refs(contract: dict[str, Any]) -> set[str]:
     data_cases = contract.get("dataCases")
     if isinstance(data_cases, list):
         refs.update(f"data-case:{case_id}" for case_id in data_cases)
+    for node_id, node in contract.get("nodes", {}).items():
+        notes = node.get("designNotes", {})
+        if isinstance(notes, dict):
+            refs.update(f"behavior:{node_id}:{i}" for i, _ in enumerate(notes.get("behaviors", [])))
     return refs
 
 
@@ -335,6 +354,176 @@ def check_source_mappings(
     return {"required": len(required_refs), "mapped": len(required_refs & mapped_refs)}
 
 
+def check_planar_default_size(
+    target: Path, contract: dict[str, Any], errors: list[dict[str, Any]]
+) -> None:
+    """Check the primary Planar launch size in real source, not receipt claims."""
+    surfaces = contract.get("surfaces", {})
+    initial = contract.get("states", {}).get(contract.get("initialStateId"), {})
+    roots = initial.get("surfaceRoots", {})
+    candidates = [
+        (key, value)
+        for key, value in surfaces.items()
+        if value.get("type", "").lower() == "planar" and (not roots or key in roots)
+    ]
+    # Multiple independent launch windows need explicit per-window ownership.
+    if len(candidates) != 1:
+        return
+    surface_id, surface = candidates[0]
+    size = surface.get("defaultSize", {})
+    if size.get("unit") != "dp" or not all(k in size for k in ("width", "height")):
+        return
+    expected = [size["width"], size["height"]]
+    android = "{http://schemas.android.com/apk/res/android}"
+    observed = []
+    for manifest in target.glob("**/src/main/AndroidManifest.xml"):
+        try:
+            tree = ET.parse(manifest)
+        except (OSError, ET.ParseError) as exc:
+            add_error(errors, "invalid_manifest", str(manifest), str(exc))
+            continue
+        for activity in tree.findall("./application/activity"):
+            launch = any(
+                any(
+                    x.get(android + "name") == "android.intent.action.MAIN"
+                    for x in intent.findall("action")
+                )
+                and any(
+                    x.get(android + "name") == "android.intent.category.LAUNCHER"
+                    for x in intent.findall("category")
+                )
+                for intent in activity.findall("intent-filter")
+            )
+            if not launch:
+                continue
+            metadata = {
+                x.get(android + "name"): x.get(android + "value")
+                for x in activity.findall("meta-data")
+            }
+            if metadata.get("pico.spatial.windowcontainer.style", "1") not in ("0", "1"):
+                continue
+            raw = metadata.get("pico.spatial.windowcontainer.defaultsize", "")
+            unit = metadata.get("pico.spatial.windowcontainer.defaultsize.unit", "dp")
+            try:
+                dimensions = [float(x) for x in raw.lower().split("x")]
+            except ValueError:
+                dimensions = []
+            observed.append({"file": str(manifest.relative_to(target)), "size": raw, "unit": unit})
+            if dimensions == expected and unit == "dp":
+                return
+    add_error(
+        errors,
+        "planar_default_size_mismatch",
+        f"/surfaces/{surface_id}/defaultSize",
+        "launcher manifest defaultsize must match spec defaultSize; windowConstraints only sets resize bounds",
+        expected={"size": expected, "unit": "dp"},
+        actual=observed,
+    )
+
+
+def check_volume_sizes(target, contract, mappings, errors):
+    for sid, surface in contract.get("surfaces", {}).items():
+        if surface.get("type") != "volume":
+            continue
+        size = surface.get("defaultSize", {})
+        expected = [size.get(k) for k in ("width", "height", "depth")]
+        if size.get("unit") != "dp" or any(
+            not isinstance(v, (float, int)) or isinstance(v, bool) or v <= 0 for v in expected
+        ):
+            add_error(
+                errors,
+                "volume_size",
+                f"/surfaces/{sid}",
+                "Volume needs positive width, height, depth in dp",
+            )
+            continue
+        matched = False
+        for mapping in mappings if isinstance(mappings, list) else []:
+            if not isinstance(mapping, dict):
+                continue
+            design_refs = mapping.get("design_refs")
+            if not isinstance(design_refs, list) or f"surface:{sid}" not in design_refs:
+                continue
+            source = (target / str(mapping.get("file", ""))).resolve()
+            if not source.is_relative_to(target.resolve()) or not source.is_file():
+                continue
+            code = source.read_text(encoding="utf-8")
+            # Keep the scope explicit: marker identifies the container call, not a body Box.
+            pattern = (
+                r"//\s*design-style:\s*volume-container\s+"
+                + re.escape(sid)
+                + r"\s*\n\s*WindowContainer\s*\((.*?)defaultSize\s*=\s*WindowContainerSize\s*\(([^)]*)\)"
+            )
+            for match in re.finditer(pattern, code, re.S):
+                prefix = match[1]
+                if "{" in prefix or not re.search(r"form\s*=\s*Form\.Volumetric\b", prefix):
+                    continue
+                found = [
+                    re.search(r"\b" + k + r"\s*=\s*(\d+(?:\.\d+)?)\.dp\b", match[2])
+                    for k in ("width", "height", "depth")
+                ]
+                if all(found) and [float(m[1]) for m in found] == expected:
+                    matched = True
+        if not matched:
+            add_error(
+                errors,
+                "volume_size_unverified",
+                f"/surfaces/{sid}/defaultSize",
+                "Cannot confirm Volume size in mapped source: use a marked WindowContainer call with explicit Form.Volumetric and named dp defaultSize, or extend the supported source adapter. Receipt values alone do not prove dimensions.",
+            )
+
+
+def check_model_deliveries(target, contract, receipt, errors):
+    deliveries = receipt.get("model_deliveries", {})
+    for nid, node in contract.get("nodes", {}).items():
+        notes = node.get("designNotes", {})
+        if (
+            node.get("kind") != "domain_visual"
+            or not isinstance(notes, dict)
+            or "assetStatus" not in notes
+        ):
+            continue
+        item = deliveries.get(nid) if isinstance(deliveries, dict) else None
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("resourcePaths"), list)
+            or not item["resourcePaths"]
+        ):
+            add_error(
+                errors,
+                "model_delivery_missing",
+                f"/nodes/{nid}",
+                "Model needs delivered resources or an authored-content result, not the Preview placeholder",
+            )
+            continue
+        paths = list(item["resourcePaths"])
+        if notes.get("assetStatus") == "to-create":
+            paths.append(item.get("authoringResultPath"))
+        for raw in paths:
+            source = (target / raw).resolve() if isinstance(raw, str) and raw else None
+            if (
+                source is None
+                or not source.is_relative_to(target.resolve())
+                or not source.is_file()
+                or source.stat().st_size == 0
+            ):
+                add_error(
+                    errors,
+                    "model_resource_missing",
+                    f"/model_deliveries/{nid}",
+                    "Delivered model resource/Editor result must resolve to a nonempty project file",
+                    actual=raw,
+                )
+            elif source.suffix.lower() in {".svg", ".html", ".png", ".jpg"}:
+                add_error(
+                    errors,
+                    "model_placeholder",
+                    f"/model_deliveries/{nid}",
+                    "A flat Preview asset cannot stand in for the delivered model",
+                    actual=raw,
+                )
+
+
 def write_result(output_path: Path, result: dict[str, Any]) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
@@ -446,10 +635,28 @@ def main() -> int:
         print(f"[design-fidelity] FAIL {len(errors)} error(s)")
         for error in errors:
             detail = f" actual={error['actual']!r}" if "actual" in error else ""
-            print(
-                f"[design-fidelity] {error['code']} {error['path']}: "
-                f"{error['message']}{detail}"
-            )
+            print(f"[design-fidelity] {error['code']} {error['path']}: {error['message']}{detail}")
+        return 1
+
+    if spec.get("schemaVersion") != "write-spec-draft-1":
+        add_error(
+            errors,
+            "unsupported_design_schema_version",
+            "/design_spec/schemaVersion",
+            "Unsupported design schemaVersion; expected write-spec-draft-1",
+        )
+        write_result(
+            output_path,
+            {
+                "passed": False,
+                "applicable": True,
+                "design_spec": str(spec_path),
+                "implementation_map": str(map_path),
+                "summary": {"errors": 1, "required_refs": 0, "mapped_refs": 0},
+                "errors": errors,
+            },
+        )
+        print("[design-fidelity] FAIL unsupported design schemaVersion")
         return 1
 
     contract = build_contract(spec)
@@ -504,6 +711,9 @@ def main() -> int:
             "implementation map must record implementation-side design facts",
         )
 
+    check_planar_default_size(target, contract, errors)
+    check_volume_sizes(target, contract, receipt.get("source_mappings"), errors)
+    check_model_deliveries(target, contract, receipt, errors)
     refs = required_design_refs(contract)
     coverage = check_source_mappings(
         target,

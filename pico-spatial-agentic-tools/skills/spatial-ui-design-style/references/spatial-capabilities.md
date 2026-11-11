@@ -76,10 +76,26 @@ SDK file name only and is not part of the application-facing API.
 
 ## 4. SpatialView / SpatialModelView / AttachmentPanel
 
-- `SpatialView { ... }` — host regular Compose UI inside 3D space
-- `SpatialModelView { Model(...) }` — 3D model presentation
-- `attachmentPanelComponent { content { ... } }` + `panelSize(...)` —
-  attach Compose content to an ECS entity
+- `SpatialView(initial = ..., update = ..., attachments = ...)` — host ECS
+  scene entities. Create/add entities in `initial`; apply state-driven entity
+  changes in `update`. Compose panels enter through attachments.
+- `SpatialModelView(source = Source.assets("models/model.glb"), ...)` — load
+  and present a model in Compose layout. When supplying a loading-state content
+  lambda, render `Model(state.model)` on success; a callback alone is not model
+  content. Check the chosen overload against the target SDK.
+- `AttachmentPanel(id) { ... }` inside `SpatialView(attachments = { ... })` —
+  declare Compose panel content; retrieve `attachments.entity(id)` for placement
+  and parenting. Valid inside a Volume's bounded scene as well as a Stage scene;
+  it is not a window-level ornament or an automatic model child.
+- `attachmentPanelComponent { ... }` + `panelSize(...)` — lower-level Compose
+  content component assigned to an ECS entity. Keep a working implementation
+  when it already satisfies the design.
+
+See the [AttachmentPanel reference](../../pico-spatial-app-designer/design/design-reference/components/AttachmentPanel/README.md)
+for the native DSL and placement example, and
+[spatial gestures](../../spatial-ui-ability/references/ability-gestures.md)
+when model-targeted drag is required. Resolve versions and imports through
+[API lookup](../../spatial-design-to-app/references/spatial-api-imports.md).
 
 ## 5. Vibrant and Material Modifiers
 

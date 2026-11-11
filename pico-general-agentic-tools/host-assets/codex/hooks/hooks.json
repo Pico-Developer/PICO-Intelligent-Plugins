@@ -14,18 +14,18 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^Bash$",
+        "matcher": "^(?:Bash|exec_command|shell_command|run_terminal_command|(?:mcp__(?:pico-spatial-editor|pico_spatial_editor)__)?(?:start_editor_workflow|start_3d_generation_workflow))$",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
-            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
-            "timeout": 65
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/capture-context.mjs\" codex",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\capture-context.mjs\" codex",
+            "timeout": 10
           }
         ]
       },
       {
-        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "matcher": "^mcp__(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__",
         "hooks": [
           {
             "type": "command",
@@ -38,7 +38,18 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__",
         "hooks": [
           {
             "type": "command",
@@ -51,7 +62,18 @@
     ],
     "PostToolUseFailure": [
       {
-        "matcher": "^mcp__pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/host-assets/codex/hooks/ingest.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\host-assets\\codex\\hooks\\ingest.mjs\"",
+            "timeout": 65
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__",
         "hooks": [
           {
             "type": "command",

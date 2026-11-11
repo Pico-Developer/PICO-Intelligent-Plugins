@@ -1,0 +1,41 @@
+<!-- @dsCard group="Selection" height=560 subtitle="Basic Chip" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chip · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Chip</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro">
+    <h1>Chip</h1>
+    <p>Basic labels · SDK sizes, colors and typography · no selection or remove action</p>
+  </header>
+  <main class="sui-stage">
+    <h2>Small labels</h2>
+    <p class="example-note">Short tags describing content. These labels are read-only.</p>
+    <div class="sui-row" role="group" aria-label="Small content labels">
+      <sui-chip label="Landscape" clickable="false"></sui-chip>
+      <sui-chip label="Music" clickable="false"></sui-chip>
+      <sui-chip label="Travel" clickable="false"></sui-chip>
+    </div>
+    <h2>Regular labels</h2>
+    <p class="example-note">The same tags in the larger SDK size.</p>
+    <div class="sui-row" role="group" aria-label="Regular content labels">
+      <sui-chip size="regular" label="Landscape" clickable="false"></sui-chip>
+      <sui-chip size="regular" label="Music" clickable="false"></sui-chip>
+      <sui-chip size="regular" label="Travel" clickable="false"></sui-chip>
+    </div>
+    <h2>Labels with an icon</h2>
+    <p class="example-note">An optional leading icon supports the label; it is not a separate action.</p>
+    <div class="sui-row" role="group" aria-label="Content labels with icons">
+      <sui-chip label="Music" leading-icon="ic_music_note" clickable="false"></sui-chip>
+      <sui-chip size="regular" label="Music" leading-icon="ic_music_note" clickable="false"></sui-chip>
+    </div>
+  </main>
+</body>
+</html>

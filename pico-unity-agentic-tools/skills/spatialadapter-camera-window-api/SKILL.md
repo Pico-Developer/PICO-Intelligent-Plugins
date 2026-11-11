@@ -1,10 +1,16 @@
 ---
 name: spatialadapter-camera-window-api
-description: Use when working with SpatialCamera in Spatial Adapter, PICO Spatial, or Unity Spatial scenes, spatial windows, camera modes, dimensions, or configuration.
+description: Use to explain or configure SpatialCamera window lifecycle, camera modes, dimensions, configuration assets, or metadata in Spatial Adapter. Scene camera presence and target following belong to their topic skills. Platform names alone do not activate this skill.
 license: 'Apache-2.0'
 ---
 
 # SpatialAdapter Camera And Window API
+
+## When NOT to Use
+
+- Camera movement or recording in Spatial SDK — use general’s `capture-camera` Skill
+- General Spatial Adapter overview — use `spatialadapter-runtime-overview`
+- Input handling or ray interaction — use `spatialadapter-input-api`
 
 ## Overview
 
@@ -16,12 +22,12 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
 
 ## Trigger Keywords
 
-- `Spatial Adapter`
-- `PICO Spatial`
-- `Unity Spatial`
-- `SpatialCamera`
+- open, close, or query a spatial window
+- configure SpatialCamera window mode or dimensions
 - `SpatialCameraConfiguration`
-- `Spatial Window`
+- window OutputConfiguration, DefaultConfiguration, or CurrentConfiguration
+
+Platform names alone do not activate this skill. Require a camera/window API or configuration topic. Use [spatialadapter-scene-setup](../spatialadapter-scene-setup/SKILL.md) to inspect or create the scene camera and [spatialadapter-spatial-camera-focus](../spatialadapter-spatial-camera-focus/SKILL.md) for target following. If only `SpatialCamera` is mentioned, clarify the intended action.
 
 ## When to Use
 

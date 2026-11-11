@@ -1,5 +1,7 @@
 # Design Package Bridge
 
+Follow [Preview-first restoration](preview-first-restoration.md) for the current Designer output and implementation evidence.
+
 Turn accepted design facts into the evidence that drives code generation. The
 source may be `pico-spatial-app-designer` or a user-provided executable design
 package.
@@ -11,21 +13,17 @@ recover facts from HTML/CSS. On the Designer path, the additional persisted arti
 `.scratch/design_escalation_receipt.json`, because it records that the designer
 pass really happened and passed.
 
-`pico-spatial-app-designer` is a lean, host-LLM-orchestrated
-Frame→Explore→Plan→Critique→Build→Critique loop. It delivers a three-artifact
-package: rationale in `design-doc.md`, executable facts in `design-spec.json`,
-and a SpatialUI Web `preview.html` rendered from an exact embedded copy of that
-JSON.
+`pico-spatial-app-designer` runs Frame → Explore → Plan → Critique → Write Spec → Consistency Review. Plan authors Preview and design notes; Critique accepts the design; Write Spec records the formal JSON; Consistency Review checks the record against Preview. App consumes the accepted package after all six stages.
 
 ## 0. Boundary declaration (read first — it constrains everything below)
 
-| Boundary                                     | Rule                                                                                                                                                                                                                 |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No write-back to the design package          | The bridge only **reads** it; never modify `design-doc.md`, `design-spec.json`, or `preview.html`.                                                                                                                   |
-| Terms ≠ enums                                | The design package uses PICO design terminology (WindowContainer Planar, Stage Progressive, TabBar…). These terms are **not equal to** this skill's enums (`ON_PLAIN` / `STAGE_PROGRESSIVE` / window ornaments).     |
-| The bridge prepares evidence; Decide commits | Mapping terms to enums, checking legality, and committing to a container / window model all happen in the **Decide** stage using `structure-decisions.md`. The bridge may record leaning evidence, never a decision. |
-| JSON is authoritative                        | Read implementation facts from `design-spec.json`. Use `design-doc.md` for rationale and `preview.html` only for visual acceptance evidence. A conflict is a package failure, not permission to choose HTML.         |
-| Gate-result consumption                      | Consume a package after either the Designer receipt records `status=designer_passed` with all pre-gates true, or Stage 1 accepts a user-provided executable package as `user_package_passed`. A package that merely exists on disk is not enough.                   |
+| Boundary                                     | Rule                                                                                                                                                                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No write-back to the design package          | The bridge only **reads** it; never modify `design-doc.md`, `design-spec.json`, or `preview.html`.                                                                                                                                                |
+| Terms ≠ enums                                | The design package uses PICO design terminology (WindowContainer Planar, Stage Progressive, TabBar…). These terms are **not equal to** this skill's enums (`ON_PLAIN` / `STAGE_PROGRESSIVE` / window ornaments).                                  |
+| The bridge prepares evidence; Decide commits | Mapping terms to enums, checking legality, and committing to a container / window model all happen in the **Decide** stage using `structure-decisions.md`. The bridge may record leaning evidence, never a decision.                              |
+| JSON is authoritative                        | Read implementation facts from `design-spec.json`. Use `design-doc.md` for rationale and `preview.html` only for visual acceptance evidence. A conflict is a package failure, not permission to choose HTML.                                      |
+| Gate-result consumption                      | Consume a package after either the Designer receipt records `status=designer_passed` with all pre-gates true, or Stage 1 accepts a user-provided executable package as `user_package_passed`. A package that merely exists on disk is not enough. |
 
 ---
 
@@ -33,99 +31,48 @@ JSON.
 
 ### A.1 Design package location and pre-gates
 
-The Designer-produced package has this shape:
+The current Designer delivers design-doc.md, preview.html, design-spec.json and referenced resources under the target's .scratch directory. Preview is authored in Plan; the formal write-spec-draft-1 JSON is recorded in Write Spec after Critique. See the Designer's design/spec-writing.md and design/scripts/check_design_spec.py for its contract. A full Spec embedded in Preview is not required.
 
-```
-<design-package>/
-├── design-doc.md      # §1 Frame · §2 Explore · §3 Plan · §4 Critique(pre-build) · §5 Build manifest · §6 Critique(post-build)
-├── design-spec.json   # schema-valid executable design IR; source of truth for code generation
-├── preview.html       # SpatialUI Web rendering of the embedded spec (web_design_validation_only)
-└── design-assets/
-    └── icons/*.svg    # only when custom icon drawing was required
-```
+The design record covers Frame decisions, Explore layouts/relationships, Plan Preview decisions, Critique findings, Write Spec validation and Consistency Review results. Plan is not a summary of an already existing Spec. Pending model creation is a valid handoff requirement; Compose invokes Editor and records deliveries separately.
 
-For a user-provided package, Stage 1 must confirm that it was supplied with the
-request and contains information architecture, page structure, and a state
-model, then stage its executable JSON at
-`<target>/.scratch/design-spec.json` before recording `user_package_passed`.
+For a user-provided executable package, confirm it was supplied with the request and contains information architecture, page structure and state model, then record user_package_passed. Require schemaVersion=write-spec-draft-1 and the current design checks; unsupported formats must be rejected.
 
-`design-spec.json` follows
-`pico-spatial-app-designer/assets/design-spec.schema.json` and owns surfaces,
-dimensions, theme, assets, node hierarchy, component props, states,
-transitions, data cases, and responsive rules. `design-doc.md` is filled from
-the designer's template and carries rationale and review evidence:
-
-| Section                      | Contents the bridge reads                                                                                                        |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **§1 Frame**                 | subject, viewer/context, the single job, spatial justification table (affordance + 2D counterfactual per core task), assumptions |
-| **§2 Explore**               | ≥3 alternatives, decision matrix, chosen direction + rejection reasons                                                           |
-| **§3 Plan**                  | Human-readable summary of `design-spec.json`, signature and layout rationale                                                     |
-| **§4 Critique (pre-build)**  | generic-default simulation, hard-check table                                                                                     |
-| **§5 Build**                 | coverage manifest (states/transitions/components/bindings/tiers)                                                                 |
-| **§6 Critique (post-build)** | independent coverage rebuild, quality-bar table, patch log, **verdict** (`pass` / `changes_requested` / `block`)                 |
-
-**Designer pre-gates (all required on the Designer path):**
-
-| Gate                | Source                      | Pass condition                                                                                        |
-| ------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Design doc complete | `design-doc.md` §1–§6       | All six sections filled (not placeholders); §3 Plan sizing table, state graph, and components present |
-| Design spec valid   | `design-spec.json`          | Schema-valid; IDs are unique and every reference resolves                                             |
-| Preview parity      | JSON + `preview.html`       | Embedded JSON is semantically identical; no executable design fact exists only in HTML                |
-| Post-build verdict  | `design-doc.md` §6 Critique | The §6 Critique-again **verdict is `pass`** — quality bar met, no active blocking finding             |
-
-> If any gate fails (`design-doc.md` incomplete, invalid/divergent
-> `design-spec.json`, or §6 verdict is `changes_requested` / `block`), **do not
-> run this bridge and do not fall back to HTML or shallow text extraction to
-> keep generating**:
-> stop before extraction and report `BLOCKED`, listing the missing sections or
-> the unmet verdict. Only resume once the design package is complete and the
-> designer records `status=designer_passed`. `check_handoff_receipts.py` rejects
-> `fallback_accepted` as a continuation path for no-visual inputs.
-
-Write the receipt before generating code. `check_handoff_receipts.py` requires
-these fields (`Gate result: PASS | BLOCKED` is prose Step Output, not a receipt
-field):
+Set `input_mode` to the current run's declared mode. Valid route examples include `"input_mode": "product_doc"` and `"input_mode": "hybrid"`; never copy an intent_only receipt into either route. The Designer receipt keeps its existing outer fields and records:
 
 ```json
 {
-  "schema_version": 1,
-  "phase": "designer_gate",
-  "input_mode": "intent_only",
-  "visual_asset_present": false,
-  "gate_required": true,
-  "status": "designer_passed",
-  "pre_gates": {
-    "designDocComplete": true,
-    "designSpecValid": true,
-    "previewMatchesSpec": true,
-    "postBuildVerdict": "pass"
-  }
+  "designDocComplete": true,
+  "designSpecValid": true,
+  "previewMatchesSpec": true,
+  "critiqueVerdict": "pass",
+  "consistencyReviewVerdict": "pass"
 }
 ```
 
+These are pre_gates results, not instructions to create Spec during Plan. A failed result blocks implementation. For model deliveries, behavior mappings and source checks, follow [Preview-first restoration](preview-first-restoration.md).
+
 ### A.2 Artifact fields → downstream facts
 
-| Source                                        | Facts provided                                                                                    | Downstream use                                                        |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `design-spec.json.experience`                 | subject, user/context, single job, space/form, signature                                          | product and spatial intent                                            |
-| `design-spec.json.surfaces`                   | surface type, roots, final default/min/max dp or meter dimensions, placement                      | container evidence, window intent, constraints                        |
-| `design-spec.json.nodes`                      | exact hierarchy, layout ownership, SpatialUI components/props/events, text, media, domain visuals | regions, repeated structures, JSON → Compose inventory                |
-| `design-spec.json.theme`                      | immutable 16-role references, brand tokens, type, spacing                                         | native `PicoTheme`, app tokens, typography, spacing ownership             |
-| `design-spec.json.states/transitions/actions` | initial/visible states, per-surface roots, triggers, local mutations, confirmation contracts      | typed UI state, ViewModel events, navigation/window behavior          |
-| `design-spec.json.dataCases`                  | normal, fallback, and error samples                                                               | domain/UI state requirements and test cases                           |
-| `design-spec.json.responsiveRules`            | bounded per-node overrides                                                                        | adaptive Compose layout                                               |
-| `design-spec.json.assets`                     | asset kind, source, purpose, alternative text                                                     | resource acquisition and app resources                                |
-| `design-doc.md` §1/§2/§4/§6                   | spatial rationale, rejected alternatives, assumptions, critique verdict                           | decision evidence and acceptance trace                                |
-| `preview.html`                                | accepted rendered appearance and interaction behavior from the embedded spec                      | visual comparison only; never an independent source for codegen facts |
+| Source                                        | Facts provided                                                                                                                   | Downstream use                                                              |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `design-spec.json.experience`                 | subject, user/context, single job, space/form, signature                                                                         | product and spatial intent                                                  |
+| `design-spec.json.surfaces`                   | surface type, roots, final default/min/max dp or meter dimensions, placement                                                     | container evidence, window intent, constraints                              |
+| `design-spec.json.nodes`                      | exact hierarchy, layout ownership, component-affordance metadata, SpatialUI components/props/events, text, media, domain visuals | regions, repeated structures, presentation choice, JSON → Compose inventory |
+| `design-spec.json.theme`                      | immutable 16-role references, brand tokens, type, spacing                                                                        | native `PicoTheme`, app tokens, typography, spacing ownership               |
+| `design-spec.json.states/transitions/actions` | initial/visible states, per-surface roots, triggers, local mutations, confirmation contracts                                     | typed UI state, ViewModel events, navigation/window behavior                |
+| `design-spec.json.dataCases`                  | normal, fallback, and error samples                                                                                              | domain/UI state requirements and test cases                                 |
+| `design-spec.json.responsiveRules`            | bounded per-node overrides                                                                                                       | adaptive Compose layout                                                     |
+| `design-spec.json.assets`                     | asset kind, source, purpose, alternative text                                                                                    | resource acquisition and app resources                                      |
+| `design-doc.md` §1/§2/§4/§6                   | spatial rationale, rejected alternatives, assumptions, critique verdict                                                          | decision evidence and acceptance trace                                      |
+| `preview.html`                                | accepted Preview appearance and interaction behavior                                                                             | visual comparison only; never an independent source for codegen facts       |
 
-For `assets[].kind: "icon"`, follow the source rather than approximating it:
+For current Designer icons, preserve the exact asset ID and file from `design/design-reference/assets/icons/`; use its README and search.py to resolve names without reselecting the artwork. Package and load the accepted source according to [Image and icon sources](preview-first-restoration.md#image-and-icon-sources). For existing user packages with `assets[].kind: "icon"`, follow their declared source rather than approximating it:
 
 - `icon70://7.0/<name>` resolves through the Designer's
-  `scripts/icon-catalog.mjs`; materialize only referenced catalog vectors.
+  [icon catalog](../../pico-spatial-app-designer/scripts/icon-catalog.mjs); materialize only referenced catalog vectors.
 - `design-assets/icons/<resource-name>.svg` is an accepted custom drawing.
-  Read `icon-drawing.md`, preserve its path geometry and transparent holes in a
-  matching Android VectorDrawable, and keep the SVG unchanged as the design
-  authority.
+  Read `icon-drawing.md`, package the SVG unchanged, and load it through Coil
+  with SVG support, preserving transparent holes and monochrome theme tint.
 - User/Figma, app, and SDK assets retain their original authority and are not
   replaced by a catalog or custom approximation.
 
@@ -141,14 +88,17 @@ designer bridge rather than a later visual interpretation.
 1. Read every node in `design-spec.json`.
 2. Inventory each node with `kind: "spatialui"` and its component, props,
    bindings, events, children, visibility, and surface hierarchy.
-3. Resolve each declared component through `spatialui-web-to-compose.md`.
-4. Carry one in-memory conversion row per node:
+3. Inventory each implementation-relevant node's optional `role`, `trigger`,
+   `relationship`, and `presentation`; treat these as design facts that explain
+   why the node is inline, attached, modal, transient, or independent.
+4. Resolve each declared component through `spatialui-web-to-compose.md`.
+5. Carry one in-memory conversion row per node:
 
    ```text
-   node_id | web_component | compose_api | props_and_state | callback | hierarchy
+   node_id | role | trigger | relationship | presentation | web_component | compose_api | props_and_state | callback | hierarchy
    ```
 
-5. Reconcile the inventory with the preview only as a parity check. A
+6. Reconcile the inventory with the preview only as a parity check. A
    preview-only product component is a blocking package defect; do not add it to
    the inventory until the designer repairs `design-spec.json`.
 
@@ -159,17 +109,39 @@ Conversion preserves semantics, not Web syntax:
 | node `props`, `bindings`, `visibleInStates`                     | typed UI state and explicit visibility                                                         |
 | node `events` + matching transition                             | callbacks dispatched to the state holder/ViewModel                                             |
 | node `children`                                                 | composable content lambdas                                                                     |
+| node `role/trigger/relationship/presentation`                   | preserve the accepted component carrier and reject accidental flattening into ordinary layout  |
 | convenience string/list props                                   | explicit child composables/DSL items                                                           |
-| `sui-tab-bar`, `sui-toolbar`, `sui-subwindow`, `sui-augment`    | root/window-level sibling; never an in-page `Row`/`Box` imitation                              |
+| `sui-tab-bar`, `sui-toolbar`, `sui-subwindow`, `sui-augment`    | window attachment; declaration may nest in page; never a hand-built `Row`/`Box` imitation      |
 | modal/menu/popup/coachmark/snackbar components                  | corresponding SpatialUI window/host pattern with explicit visibility/dismissal                 |
 | node `layout`, `appearance`, `theme`, and `responsiveRules`     | dp/token-based Compose layout and styling; Web CSS pixels are not copied                       |
 | `domain_visual.rendererKey`, purpose, props, bindings, children | a deliberate app implementation preserving the declared semantics, data, dimensions, and style |
+
+For app-authored text, preserve the exact SpatialUI typography token from the
+design node. Do not collapse `headlineSmall`, `headlineMedium`, and
+`headlineLarge` into a generic `headline` role during conversion. When the
+accepted design explicitly uses `titleLarge` (20sp) or a larger token, carry
+its reviewed warning into implementation. Text inside a native component that
+declares no `textStyle` keeps the component default and needs no explicit
+Compose `style` argument. A TitleBar or SideNavigation slot may carry an
+explicit typography or foreground only when its node also records
+`styleOverrideEvidence` from the original user requirement, Figma, or a
+screenshot; otherwise reopen the design package.
 
 **Gate:** every declared `sui-*` component resolves to a mapped Compose API.
 Because the current SpatialUI Web catalog has production counterparts, a
 mapped component cannot fall through to `// TODO(missing-component)` or
 hand-built primitives. If a component is unknown, stop and repair the
 design/mapping before Build.
+
+**Component-affordance preservation gate:** an accepted node whose
+`presentation` is `menu`, `submenu`, `popup`, `dialog`, `sheet`,
+`date-picker-dialog`, `snackbar`, `augment`, `subwindow`, or `window` must
+restore to the corresponding SpatialUI carrier. Do not implement it as a plain
+in-page `Row`, `Column`, or `Box`. `presentation=inline` is valid for
+same-level peer content and justified master-detail panes; it is suspicious for
+`role=detail`, `role=auxiliary`, `role=modal-task`, or
+`role=action-feedback` unless the design rationale explicitly explains why it
+must stay continuously visible inside the page.
 
 ---
 
@@ -236,9 +208,11 @@ evidence** for the Decide stage. Legal window model enums: `single_panel` /
 
 **`window_chrome_ornaments[]` (docked attachment) mapping:** when `TabBar` /
 `Toolbar` / `Subwindow` nodes act as docked attachments, record them as
-`window_chrome_ornaments[]` entries (`type ∈ TabBar / Toolbar / Subwindow`). They
-are **sibling nodes of the main window**, not page child nodes (do not stuff them
-into `windows[].children` or `regions[]`).
+`window_chrome_ornaments[]` entries (`type ∈ TabBar / Toolbar / Subwindow`). In this decision inventory they
+are sibling entries of the main window (do not stuff them into
+`windows[].children` or `regions[]`). This inventory is not a Compose nesting
+restriction: Toolbar may be declared inside the page and still attaches to the
+current WindowContainer. Preserve its owning window and composition lifecycle.
 
 ```json
 "window_chrome_ornaments": [
@@ -288,6 +262,16 @@ in `layout_intent`).
 > `pico-spatial-app-designer/references/window-sizing.md` for the chain that
 > produced them.)
 
+Planar first-open default must be restored in launcher Activity metadata:
+`pico.spatial.windowcontainer.defaultsize="<width>x<height>"` and
+`pico.spatial.windowcontainer.defaultsize.unit="dp"`. `windowConstraints` only
+restores min/max resize bounds. Verify actual manifest values against the spec;
+a copied surface receipt or a source token alone does not prove default sizing.
+Preview starts at the same `defaultSize`. Preserve Sheet native title/action
+slots and short titles; apply the shared Subwindow operation rules without a
+second TitleBar or duplicated cancel action. Preserve complete picker group
+geometry and declared fillLight grouping for multiple independent fields.
+
 ### D.2 JSON theme + nodes → root_fill + spacing_ownership
 
 Read the padding tokens (Small/Regular/Medium/Large = 8/16/24/32 dp) and the
@@ -335,11 +319,11 @@ Custom design colors live in `theme.brandColors` and are app-owned. Carry them
 separately (grounded in
 `spatial-ui-design-style/references/tokens.md §7`):
 
-| JSON theme fact                        | How to carry it                    | Codegen consequence                                             |
-| -------------------------------------- | ---------------------------------- | --------------------------------------------------------------- |
+| JSON theme fact                        | How to carry it                    | Codegen consequence                                               |
+| -------------------------------------- | ---------------------------------- | ----------------------------------------------------------------- |
 | Native `ColorScheme` role              | Same-name Vibrant role             | Read through `PicoTheme.colorScheme.<role>` without overriding it |
-| Custom brand/decorative color          | Named Kotlin color literal/token   | Use directly; never assign it to a native role                  |
-| Semantic status needing a custom color | App-owned token plus non-color cue | UI shows the label and cue without changing SDK status tokens   |
+| Custom brand/decorative color          | Named Kotlin color literal/token   | Use directly; never assign it to a native role                    |
+| Semantic status needing a custom color | App-owned token plus non-color cue | UI shows the label and cue without changing SDK status tokens     |
 
 Legal role names (16 total): fill
 `fillPrimary/fillSecondary/fillTertiary/fillLight`, text
@@ -422,17 +406,17 @@ The receipt has four responsibilities:
 
 The implementation projection is deliberately narrower than the design IR:
 
-| Section          | Compared implementation facts                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| initial state    | `initialStateId`                                                                                                                      |
-| surfaces         | every field except `id`                                                                                                               |
-| nodes            | kind, component/renderer, content/asset, props, bindings, events, layout, appearance, text style, children, visibility, accessibility |
-| states           | surface roots and entry action                                                                                                        |
-| transitions      | from/to, trigger, confirmation                                                                                                        |
-| actions          | executable type, transition, binding, value, payload; rationale-only `purpose` is excluded                                            |
-| responsive rules | surface, condition, every node override                                                                                               |
-| data cases       | exact case-name coverage                                                                                                              |
-| assets           | kind, source, and alternative text; rationale-only `purpose` is excluded                                                              |
+| Section          | Compared implementation facts                                                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| initial state    | `initialStateId`                                                                                                                                                                 |
+| surfaces         | every field except `id`                                                                                                                                                          |
+| nodes            | kind, component/renderer, content/asset, role, trigger, relationship, presentation, props, bindings, events, layout, appearance, text style, children, visibility, accessibility |
+| states           | surface roots and entry action                                                                                                                                                   |
+| transitions      | from/to, trigger, confirmation                                                                                                                                                   |
+| actions          | executable type, transition, binding, value, payload; rationale-only `purpose` is excluded                                                                                       |
+| responsive rules | surface, condition, every node override                                                                                                                                          |
+| data cases       | exact case-name coverage                                                                                                                                                         |
+| assets           | kind, source, and alternative text; rationale-only `purpose` is excluded                                                                                                         |
 
 For every node whose `appearance` declares a fill, the mapped Kotlin source
 must place
@@ -462,31 +446,33 @@ compares the running app with the accepted preview or visual source.
 
 ## F. Boundaries and non-goals
 
-| Item                                | Rule                                                                                                                                                                                                                                                             |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No write-back to the design package | The bridge only reads the design package and writes outputs to `.scratch/`; it does not modify `design-doc.md`, `design-spec.json`, or `preview.html`.                                                                                                           |
-| No second design IR                 | Consume the accepted `design-spec.json` directly; do not produce another code-generation layout JSON or treat the Web DOM/CSS as an alternate source. The post-Build implementation mapping receipt in §E is verification-only and never feeds generation.       |
-| No final decision                   | The **final commitment** to container / window model happens in the Decide stage; the bridge only prepares evidence.                                                                                                                                             |
-| No new `input_mode`                 | The bridge is a `references/` document; it occupies no `input_mode` and adds no new one.                                                                                                                                                                         |
-| No new top-level schema fields      | It only writes existing fields of the existing three-artifact schemas.                                                                                                                                                                                           |
-| Block if a pre-gate fails           | On the Designer path, require all existing pre-gates and `status=designer_passed`. On the user-package path, require Stage 1 `user_package_passed`. Otherwise the package must not be consumed.                                                           |
+| Item                                | Rule                                                                                                                                                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No write-back to the design package | The bridge only reads the design package and writes outputs to `.scratch/`; it does not modify `design-doc.md`, `design-spec.json`, or `preview.html`.                                                                                                     |
+| No second design IR                 | Consume the accepted `design-spec.json` directly; do not produce another code-generation layout JSON or treat the Web DOM/CSS as an alternate source. The post-Build implementation mapping receipt in §E is verification-only and never feeds generation. |
+| No final decision                   | The **final commitment** to container / window model happens in the Decide stage; the bridge only prepares evidence.                                                                                                                                       |
+| No new `input_mode`                 | The bridge is a `references/` document; it occupies no `input_mode` and adds no new one.                                                                                                                                                                   |
+| No new top-level schema fields      | It only writes existing fields of the existing three-artifact schemas.                                                                                                                                                                                     |
+| Block if a pre-gate fails           | On the Designer path, require all existing pre-gates and `status=designer_passed`. On the user-package path, require Stage 1 `user_package_passed`. Otherwise the package must not be consumed.                                                            |
 
 ### F.1 Comparison against legacy shallow extraction
 
-| Dimension           | Shallow extraction (no design package)        | Design package bridge (this doc)                                                                        |
-| ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `confidence.layout` | ≈ 0.35                                        | ≥ 0.8 (from a complete design package with §6 verdict = pass)                                           |
-| Surface sizing      | None (codegen easily guesses wrong)           | `surfaces` provides exact default/min/max dimensions                                                    |
-| Spacing ownership   | Missing, prone to double padding              | node layout values preserve one explicit spacing owner                                                  |
-| Component anatomy   | None                                          | `nodes[kind=spatialui]` drives the complete Compose conversion inventory                                |
-| Color               | Guessed or scattered hex values               | Native roles stay unchanged; `theme.brandColors` maps to named app-owned tokens                         |
-| Traceability        | Weak                                          | every implementation fact points to a stable JSON ID/path and can be compared with the accepted preview |
+| Dimension           | Shallow extraction (no design package) | Design package bridge (this doc)                                                                        |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `confidence.layout` | ≈ 0.35                                 | ≥ 0.8 (from a complete design package with Consistency Review = pass)                                   |
+| Surface sizing      | None (codegen easily guesses wrong)    | `surfaces` provides exact default/min/max dimensions                                                    |
+| Spacing ownership   | Missing, prone to double padding       | node layout values preserve one explicit spacing owner                                                  |
+| Component anatomy   | None                                   | `nodes[kind=spatialui]` drives the complete Compose conversion inventory                                |
+| Color               | Guessed or scattered hex values        | Native roles stay unchanged; `theme.brandColors` maps to named app-owned tokens                         |
+| Traceability        | Weak                                   | every implementation fact points to a stable JSON ID/path and can be compared with the accepted preview |
 
 ### F.2 Validation-consistency self-check
 
-| Checker                     | What the bridge must guarantee                                                                                                                                           |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `check_handoff_receipts.py` | The accepted route is preserved: either a valid `designer_passed` receipt or `user_package_passed` with a staged JSON object                                             |
-| `scan_implementation.py`    | Feature legality survives into code and the expanded SpatialUI vocabulary recognizes all mapped production components                                                    |
-| `check_design_fidelity.py`  | The current design hash, implementation facts, full entity coverage, and source anchors match; running visual output remains an LLM/device review                        |
-| `verify-design-style.sh`    | Every custom design color is passed as `--design-color`; generated code preserves native roles and contains each app-owned token value |
+| Checker                     | What the bridge must guarantee                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check_handoff_receipts.py` | The accepted route is preserved: either a valid `designer_passed` receipt or `user_package_passed` with a staged JSON object                      |
+| `scan_implementation.py`    | Feature legality survives into code and the expanded SpatialUI vocabulary recognizes all mapped production components                             |
+| `check_design_fidelity.py`  | The current design hash, implementation facts, full entity coverage, and source anchors match; running visual output remains an LLM/device review |
+| `verify-design-style.sh`    | Every custom design color is passed as `--design-color`; generated code preserves native roles and contains each app-owned token value            |
+
+Restore textRole: surface_title with its accepted exact token and one immediately preceding // design-style: surface-title <node-id> marker. Subwindow has no title parameter. The verifier needs the accepted spec to grant a title-only ceiling exemption; retain warnings for ordinary text.

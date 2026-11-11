@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><mask xmlns="http://www.w3.org/2000/svg" id="mask0_13497_3376" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+<path d="M3.53553 0H24V20.4645L3.53553 0ZM0 3.53553L20.4645 24H0V3.53553Z" fill="white" />
+</mask>
+<g xmlns="http://www.w3.org/2000/svg" mask="url(#mask0_13497_3376)">
+<path d="M22 12C22 14.6522 20.9464 17.1957 19.0711 19.0711C17.1957 20.9464 14.6522 22 12 22C9.34784 22 6.8043 20.9464 4.92893 19.0711C3.05357 17.1957 2 14.6522 2 12C2 9.34784 3.05357 6.8043 4.92893 4.92893C6.8043 3.05357 9.34784 2 12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893C20.9464 6.8043 22 9.34784 22 12ZM12 16.9944C11 16.2167 7 13.4944 7 10.3833C7 8.7167 8.2222 7.6056 9.7778 7.6056C10.75 7.6056 11.5556 8.1333 12 8.8556C12.4444 8.1333 13.25 7.6056 14.2222 7.6056C15.7778 7.6056 17 8.7167 17 10.3833C17 13.4944 13 16.2167 12 16.9944Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" />
+</g>
+<path xmlns="http://www.w3.org/2000/svg" d="M2.80762 2.80762L21.1924 21.1924" stroke-width="2" stroke="currentColor" />
+</svg>

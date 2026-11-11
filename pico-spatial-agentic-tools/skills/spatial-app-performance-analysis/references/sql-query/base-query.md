@@ -115,7 +115,7 @@ ORDER BY t.is_main_thread DESC, t.name ASC, t.tid ASC;
 
 ### Purpose
 - Find the actual frame-driving thread in the App process, to avoid hardcoding the thread name `main`.
-- The result can be used as a manual validation reference for `trace-probe-detail.yaml`’s `identities.app_frame_driving_threads.candidates[0].utid`.
+- The result can be used as a manual validation reference for `trace-probe-detail.json`’s `identities.app_frame_driving_threads.candidates[0].utid`.
 
 ### Parameters
 - `${app_package}`: target package name or process name, e.g. `'com.xxx.yyy'`.

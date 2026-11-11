@@ -1,15 +1,10 @@
 /*
- * Copyright 2026 PICO. All rights reserved.
- *
- * NOTICE: All information contained herein is, and remains the property of PICO.
- * The intellectual and technical concepts contained herein are proprietary to PICO
- * and may be covered by patents, patents in process, and are protected by trade
- * secret or copyright law. Dissemination of this information or reproduction of
- * this material is strictly forbidden unless prior written permission is obtained
- * from PICO.
+ * Copyright 2026 PICO Immersive Pte. Ltd.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 import { spawn } from 'node:child_process';
+import { terminateAgentHookChildTree } from './agent-hook-process-lifecycle.mjs';
 import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -24,6 +19,7 @@ const MAX_INPUT_BYTES = 256 * 1024;
 const SKILL_TOKEN = /(^|\s)\$([a-z0-9]+(?:-[a-z0-9]+)*)(?=$|\s|[.,!?;:，。！？；：])/giu;
 const CLI_PACKAGE = '@picoxr/pico-cli';
 const CLI_REGISTRY = undefined;
+export const PICO_AGENT_HOOK_FAILURE_MODE = 'non-blocking';
 
 export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
   const startedAt = Date.now();
@@ -34,15 +30,10 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
     host === 'traecli' &&
     path.basename(path.resolve(wrapperDirectory, '../../..')) === '.trae' &&
     path.basename(path.resolve(wrapperDirectory, '../..')) === 'cli';
-  const pluginRoot = resolvePluginRoot(host)?.trim();
+  const pluginRoot = resolvePluginRoot(host, wrapperDirectory)?.trim();
   const nativePluginInstall =
-    pluginRoot &&
-    equivalentPath(
-      ['codebuddy', 'grok', 'qoder'].includes(host)
-        ? path.resolve(pluginRoot, 'hooks')
-        : path.resolve(pluginRoot, 'host-assets', host, 'hooks'),
-      wrapperDirectory,
-    );
+    pluginRoot && isNativePluginInstall(host, pluginRoot, wrapperDirectory);
+  const nativePluginRoot = nativePluginInstall ? path.resolve(pluginRoot) : undefined;
   const projectRoot = nativePluginInstall
     ? resolveGlobalProjectRoot(host)
     : path.resolve(wrapperDirectory, nestedTraeInstall ? '../../../..' : '../../..');
@@ -57,27 +48,48 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
     diagnosticDirectory && Number.isSafeInteger(testTimeoutMs) && testTimeoutMs > 0
       ? testTimeoutMs
       : DEFAULT_HOT_TIMEOUT_MS;
-  const chunks = [];
-  let inputBytes = 0;
+  const remainingHotMs = () => Math.max(0, hotTimeoutMs - (Date.now() - startedAt));
   let childAttempt = 0;
+  let inputExpired = false;
+  let inputTimer;
+  // The same hot-path deadline covers stdin and filtering, then only the
+  // remaining budget is available to the child. A Host need not deliver EOF.
+  const input = await Promise.race([
+    prepareInput(),
+    new Promise((resolve) => {
+      inputTimer = setTimeout(() => {
+        inputExpired = true;
+        process.stdin.destroy();
+        resolve(undefined);
+      }, remainingHotMs());
+    }),
+  ]).finally(() => clearTimeout(inputTimer));
+  if (!input || remainingHotMs() <= 0) return;
 
-  for await (const chunk of process.stdin) {
-    inputBytes += chunk.length;
-    if (inputBytes > MAX_INPUT_BYTES) return;
-    chunks.push(chunk);
+  async function prepareInput() {
+    try {
+      const chunks = [];
+      let inputBytes = 0;
+      for await (const chunk of process.stdin) {
+        inputBytes += chunk.length;
+        if (inputExpired || inputBytes > MAX_INPUT_BYTES) return;
+        chunks.push(chunk);
+      }
+      if (inputExpired) return;
+      const normalized = await normalizeHostInput(host, stage, Buffer.concat(chunks), catalogPath);
+      if (inputExpired || !normalized?.length) return;
+      const forward = await shouldForward(
+        host,
+        normalized,
+        catalogPath,
+        projectRoot,
+        nativePluginRoot,
+      );
+      if (!inputExpired && forward) return normalized;
+    } catch {
+      // Broken, oversized and timed-out input all fail open.
+    }
   }
-  const input = await normalizeHostInput(host, stage, Buffer.concat(chunks), catalogPath);
-  if (
-    !input?.length ||
-    !(await shouldForward(
-      host,
-      input,
-      catalogPath,
-      projectRoot,
-      nativePluginInstall ? pluginRoot : undefined,
-    ))
-  )
-    return;
   const commonArgs = [
     'telemetry',
     'ingest-hook',
@@ -88,9 +100,8 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
     '--project-root',
     projectRoot,
   ];
-
   if (localEntry) {
-    await run([localEntry, ...commonArgs], input, hotTimeoutMs);
+    await run([localEntry, ...commonArgs], input, remainingHotMs());
     return;
   }
 
@@ -98,12 +109,13 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
   const hotResult = await run(
     [...npxArgs, '--offline', CLI_PACKAGE, ...commonArgs],
     input,
-    hotTimeoutMs,
+    remainingHotMs(),
   );
   if (hotResult === 'ok') return;
   startBackgroundWarm(wrapperPath);
 
   async function run(args, stdin, timeoutMs) {
+    if (timeoutMs <= 0) return 'timeout';
     return new Promise((resolve) => {
       const attempt = ++childAttempt;
       let timedOut = false;
@@ -153,7 +165,7 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
         timedOut = true;
         finished = true;
         child.stdin.destroy();
-        await terminateChildTree(child);
+        await releaseChildAfterTimeout(child);
         child.stderr?.destroy();
         const outcome = ingestCompleted ? 'ok' : 'timeout';
         recordDiagnostic(attempt, {
@@ -165,7 +177,7 @@ export async function runAgentHookWrapper({ host, wrapperUrl, stage }) {
           stages,
         });
         resolve(outcome);
-      }, timeoutMs);
+      }, remainingHotMs());
       child.on('error', (error) => {
         if (finished) return;
         finished = true;
@@ -238,13 +250,29 @@ function resolveGlobalProjectRoot(host) {
   return path.resolve(hostRoot?.trim() || process.cwd());
 }
 
-function resolvePluginRoot(host) {
+function resolvePluginRoot(host, wrapperDirectory) {
   if (host === 'claude-code') return process.env.CLAUDE_PLUGIN_ROOT;
   if (host === 'cursor') return process.env.CURSOR_PLUGIN_ROOT;
   if (host === 'codex' || host === 'copilot' || host === 'traecli') return process.env.PLUGIN_ROOT;
   if (host === 'codebuddy') return process.env.CODEBUDDY_PLUGIN_ROOT;
   if (host === 'grok') return process.env.GROK_PLUGIN_ROOT;
   if (host === 'qoder') return process.env.QODER_PLUGIN_ROOT;
+  const authoredHostAsset =
+    path.basename(path.dirname(wrapperDirectory)) === 'antigravity' &&
+    path.basename(path.resolve(wrapperDirectory, '../..')) === 'host-assets';
+  if (host === 'antigravity' && path.basename(wrapperDirectory) === 'hooks' && !authoredHostAsset) {
+    return path.dirname(wrapperDirectory);
+  }
+}
+
+function isNativePluginInstall(host, pluginRoot, wrapperDirectory) {
+  const expected =
+    host === 'antigravity'
+      ? path.resolve(pluginRoot, 'hooks')
+      : ['codebuddy', 'grok', 'qoder'].includes(host)
+        ? path.resolve(pluginRoot, 'hooks')
+        : path.resolve(pluginRoot, 'host-assets', host, 'hooks');
+  return equivalentPath(expected, wrapperDirectory);
 }
 
 function equivalentPath(left, right) {
@@ -269,29 +297,56 @@ async function normalizeHostInput(host, stage, input, catalogUrl) {
   const conversationId =
     typeof payload?.conversationId === 'string' ? payload.conversationId : undefined;
   const stepIdx = Number.isSafeInteger(payload?.stepIdx) ? payload.stepIdx : undefined;
-  const toolName = normalizeAntigravityMcpTool(payload?.toolCall, catalog);
-  if (!conversationId || stepIdx === undefined || !toolName) return undefined;
+  const normalizedTool = normalizeAntigravityTool(payload?.toolCall, catalog, payload);
+  if (!conversationId || stepIdx === undefined || !normalizedTool) return undefined;
+  const { carryRawError, ...normalizedPayload } = normalizedTool;
+  const rawError = typeof payload.error === 'string' && payload.error ? payload.error : undefined;
   return Buffer.from(
     JSON.stringify({
       session_id: conversationId,
       turn_id: String(stepIdx),
       tool_use_id: `${conversationId}:${stepIdx}`,
-      hook_event_name:
-        typeof payload.error === 'string' && payload.error ? 'PostToolUseFailure' : 'PostToolUse',
-      tool_name: toolName,
+      hook_event_name: rawError ? 'PostToolUseFailure' : 'PostToolUse',
+      ...(carryRawError && rawError ? { error: rawError } : {}),
+      ...normalizedPayload,
     }),
   );
 }
 
-function normalizeAntigravityMcpTool(toolCall, catalog) {
-  // Antigravity 1.2.8 reports MCP calls through this built-in tool. Keep this
-  // adapter limited to the observed contract: guessing from other tool-name
-  // shapes would weaken the unique catalog-ownership boundary.
-  if (toolCall?.name !== 'call_mcp_tool') return undefined;
-  const serverId = toolCall?.args?.ServerName;
-  const toolName = toolCall?.args?.ToolName;
-  if (typeof serverId !== 'string' || typeof toolName !== 'string') return undefined;
-  return normalizeAntigravityMcpServerTool(serverId, toolName, catalog);
+function normalizeAntigravityTool(toolCall, catalog, payload) {
+  if (toolCall?.name === 'call_mcp_tool') {
+    const serverId = toolCall?.args?.ServerName;
+    const toolName = toolCall?.args?.ToolName;
+    if (typeof serverId !== 'string' || typeof toolName !== 'string') return undefined;
+    const normalized = normalizeAntigravityMcpServerTool(serverId, toolName, catalog);
+    return normalized ? { tool_name: normalized, carryRawError: false } : undefined;
+  }
+  // Antigravity 1.3.3 exposes project Skill access through these built-ins.
+  // Normalize only the documented argument fields; the canonical path/catalog
+  // gates below still decide whether this is a PICO-owned Skill invocation.
+  if (toolCall?.name === 'view_file') {
+    const filePath = toolCall?.args?.AbsolutePath;
+    return typeof filePath === 'string' && filePath
+      ? { tool_name: 'Read', tool_input: { file_path: filePath }, carryRawError: true }
+      : undefined;
+  }
+  if (toolCall?.name === 'run_command') {
+    const command = toolCall?.args?.CommandLine;
+    if (typeof command !== 'string' || !command) return undefined;
+    const cwd =
+      typeof toolCall?.args?.Cwd === 'string' && toolCall.args.Cwd
+        ? toolCall.args.Cwd
+        : Array.isArray(payload?.workspacePaths) && typeof payload.workspacePaths[0] === 'string'
+          ? payload.workspacePaths[0]
+          : undefined;
+    return {
+      tool_name: 'Bash',
+      tool_input: { command },
+      ...(cwd ? { cwd } : {}),
+      carryRawError: true,
+    };
+  }
+  return undefined;
 }
 
 function normalizeAntigravityMcpServerTool(serverId, toolName, catalog) {
@@ -328,16 +383,28 @@ async function shouldForward(host, input, catalogUrl, projectRoot, nativePluginR
   if (['UserPromptSubmit', 'beforeSubmitPrompt'].includes(eventName)) {
     return hasCatalogSkillToken(payload.prompt, catalog);
   }
-  if (host === 'codex') return shouldForwardCodex(payload, catalog, projectRoot);
-  if (host === 'traecli') {
-    return shouldForwardReadOrMcp(payload, catalog, projectRoot, '.trae/skills', {
-      nativePluginRoot,
-    });
+  if (host === 'codex') {
+    return shouldForwardCodex(payload, catalog, projectRoot, nativePluginRoot);
   }
-  if (host === 'cursor') return shouldForwardCursor(payload, catalog, projectRoot);
+  if (host === 'traecli') {
+    return (
+      shouldForwardReadOrMcp(payload, catalog, projectRoot, '.trae/skills', {
+        nativePluginRoot,
+      }) ||
+      shouldForwardShellSkillAccess(payload, catalog, projectRoot, '.trae/skills', {
+        eventNames: ['PostToolUse', 'PostToolUseFailure'],
+        toolNames: ['Bash', 'exec_command', 'shell_command'],
+        nativePluginRoot,
+      })
+    );
+  }
+  if (host === 'cursor') {
+    return shouldForwardCursor(payload, catalog, projectRoot, nativePluginRoot);
+  }
   if (host === 'copilot') {
     return shouldForwardReadOrMcp(payload, catalog, projectRoot, '.github/skills', {
       mcpHost: 'copilot',
+      nativePluginRoot,
     });
   }
   if (host === 'codebuddy') return shouldForwardCodeBuddy(payload, catalog, projectRoot);
@@ -350,7 +417,18 @@ async function shouldForward(host, input, catalogUrl, projectRoot, nativePluginR
       readPathFields: ['path'],
     });
   }
-  if (host === 'antigravity') return isCatalogMcpPayload(payload, catalog);
+  if (host === 'antigravity') {
+    return (
+      shouldForwardReadOrMcp(payload, catalog, projectRoot, '.agents/skills', {
+        nativePluginRoot,
+      }) ||
+      shouldForwardShellSkillAccess(payload, catalog, projectRoot, '.agents/skills', {
+        eventNames: ['PostToolUse', 'PostToolUseFailure'],
+        toolNames: ['Bash'],
+        nativePluginRoot,
+      })
+    );
+  }
   return false;
 }
 
@@ -382,28 +460,330 @@ function shouldForwardGrok(payload, catalog, projectRoot) {
   });
 }
 
-function shouldForwardCodex(payload, catalog, projectRoot) {
+function shouldForwardCodex(payload, catalog, projectRoot, nativePluginRoot) {
   if (isCatalogMcpPayload(payload, catalog)) return true;
-  if (payload.hook_event_name !== 'PreToolUse' || payload.tool_name !== 'Bash') return false;
+  return shouldForwardShellSkillAccess(payload, catalog, projectRoot, '.agents/skills', {
+    eventNames: ['PostToolUse', 'PostToolUseFailure'],
+    toolNames: ['Bash'],
+    nativePluginRoot,
+  });
+}
+
+function shouldForwardShellSkillAccess(
+  payload,
+  catalog,
+  projectRoot,
+  skillsDirectory,
+  { eventNames, toolNames, nativePluginRoot },
+) {
+  if (!eventNames.includes(payload.hook_event_name) || !toolNames.includes(payload.tool_name)) {
+    return false;
+  }
   const command = payload.tool_input?.command;
   if (typeof command !== 'string') return false;
-  return splitShellCommand(command).some((tokens) => {
-    const [program, ...arguments_] = unwrapShellCommand(tokens);
+  const outerUnits = splitShellCommand(command);
+  if (!outerUnits) return false;
+  const units = [];
+  for (const unit of outerUnits) {
+    const unwrapped = unwrapShellCommand(unit);
+    if (!unwrapped) return false;
+    units.push(...unwrapped);
+  }
+  let matched = false;
+  for (const unit of units) {
+    const [stage, filter] = unit.stages;
+    if (!stage || unit.stages.length > 2) return false;
+    if (filter && !isLiteralSedRangeFilter(filter)) return false;
+    const [program, ...arguments_] = stage;
     if (!program) return false;
-    const name = program
-      .split('/')
-      .at(-1)
-      .replace(/\.exe$/iu, '')
-      .toLowerCase();
-    const candidates = scriptRunner(name)
-      ? firstNonOption(arguments_)
-      : documentReader(name)
-        ? arguments_.filter((value) => value !== '--' && !value.startsWith('-'))
-        : [];
-    return candidates.some((candidate) =>
-      isSkillPath(candidate, payload.cwd, projectRoot, '.agents/skills'),
-    );
-  });
+    const name = portableProgramName(program);
+    if (filter && isInertPrintfSegment(name, arguments_)) return false;
+    if (isInertPrintfSegment(name, arguments_)) continue;
+    const access = shellSkillAccess(name, arguments_);
+    if (!access) return false;
+    if (filter && access.kind !== 'document') return false;
+    matched ||= access.candidates.some((candidate) => {
+      // Shell candidates are expressions until tokenization proves otherwise. Structured
+      // Host read callbacks pass literal paths and are validated by containment below.
+      if (candidate.includes('$') || candidate.includes('`')) return false;
+      const skillId = installedSkillId(
+        candidate,
+        payload.cwd,
+        projectRoot,
+        skillsDirectory,
+        access.kind,
+      );
+      if (typeof skillId === 'string' && catalogSkills(catalog).includes(skillId)) return true;
+      return nativePluginRoot
+        ? isCatalogPluginSkillPath(
+            candidate,
+            payload.cwd ?? projectRoot,
+            nativePluginRoot,
+            catalog,
+            access.kind,
+          )
+        : false;
+    });
+  }
+  return matched;
+}
+
+function isLiteralSedRangeFilter(stage) {
+  const [program, ...arguments_] = stage;
+  return (
+    typeof program === 'string' &&
+    portableProgramName(program) === 'sed' &&
+    arguments_.length === 2 &&
+    arguments_[0] === '-n' &&
+    /^\d+(?:,\d+)?p$/u.test(arguments_[1])
+  );
+}
+
+function isInertPrintfSegment(program, arguments_) {
+  const literalArguments = arguments_[0] === '--' ? arguments_.slice(1) : arguments_;
+  return (
+    program === 'printf' &&
+    literalArguments.length > 0 &&
+    (arguments_[0] === '--' || !arguments_[0].startsWith('-')) &&
+    literalArguments.every((argument) => !argument.includes('$') && !argument.includes('`'))
+  );
+}
+
+function shellSkillAccess(program, arguments_) {
+  if (scriptRunner(program)) {
+    const candidate = scriptRunnerCandidate(program, arguments_);
+    return candidate ? { kind: 'script', candidates: [candidate] } : undefined;
+  }
+  if (!documentReader(program) || hasMutatingReaderOption(program, arguments_)) return undefined;
+  const candidates = documentReaderCandidates(program, arguments_);
+  return candidates ? { kind: 'document', candidates } : undefined;
+}
+
+function scriptRunnerCandidate(program, arguments_) {
+  if (program === 'deno') {
+    const runIndex = arguments_.indexOf('run');
+    return runIndex === 0 ? firstRunnerOperand(program, arguments_.slice(1)) : undefined;
+  }
+
+  if (['pwsh', 'powershell'].includes(program)) {
+    const fileIndex = arguments_.findIndex((argument) => /^-(?:f|file)$/iu.test(argument));
+    if (
+      fileIndex >= 0 &&
+      arguments_
+        .slice(0, fileIndex)
+        .every((argument) => /^-(?:nologo|noprofile|noninteractive)$/iu.test(argument))
+    ) {
+      return arguments_[fileIndex + 1];
+    }
+    return fileIndex < 0 ? firstRunnerOperand(program, arguments_) : undefined;
+  }
+
+  return firstRunnerOperand(program, arguments_);
+}
+
+function firstRunnerOperand(program, arguments_) {
+  let optionsEnded = false;
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (!optionsEnded && argument === '--') {
+      optionsEnded = true;
+      continue;
+    }
+    if (!optionsEnded && argument.startsWith('-') && argument !== '-') {
+      const option = runnerOption(program, argument);
+      if (option === 'unknown') return undefined;
+      if (option === 'value') index += 1;
+      continue;
+    }
+    return argument;
+  }
+  return undefined;
+}
+
+function runnerOption(program, argument) {
+  if (['python', 'python3'].includes(program)) {
+    if (/^-(?:W|X)$/u.test(argument)) return 'value';
+    if (/^-(?:W|X).+/u.test(argument)) return 'flag';
+    return /^-(?:B|E|I|O|OO|P|q|s|S|u|v)$/u.test(argument) ? 'flag' : 'unknown';
+  }
+  if (['node', 'nodejs'].includes(program)) {
+    if (argument === '--conditions') return 'value';
+    if (/^--conditions=.+/u.test(argument)) return 'flag';
+    if (/^(?:--no-warnings|--trace-warnings|--use-strict)$/u.test(argument)) return 'flag';
+    return 'unknown';
+  }
+  if (['pwsh', 'powershell'].includes(program)) {
+    return /^-(?:nologo|noprofile|noninteractive)$/iu.test(argument) ? 'flag' : 'unknown';
+  }
+  if (program === 'deno') {
+    return /^(?:--allow-[a-z-]+(?:=.*)?|--cached-only|--no-check|--quiet)$/u.test(argument)
+      ? 'flag'
+      : 'unknown';
+  }
+  if (['bash', 'zsh', 'sh', 'ksh', 'ash', 'dash', 'fish'].includes(program)) {
+    return /^-[eEux]+$/u.test(argument) ? 'flag' : 'unknown';
+  }
+  if (program === 'osascript') {
+    if (/^-(?:l|s)$/u.test(argument)) return 'value';
+    return 'unknown';
+  }
+  return 'unknown';
+}
+
+function documentReaderCandidates(program, arguments_) {
+  const parsed = parseReaderArguments(program, arguments_);
+  if (!parsed) return undefined;
+  const { positional, suppliedExpression } = parsed;
+  const fileOperands =
+    ['grep', 'rg', 'ripgrep', 'sed'].includes(program) && !suppliedExpression
+      ? positional.slice(1)
+      : positional;
+  // One command-level terminal cannot assign an outcome to individual files.
+  // Requiring exactly one operand prevents an early exit or one failed target
+  // from being reported as a successful access to another target.
+  return fileOperands.length === 1 ? fileOperands : undefined;
+}
+
+function parseReaderArguments(program, arguments_) {
+  const positional = [];
+  let suppliedExpression = false;
+  let optionsEnded = false;
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (!optionsEnded && argument === '--') {
+      optionsEnded = true;
+      continue;
+    }
+    if (!optionsEnded && argument.startsWith('-') && argument !== '-') {
+      const optionToken = argument.split('=', 1)[0];
+      let option = optionToken;
+      let optionKind = readerOption(program, option, argument);
+      if (optionKind === 'unknown' && !optionToken.startsWith('--') && optionToken.length > 2) {
+        const shortOption = optionToken.slice(0, 2);
+        const shortKind = readerOption(program, shortOption, argument);
+        if (shortKind !== 'unknown') {
+          option = shortOption;
+          optionKind = shortKind;
+        }
+      }
+      if (optionKind === 'unknown') return undefined;
+      const pathOption =
+        ['get-content', 'gc'].includes(program) && /^-(?:path|literalpath)$/iu.test(option);
+      if (pathOption) {
+        if (argument.includes('=') || optionToken !== option) return undefined;
+        const candidate = arguments_[index + 1];
+        if (candidate === undefined) return undefined;
+        positional.push(candidate);
+        index += 1;
+        continue;
+      }
+      const expressionOption = ['-e', '-f', '--regexp', '--expression', '--file'].includes(option);
+      if (expressionOption) suppliedExpression = true;
+      if (optionKind === 'value' && !argument.includes('=') && optionToken === option) index += 1;
+      continue;
+    }
+    positional.push(argument);
+  }
+  return { positional, suppliedExpression };
+}
+
+function readerOption(program, option, argument) {
+  if (['grep', 'rg', 'ripgrep'].includes(program)) {
+    if (
+      [
+        '-A',
+        '-B',
+        '-C',
+        '-e',
+        '-f',
+        '-g',
+        '-m',
+        '--after-context',
+        '--before-context',
+        '--binary-files',
+        '--context',
+        '--directories',
+        '--exclude',
+        '--exclude-dir',
+        '--file',
+        '--glob',
+        '--include',
+        '--label',
+        '--max-count',
+        '--regexp',
+      ].includes(option)
+    ) {
+      return /^-[efgmnABC].+/u.test(argument) ? 'flag' : 'value';
+    }
+    return [
+      '-F',
+      '-H',
+      '-I',
+      '-i',
+      '-L',
+      '-l',
+      '-n',
+      '-s',
+      '-v',
+      '-w',
+      '-x',
+      '--fixed-strings',
+      '--hidden',
+      '--ignore-case',
+      '--no-ignore',
+      '--line-number',
+    ].includes(option)
+      ? 'flag'
+      : 'unknown';
+  }
+  if (program === 'sed') {
+    if (['-e', '-f', '--expression', '--file'].includes(option)) return 'value';
+    return ['-n', '--quiet', '--silent'].includes(option) ? 'flag' : 'unknown';
+  }
+  if (['head', 'tail'].includes(program)) {
+    if (['-c', '-n', '--bytes', '--lines', '--pid', '--sleep-interval'].includes(option)) {
+      return 'value';
+    }
+    return ['-f', '-F', '-q', '-v', '-z', '--follow', '--quiet', '--verbose'].includes(option)
+      ? 'flag'
+      : 'unknown';
+  }
+  if (program === 'nl') {
+    if (/^-[bdfhinpstvw].+/u.test(argument)) return 'flag';
+    return ['-b', '-d', '-f', '-h', '-i', '-n', '-s', '-v', '-w'].includes(option)
+      ? 'value'
+      : 'unknown';
+  }
+  if (program === 'bat') {
+    if (['-H', '-r', '--highlight-line', '--line-range', '--tabs'].includes(option)) return 'value';
+    return ['-n', '-p', '--plain', '--paging=never'].includes(argument) ? 'flag' : 'unknown';
+  }
+  if (['get-content', 'gc'].includes(program)) {
+    if (['-path', '-literalpath'].includes(option.toLowerCase())) return 'value';
+    if (
+      ['-delimiter', '-encoding', '-readcount', '-tail', '-totalcount'].includes(
+        option.toLowerCase(),
+      )
+    )
+      return 'value';
+    return ['-raw', '-wait'].includes(option.toLowerCase()) ? 'flag' : 'unknown';
+  }
+  if (program === 'cat') {
+    return /^-[benstuvAET]+$/u.test(argument) ||
+      ['--number', '--number-nonblank', '--squeeze-blank', '--show-all'].includes(option)
+      ? 'flag'
+      : 'unknown';
+  }
+  return 'unknown';
+}
+
+function hasMutatingReaderOption(program, arguments_) {
+  return (
+    program === 'sed' &&
+    arguments_.some(
+      (argument) => /^-[^-]*i/iu.test(argument) || /^--in-place(?:$|=)/iu.test(argument),
+    )
+  );
 }
 
 // Codex may submit Bash commands through its login shell, e.g.
@@ -411,26 +791,55 @@ function shouldForwardCodex(payload, catalog, projectRoot) {
 // explicit script argument for supported shell launchers, then apply the same
 // reader and contained-path rules as a direct command.  This is deliberately
 // not a general shell parser: unknown invocations remain unclassified.
-function unwrapShellCommand(tokens) {
-  const [program, ...arguments_] = tokens;
-  if (!program) return tokens;
-  const name = program
-    .split('/')
-    .at(-1)
-    .replace(/\.exe$/iu, '')
-    .toLowerCase();
-  if (!['bash', 'zsh', 'sh'].includes(name)) return tokens;
-  const scriptIndex = arguments_.findIndex((argument) => /^-[a-z]*c[a-z]*$/iu.test(argument));
-  if (scriptIndex < 0) return tokens;
+function unwrapShellCommand(unit) {
+  if (unit.stages.length !== 1) return [unit];
+  const [tokens] = unit.stages;
+  const [program, ...arguments_] = tokens ?? [];
+  if (!program) return undefined;
+  const name = portableProgramName(program);
+  if (!['bash', 'zsh', 'sh'].includes(name)) return [unit];
+  const scriptIndex = findCommandStringOption(arguments_);
+  if (scriptIndex < 0) return [unit];
+  if (
+    scriptIndex !== arguments_.length - 2 ||
+    !arguments_.slice(0, scriptIndex + 1).every(supportedCommandShellOption)
+  ) {
+    return undefined;
+  }
   const script = arguments_[scriptIndex + 1];
-  return typeof script === 'string' ? splitShellCommand(script).flat() : tokens;
+  if (typeof script !== 'string') return undefined;
+  const units = splitShellCommand(script);
+  if (!units) return undefined;
+  const usesErrexit = arguments_
+    .slice(0, scriptIndex + 1)
+    .some((argument) => argument.slice(1).includes('e'));
+  return usesErrexit && units.length > 1 ? undefined : units;
 }
 
-function shouldForwardCursor(payload, catalog, projectRoot) {
+function findCommandStringOption(arguments_) {
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    // `--` and the first non-option both end the interpreter option prefix.
+    // Any later `-c` belongs to the executed script, not to the shell itself.
+    if (argument === '--' || argument === '-' || !argument.startsWith('-')) return -1;
+    if (/^-[a-z]*c[a-z]*$/u.test(argument)) return index;
+  }
+  return -1;
+}
+
+function supportedCommandShellOption(argument) {
+  if (!/^-[a-z]+$/u.test(argument)) return false;
+  const flags = argument.slice(1);
+  return [...flags].every((flag) => ['c', 'e', 'l'].includes(flag));
+}
+
+function shouldForwardCursor(payload, catalog, projectRoot, nativePluginRoot) {
   if (payload.hook_event_name === 'afterMCPExecution') {
     return hasCatalogMcpServer(payload.mcp_server_name, catalog);
   }
-  return shouldForwardReadOrMcp(payload, catalog, projectRoot, '.cursor/skills');
+  return shouldForwardReadOrMcp(payload, catalog, projectRoot, '.cursor/skills', {
+    nativePluginRoot,
+  });
 }
 
 function shouldForwardReadOrMcp(payload, catalog, projectRoot, skillsDirectory, options = {}) {
@@ -447,7 +856,12 @@ function shouldForwardReadOrMcp(payload, catalog, projectRoot, skillsDirectory, 
   }
   if (isCatalogMcpPayload(payload, catalog, options.mcpHost)) return true;
   const readToolNames = options.readToolNames ?? ['Read', 'view'];
-  if (!readToolNames.includes(payload.tool_name) || payload.hook_event_name === 'PreToolUse') {
+  if (
+    !readToolNames.includes(payload.tool_name) ||
+    !['PostToolUse', 'PostToolUseFailure', 'postToolUse', 'postToolUseFailure'].includes(
+      payload.hook_event_name,
+    )
+  ) {
     return false;
   }
   const readPathFields = options.readPathFields ?? ['file_path', 'path'];
@@ -521,13 +935,33 @@ function catalogPlugins(catalog) {
 }
 
 function splitShellCommand(command) {
-  if (command.includes('`') || command.includes('$(')) return [];
+  if (command.includes('`') || command.includes('$(')) return undefined;
+  const units = [];
+  const stages = [];
   const tokens = [];
   let token = '';
+  let tokenStarted = false;
   let quote;
   for (let index = 0; index < command.length; index += 1) {
     const character = command[index];
+    // The evidence grammar supports only horizontal space and tab. Reject
+    // line boundaries and other control whitespace rather than assigning them
+    // shell semantics that differ across launchers.
+    if (character.charCodeAt(0) < 0x20 && character !== '\t') return undefined;
     if (quote) {
+      if (quote === '"' && character === '\\') {
+        const next = command[index + 1];
+        if (next === undefined || next === '\n' || next === '\r') return undefined;
+        if (['$', '`', '"', '\\'].includes(next)) {
+          token += next;
+          tokenStarted = true;
+          index += 1;
+        } else {
+          token += character;
+          tokenStarted = true;
+        }
+        continue;
+      }
       if (character === quote) quote = undefined;
       else token += character;
       continue;
@@ -536,36 +970,95 @@ function splitShellCommand(command) {
       const next = command[index + 1];
       if (next && /[\s'"`$;&|<>]/u.test(next)) {
         token += next;
+        tokenStarted = true;
         index += 1;
       } else {
         token += character;
+        tokenStarted = true;
       }
       continue;
     }
     if (character === "'" || character === '"') {
       quote = character;
+      tokenStarted = true;
       continue;
     }
-    if (/\s/u.test(character)) {
-      if (token) tokens.push(token);
+    // In POSIX shells `#` starts a comment only at the beginning of a word.
+    // Stop there so a path mentioned in a comment cannot become reader argv;
+    // an embedded `#` remains part of the current word. A later newline would
+    // begin another command, so reject the whole input instead of letting the
+    // comment hide that boundary from the fail-closed rule above.
+    if (character === '#' && !tokenStarted) {
+      if (/[\r\n]/u.test(command.slice(index + 1))) return undefined;
+      if (tokens.length > 0) stages.push([...tokens]);
+      if (stages.length > 0) units.push({ stages: [...stages] });
+      return units.length > 0 ? units : undefined;
+    }
+    if (character === ' ' || character === '\t') {
+      if (tokenStarted) tokens.push(token);
       token = '';
+      tokenStarted = false;
       continue;
     }
-    if (['&', '|', ';', '<', '>'].includes(character)) return [];
+    if (character === ';') {
+      if (tokenStarted) tokens.push(token);
+      if (tokens.length === 0) return undefined;
+      stages.push([...tokens]);
+      units.push({ stages: [...stages] });
+      stages.length = 0;
+      tokens.length = 0;
+      token = '';
+      tokenStarted = false;
+      continue;
+    }
+    if (character === '|') {
+      if (tokenStarted) tokens.push(token);
+      if (tokens.length === 0 || stages.length > 0) return undefined;
+      stages.push([...tokens]);
+      tokens.length = 0;
+      token = '';
+      tokenStarted = false;
+      continue;
+    }
+    if (['&', '<', '>'].includes(character)) return undefined;
     token += character;
+    tokenStarted = true;
   }
-  if (quote) return [];
-  if (token) tokens.push(token);
-  return tokens.length > 0 ? [tokens] : [];
+  if (quote) return undefined;
+  if (tokenStarted) tokens.push(token);
+  if (tokens.length > 0) stages.push(tokens);
+  else if (stages.length > 0) return undefined;
+  if (stages.length > 0) units.push({ stages });
+  return units.length > 0 ? units : undefined;
 }
 
-function firstNonOption(arguments_) {
-  const candidate = arguments_.find((value) => value !== '--' && !value.startsWith('-'));
-  return candidate ? [candidate] : [];
+function portableProgramName(program) {
+  return (isWindowsExecutablePath(program) ? program.split(/[\\/]/u) : program.split('/'))
+    .at(-1)
+    .replace(/\.exe$/iu, '')
+    .toLowerCase();
 }
 
 function documentReader(program) {
-  return ['cat', 'sed', 'head', 'tail', 'less', 'more', 'bat'].includes(program);
+  return [
+    'cat',
+    'sed',
+    'head',
+    'tail',
+    'more',
+    'bat',
+    'nl',
+    'grep',
+    'rg',
+    'ripgrep',
+    'od',
+    'xxd',
+    'strings',
+    'tac',
+    'view',
+    'get-content',
+    'gc',
+  ].includes(program);
 }
 
 function scriptRunner(program) {
@@ -575,29 +1068,38 @@ function scriptRunner(program) {
     'bash',
     'zsh',
     'sh',
+    'ksh',
+    'ash',
+    'dash',
+    'fish',
     'node',
+    'nodejs',
     'deno',
+    'bun',
     'ruby',
     'perl',
     'pwsh',
+    'powershell',
+    'osascript',
   ].includes(program);
 }
 
 function isSkillPath(candidate, cwd, projectRoot, skillsDirectory) {
-  if (
-    typeof candidate !== 'string' ||
-    typeof cwd !== 'string' ||
-    !cwd ||
-    candidate.includes('$') ||
-    candidate.includes('`')
-  ) {
-    return false;
+  return installedSkillId(candidate, cwd, projectRoot, skillsDirectory, 'document') !== undefined;
+}
+
+function installedSkillId(candidate, cwd, projectRoot, skillsDirectory, kind = 'document') {
+  if (typeof candidate !== 'string' || typeof cwd !== 'string' || !cwd) {
+    return undefined;
   }
   const flavor = isWindowsPath(projectRoot) ? 'win32' : 'posix';
   const implementation = path[flavor];
-  if (flavor === 'posix' && isWindowsPath(candidate)) return false;
+  // A backslash is not a POSIX path separator. Reject it rather than letting
+  // later portable formatting turn a different file name into a Skill path.
+  if (flavor === 'posix' && candidate.includes('\\')) return undefined;
+  if (flavor === 'posix' && isWindowsPath(candidate)) return undefined;
   if (flavor === 'win32' && path.posix.isAbsolute(candidate) && !path.win32.isAbsolute(candidate))
-    return false;
+    return undefined;
   const normalize = (value) => {
     const resolved = implementation.resolve(value);
     return flavor === 'win32' ? resolved.toLowerCase() : resolved;
@@ -605,21 +1107,21 @@ function isSkillPath(candidate, cwd, projectRoot, skillsDirectory) {
   const absolutePath = normalize(implementation.resolve(cwd, candidate));
   const skillsRoot = normalize(implementation.resolve(projectRoot, skillsDirectory));
   const relative = implementation.relative(skillsRoot, absolutePath).replaceAll('\\', '/');
-  return /^(?:[a-z0-9]+(?:-[a-z0-9]+)*)\/(?:SKILL\.md|scripts\/.+)$/iu.test(relative);
+  const match = (
+    kind === 'script'
+      ? /^([a-z0-9]+(?:-[a-z0-9]+)*)\/scripts\/.+/iu
+      : /^([a-z0-9]+(?:-[a-z0-9]+)*)\/SKILL\.md$/iu
+  ).exec(relative);
+  return match?.[1]?.toLowerCase();
 }
 
-function isCatalogPluginSkillPath(candidate, cwd, pluginRoot, catalog) {
-  if (
-    typeof candidate !== 'string' ||
-    typeof cwd !== 'string' ||
-    !cwd ||
-    candidate.includes('$') ||
-    candidate.includes('`')
-  ) {
+function isCatalogPluginSkillPath(candidate, cwd, pluginRoot, catalog, kind = 'document') {
+  if (typeof candidate !== 'string' || typeof cwd !== 'string' || !cwd) {
     return false;
   }
   const flavor = isWindowsPath(pluginRoot) ? 'win32' : 'posix';
   const implementation = path[flavor];
+  if (flavor === 'posix' && candidate.includes('\\')) return false;
   if (flavor === 'posix' && isWindowsPath(candidate)) return false;
   if (flavor === 'win32' && path.posix.isAbsolute(candidate) && !path.win32.isAbsolute(candidate))
     return false;
@@ -630,32 +1132,40 @@ function isCatalogPluginSkillPath(candidate, cwd, pluginRoot, catalog) {
   const absolutePath = normalize(implementation.resolve(cwd, candidate));
   const directRoot = normalize(implementation.dirname(pluginRoot));
   const cacheRoot = normalize(implementation.resolve(pluginRoot, '..', '..'));
-  return (
-    matchesCatalogPluginSkillPath(
-      implementation.relative(directRoot, absolutePath),
-      catalog,
-      false,
-    ) ||
-    matchesCatalogPluginSkillPath(implementation.relative(cacheRoot, absolutePath), catalog, true)
+  const versioned = isPluginVersionSegment(implementation.basename(normalize(pluginRoot)));
+  return matchesCatalogPluginSkillPath(
+    implementation.relative(versioned ? cacheRoot : directRoot, absolutePath),
+    catalog,
+    versioned,
+    flavor,
+    kind,
   );
 }
 
-function matchesCatalogPluginSkillPath(relativePath, catalog, versioned) {
+function matchesCatalogPluginSkillPath(relativePath, catalog, versioned, flavor, kind) {
   const segments = relativePath.replaceAll('\\', '/').split('/');
   const skillsIndex = versioned ? 2 : 1;
   if (
     segments.length < skillsIndex + 3 ||
     segments.some((segment) => !segment || segment === '.' || segment === '..') ||
-    segments[skillsIndex] !== 'skills'
+    !portableSegmentEquals(segments[skillsIndex], 'skills', flavor)
   ) {
     return false;
   }
-  if (versioned && !/^[a-z0-9][a-z0-9._+-]*$/iu.test(segments[1])) return false;
+  if (versioned && !isPluginVersionSegment(segments[1])) return false;
   const pluginId = segments[0]?.toLowerCase();
   const skillId = segments[skillsIndex + 1]?.toLowerCase();
-  const resource = segments.slice(skillsIndex + 2).join('/');
+  const resourceSegments = segments.slice(skillsIndex + 2);
+  const resource = resourceSegments.join('/');
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(skillId ?? '')) return false;
-  if (resource !== 'SKILL.md' && !/^scripts\/.+/u.test(resource)) return false;
+  if (
+    kind === 'document'
+      ? !portableSegmentEquals(resource, 'SKILL.md', flavor)
+      : resourceSegments.length < 2 ||
+        !portableSegmentEquals(resourceSegments[0], 'scripts', flavor)
+  ) {
+    return false;
+  }
   const plugin = catalogPlugins(catalog).find(
     (entry) => typeof entry?.id === 'string' && entry.id.toLowerCase() === pluginId,
   );
@@ -665,67 +1175,35 @@ function matchesCatalogPluginSkillPath(relativePath, catalog, versioned) {
   );
 }
 
+function isPluginVersionSegment(value) {
+  return /^\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?(?:\+[0-9a-z.-]+)?$/iu.test(value);
+}
+
+function portableSegmentEquals(actual, expected, flavor) {
+  return flavor === 'win32'
+    ? actual?.toLowerCase() === expected.toLowerCase()
+    : actual === expected;
+}
+
 function isWindowsPath(value) {
   return path.win32.isAbsolute(value) && !path.posix.isAbsolute(value);
+}
+
+function isWindowsExecutablePath(value) {
+  return isWindowsPath(value) || /^\.{1,2}[\\/]/u.test(value);
 }
 
 function normalizeToken(value) {
   return value.toLowerCase().replaceAll('-', '_');
 }
 
-async function terminateChildTree(child) {
-  if (!child.pid) {
-    child.kill();
-    return;
-  }
-  if (process.platform !== 'win32') {
-    const processGroupId = child.pid;
-    try {
-      process.kill(-processGroupId, 'SIGTERM');
-    } catch {
-      child.kill();
-    }
-    if (await waitForProcessGroupExit(processGroupId, 500)) return;
-    try {
-      process.kill(-processGroupId, 'SIGKILL');
-    } catch {
-      // The process group has already exited.
-    }
-    await waitForProcessGroupExit(processGroupId, 1_000);
-    return;
-  }
-  await new Promise((resolve) => {
-    const killer = spawn(
-      process.env.ComSpec || 'cmd.exe',
-      ['/d', '/s', '/c', 'taskkill', '/PID', String(child.pid), '/T', '/F'],
-      { stdio: 'ignore', windowsHide: true },
-    );
-    killer.on('error', () => {
-      child.kill();
-      resolve();
-    });
-    killer.on('close', (code) => {
-      if (code !== 0) child.kill();
-      resolve();
-    });
-  });
-}
-
-async function waitForProcessGroupExit(processGroupId, timeoutMs) {
-  const deadline = Date.now() + timeoutMs;
-  while (isProcessGroupAlive(processGroupId)) {
-    if (Date.now() >= deadline) return false;
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  }
-  return true;
-}
-
-function isProcessGroupAlive(processGroupId) {
+async function releaseChildAfterTimeout(child) {
   try {
-    process.kill(-processGroupId, 0);
-    return true;
-  } catch (error) {
-    return error?.code !== 'ESRCH';
+    await terminateAgentHookChildTree(child);
+  } catch {
+    // Cleanup is advisory even when the operating system refuses termination.
+  } finally {
+    child.unref();
   }
 }
 
@@ -772,7 +1250,7 @@ async function warmCliCache() {
       const timer = setTimeout(async () => {
         if (finished) return;
         finished = true;
-        await terminateChildTree(child);
+        await releaseChildAfterTimeout(child);
         resolve();
       }, BACKGROUND_WARM_TIMEOUT_MS);
       child.on('error', finish);

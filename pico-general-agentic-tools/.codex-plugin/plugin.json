@@ -1,11 +1,12 @@
 {
   "name": "pico-general-agentic-tools",
-  "description": "Cross-platform agentic tools shared by PICO Spatial and Unity development workflows. Provides platform-agnostic skills such as knowledge-graph querying and PICO CLI utilities.",
-  "version": "0.1.1",
+  "description": "Entry plugin for PICO development, installed once per user. Configures the PICO Spatial or Unity platform plugin into each project, and provides the PICO development knowledge MCP, knowledge-graph querying, and PICO CLI usage guidance.",
+  "version": "0.2.0",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "homepage": "https://developer.picoxr.com/",
   "keywords": [
     "pico",
@@ -24,16 +25,17 @@
   ],
   "interface": {
     "displayName": "PICO General Agentic Tools",
-    "shortDescription": "Cross-platform agentic tools for PICO development.",
-    "longDescription": "Cross-platform agentic tools shared by PICO Spatial and Unity development workflows. Provides platform-agnostic skills such as knowledge-graph querying and PICO CLI utilities.",
+    "shortDescription": "Entry plugin for PICO development with AI agents.",
+    "longDescription": "Entry plugin for PICO development, installed once per user. Configures the PICO Spatial or Unity platform plugin into each project, and provides the PICO development knowledge MCP, knowledge-graph querying, and PICO CLI usage guidance.",
     "developerName": "PICO Immersive Pte. Ltd.",
     "category": "Developer Tools",
     "capabilities": [
-      "Read"
+      "Read",
+      "Write"
     ],
     "websiteURL": "https://developer.picoxr.com/",
     "defaultPrompt": [
-      "Use PICO General Agentic Tools for cross-platform PICO development tasks."
+      "Use PICO General Agentic Tools to set up a PICO project and answer PICO development questions."
     ]
   }
 }

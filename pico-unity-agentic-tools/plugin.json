@@ -1,12 +1,11 @@
 {
   "name": "pico-unity-agentic-tools",
-  "description": "Agentic tools for PICO Unity development (skills, MCP, and sub-agents). Helps AI agents assist with Unity project setup, Unity PICO Spatial, Spatial Adapter runtime APIs, PICO XR building blocks, Unity OpenXR setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
-  "version": "0.1.1",
+  "description": "Project Skills for PICO Unity development. Shared MCP services and Hooks are provided by the user-level general plugin. Helps AI agents assist with Unity project setup, Unity PICO Spatial, Spatial Adapter runtime APIs, PICO XR building blocks, Unity OpenXR setup, the Unity Hub CLI, device debugging, build and deployment workflows, and PICO CLI device workflows.",
+  "version": "0.2.0",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "homepage": "https://developer.picoxr.com/",
   "keywords": [
     "pico",
@@ -28,5 +27,10 @@
   "displayName": "PICO Unity Agentic Tools",
   "license": "Apache-2.0",
   "category": "developer-tools",
-  "tags": ["pico", "unity", "agentic", "xr"]
+  "tags": [
+    "pico",
+    "unity",
+    "agentic",
+    "xr"
+  ]
 }

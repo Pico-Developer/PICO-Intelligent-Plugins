@@ -228,7 +228,7 @@ def main() -> int:
         args.session,
         "--sql",
         sql,
-        "-p",
+        "--port",
         str(args.daemon_port),
     )
     if args.execute:

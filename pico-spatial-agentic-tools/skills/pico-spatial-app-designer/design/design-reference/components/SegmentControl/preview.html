@@ -1,0 +1,60 @@
+<!-- @dsCard group="Selection" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>SegmentControl · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"><style>
+.segment-examples{display:grid;gap:12px;width:360px;max-width:100%}
+.rich-example{display:grid;gap:12px;margin-top:8px;min-width:0}
+.rich-example h2{margin:0;font-size:13px;font-weight:600;color:#596470}
+.rich-example sui-segment-control{width:100%}
+.view-caption{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#596470}
+.scene-views{height:216px;padding:8px;border:1px solid #0000000a;border-radius:12px;background:#ffffff26;overflow:auto}
+.scene-items{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.scene-item{display:flex;align-items:center;gap:12px;min-width:0;padding:8px;border-radius:8px;background:#ffffff40}
+.scene-thumbnail{position:relative;flex:none;width:44px;height:44px;overflow:hidden;border-radius:6px;background:var(--scene-background)}
+.scene-thumbnail::after{content:"";position:absolute;width:70%;height:90%;left:35%;top:35%;border-radius:50%;background:#ffffff40;transform:rotate(-28deg)}
+.scene-lake{--scene-background:linear-gradient(145deg,#c1d6df,#7d9ca5)}
+.scene-forest{--scene-background:linear-gradient(145deg,#ced8c6,#8c9f91)}
+.scene-sunset{--scene-background:linear-gradient(145deg,#e5d2bf,#bd9e95)}
+.scene-copy{min-width:0}
+.scene-copy strong{display:block;font-size:12px;font-weight:600;line-height:18px}
+.scene-copy small{display:block;font-size:11px;line-height:16px;color:#596470}
+.scene-views[data-view="grid"] .scene-items{grid-template-columns:repeat(3,minmax(0,1fr))}
+.scene-views[data-view="grid"] .scene-item{display:block;padding:6px}
+.scene-views[data-view="grid"] .scene-thumbnail{width:100%;height:76px;margin-bottom:8px}
+.scene-views[data-view="gallery"]{overflow-x:auto;scroll-snap-type:x mandatory}
+.scene-views[data-view="gallery"] .scene-items{display:flex;height:100%}
+.scene-views[data-view="gallery"] .scene-item{display:block;flex:0 0 78%;scroll-snap-align:center}
+.scene-views[data-view="gallery"] .scene-thumbnail{width:100%;height:140px;margin-bottom:8px}
+</style></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>SegmentControl</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>SegmentControl</h1><p>Reference examples · original defaults unless explicitly overridden</p></header><div class="sui-stage"><div class="segment-examples"><sui-segment-control options="Day,Week,Month" size="small"></sui-segment-control><sui-segment-control options="Day,Week,Month" size="regular" selected-index="1"></sui-segment-control><section class="rich-example" aria-labelledby="rich-heading">
+<h2 id="rich-heading">Rich · Content view</h2>
+<sui-segment-control id="content-view" options="List,Grid,Gallery" icons="list,grid,image" size="rich" selected-index="0" aria-label="Content view" aria-controls="scene-views"></sui-segment-control>
+<div class="view-caption"><span>Saved scenes · 3 items</span><span id="view-status" role="status" aria-live="polite">List view</span></div>
+<div id="scene-views" class="scene-views" data-view="list" role="region" tabindex="0" aria-label="Saved scenes, List view">
+<ul class="scene-items">
+<li class="scene-item"><div class="scene-thumbnail scene-lake" aria-hidden="true"></div><div class="scene-copy"><strong>Lake house</strong><small>3D scene</small></div></li>
+<li class="scene-item"><div class="scene-thumbnail scene-forest" aria-hidden="true"></div><div class="scene-copy"><strong>Forest studio</strong><small>3D scene</small></div></li>
+<li class="scene-item"><div class="scene-thumbnail scene-sunset" aria-hidden="true"></div><div class="scene-copy"><strong>Sunset loft</strong><small>3D scene</small></div></li>
+</ul>
+</div>
+</section></div><div class="sui-row" style="margin-top:16px"><sui-segment-item title="An independent item" selected></sui-segment-item></div></div><script>
+(function () {
+  const control = document.getElementById('content-view');
+  const content = document.getElementById('scene-views');
+  const status = document.getElementById('view-status');
+  const views = ['List', 'Grid', 'Gallery'];
+  control.addEventListener('select', function (event) {
+    const view = views[event.detail.index];
+    if (!view) return;
+    content.dataset.view = view.toLowerCase();
+    content.setAttribute('aria-label', 'Saved scenes, ' + view + ' view');
+    content.scrollTop = 0;
+    content.scrollLeft = 0;
+    status.textContent = view + ' view';
+  });
+})();
+</script><script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script></body></html>

@@ -10,33 +10,22 @@ Use this workflow in an existing PICO Unity project. Use this plugin's `spatialm
 graph construction/package operations.
 Do not reinitialize an existing Unity project just to debug its pipelines.
 
-## Kotlin requests require an external owner
+## When to Use
 
-Kotlin Spatial SDK debugging is outside this Unity distribution. It requires **PICO Spatial Agentic
-Tools** (`pico-spatial-agentic-tools`), which is not installed by Unity setup. Both plugins name their
-debugging skill `spatialml-debugging`, so the name alone does not establish Kotlin support.
+- Debugging PICO Unity SpatialML apps, pipelines, or operators
+- Runtime diagnosis of ML output issues in Unity XR
 
-Before handing off a Kotlin request, resolve `pico-spatial-agentic-tools:spatialml-debugging` through
-the current host's skill/plugin catalog and load that owner's instructions. If the host flattens
-skill names, verify the owning plugin from its metadata or installed source. Once available, hand
-over the complete request, Kotlin project path, and collected evidence; stop this Unity workflow.
+## When NOT to Use
 
-If the Spatial plugin or its debugging skill cannot be resolved and loaded, report `BLOCKED`:
-Kotlin Spatial SDK debugging is unsupported by the available Unity distribution. Name the missing
-`pico-spatial-agentic-tools:spatialml-debugging` capability. Use `BLOCKED` as a user-facing handoff
-label in your response, not as a CLI `tool_status`; this skill-level check does not produce a CLI
-Tool Result envelope or process exit code. Give this recovery path:
+- Initial SpatialML setup in Unity — use Unity `spatialml`
+- Kotlin Spatial SDK SpatialML debugging — use the Spatial plugin's `spatialml-debugging`
 
-1. Configure PICO Spatial Agentic Tools for the actual Kotlin project and selected agent host/scope
-   using the [PICO CLI Installation and Setup Guide](https://github.com/Pico-Developer/PICO-Intelligent-Plugins/blob/main/docs/pico-cli-installation-guide.md).
-   Run guided `pico-cli setup` from that Kotlin project and select the Spatial SDK platform.
-2. Start a new session from the Kotlin project or restart the configured agent host, then verify
-   that its catalog exposes the Spatial plugin's debugging skill before resuming the request.
+## Kotlin requests
 
-Do not substitute this Unity skill, change a Unity project's platform, initialize Unity, or run
-Unity readback/device instructions for the Kotlin request. An installed-plugin record without a
-loadable skill in the current session is not a completed handoff. Ordinary Unity debugging does
-not require the Spatial plugin.
+For Kotlin Spatial SDK debugging, read the Kotlin project's Spatial `spatialml-debugging` Skill
+and continue with the original request and collected evidence. This Skill covers Unity debugging.
+If the Kotlin project is not configured, use `pico-project-setup` for that project; keep the Unity
+project's configuration intact.
 
 ## Probe a Unity global output
 
@@ -81,7 +70,10 @@ if (values == null || values.Length != expectedElements)
 
 ## Retrieve service debugging knowledge
 
-Query available `pico-dev-knowledge` tools for SpatialML service logging, global tensor readback,
+Use the general plugin's `knowledge-query` Skill for `pico-dev-knowledge` lookups. Pass the engineering
+`--project <target-dir>` and distinct resource `--workspace-root <session-root>`; follow its live
+activation, query, and restore protocol instead of querying the connected graph directly. Query
+for SpatialML service logging, global tensor readback,
 `debug.pico.spatialml.debug`, and the detected SDK, runtime mode, and version. Retrieve the relevant
 service behavior, readback, and operator API knowledge before writing bindings. If lookup is
 unavailable, use the essential contract below and verify APIs against the installed SDK. Do not
@@ -172,5 +164,7 @@ probe contract and observed values; diagnosis versus remaining hypotheses; fix a
 property cleanup and resource status. Recheck the original issue and normal permission behavior with
 debugging off. Remove or gate temporary instrumentation; measure performance with diagnostics off.
 If no compatible device is available, deliver source/build findings and precise remaining device
-checks without claiming runtime verification. Use pySpatialML for identified package/model
-comparisons and platform diagnostics for whole-app/service evidence.
+checks without claiming runtime verification. Before using pySpatialML for identified package/model
+comparisons, verify the selected executable with `pyspatialml --version` and require 0.5.3 or newer;
+use the installation guidance in `spatialml` to repair an older release. Use platform diagnostics
+for whole-app/service evidence.

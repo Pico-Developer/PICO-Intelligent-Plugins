@@ -9,6 +9,16 @@ license: 'Apache-2.0'
 Use this skill for the Unity-facing SpatialML workflow. SpatialML is an integration inside a PICO
 Unity project, not a separate Unity project type.
 
+## When to Use
+
+- Configuring or implementing SpatialML in an existing PICO Unity project
+- Setting up ML pipelines, models, or operators in Unity XR
+
+## When NOT to Use
+
+- Runtime debugging of Unity SpatialML — use Unity `spatialml-debugging`
+- Kotlin Spatial SDK SpatialML — use the Spatial plugin's `spatialml`
+
 ## Recognize SpatialML Intent
 
 Runtime service logs, zero/stale outputs, global tensor probes, debug-flag changes, and readback
@@ -39,8 +49,9 @@ Start from picoxr/face-mediapipe-pipeline, import it through the Unity SDK impor
 verify the app. Explain any step I need to do in the Editor.
 ```
 
-If the PICO Unity SDK is absent, tell the user to invoke `/pico-unity-init`; it is a separate explicit
-workflow. After it completes, resume this SpatialML request instead of asking the user to start over.
+If the PICO Unity SDK is absent and the project has not completed initialization, continue with the
+`pico-unity-init` Skill in the same session. After it completes, resume this SpatialML request
+instead of asking the user to start over.
 
 ## Route The Request
 
@@ -53,8 +64,8 @@ workflow. After it completes, resume this SpatialML request instead of asking th
   loader use, or package verification, stay in this skill and read `references/pipeline-zoo.md`.
 - A full app request continues from the package sub-workflow into application integration, build, and
   runtime verification. A package-only request may stop after verified SDK-owned import.
-- For missing PICO Unity SDK setup, tell the developer to invoke `/pico-unity-init` explicitly. That
-  skill is manual-trigger-only; never invoke it automatically.
+- For missing PICO Unity SDK setup in a project that has not completed initialization, continue with
+  `pico-unity-init`, then resume this skill. The developer does not need to type `/pico-unity-init`.
 - For ordinary UPM package changes, or to repair a recognized official moving Git SDK reference in
   an already initialized project, use `pico-unity-package-manager`. Never send an initialized project
   back to `/pico-unity-init` for an SDK refresh.
@@ -80,9 +91,13 @@ Respect each returned status and `nextAction`:
   incompatible. Inspect the checks and capability matrix instead of treating every `PARTIAL` as the
   same problem.
 - Install or update pySpatialML with
-  `uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`. pico-cli supports version 0.5.0 or newer,
+  `uv tool install --upgrade --python 3.13 --system-certs 'pyspatialml-pico>=0.5.3'`. pico-cli supports version 0.5.3 or newer,
   resolves `pyspatialml` from `PATH`, and honors `PICO_CLI_PYSPATIALML` as an explicit executable
   override.
+- Before handing package authoring or isolated host/device execution directly to pySpatialML, verify
+  the selected executable reports at least 0.5.3. This minimum includes the JavaScript tensor/error,
+  corrupt-model diagnostic, and visualization validation/readiness fixes. Upgrade older managed
+  installs through `spatialml setup`; repair an explicit executable override in its owning environment.
 - `pipeline.verify`, `model.inspect`, and `model.visualize` delegate to pySpatialML. If they return
   `PSM_TOOL_UNAVAILABLE` with exit code `3`, repair that installation; do not replace them with legacy
   Docker, QNN context-binary, direct `litert`, or AOT workflows.

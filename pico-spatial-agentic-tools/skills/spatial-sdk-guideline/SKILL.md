@@ -6,11 +6,23 @@ license: 'Apache-2.0'
 
 # PICO Spatial SDK 3D Developer
 
+## When to Use
+
+- PICO Spatial SDK API usage questions (ECS, Entity, Component, System)
+- Spatial coordinate systems, units, or spatial math guidance
+- Quick API reference or diagnostic guidance for Spatial SDK features
+
+## When NOT to Use
+
+- Full app delivery — use `spatial-app-dev-workflow`; use `spatial-app-onboarding` when only a runnable scaffold is requested
+- SDK version migration — use `spatial-sdk-update`
+- Editor-based 3D authoring — use `spatial-editor`
+
 ## Description and Goals
 
 Use this skill for focused SDK API guidance, isolated implementation patterns, and non-deliverable diagnosis in **PICO Spatial SDK on PICO OS 6** (Android + Kotlin + Jetpack Compose + Spatial ECS).
 
-Route any requested edit that creates, loads, parents, transforms, arranges, places, or validates a Kotlin `Entity` hierarchy to `spatial-sdk-scene-builder`. This skill may provide the API facts that support that implementation, but it does not own the resulting scene change.
+Route Kotlin scene composition and placement to `spatial-sdk-scene-builder`; this skill provides the supporting API facts. Runtime behavior changes that preserve the scene stay in the current app task, even when they use Entity or transform APIs.
 
 Goals:
 
@@ -92,6 +104,13 @@ Practical rule:
 - 2D view space (Compose/View in a WindowContainer): **left-handed, virtual pixels** with +Y down.
 - Mixing 2D + 3D requires **explicit conversions** (space + unit).
 
+### Accessibility and AI Operation
+
+Use `spatial-accessibility` whenever user-facing Entities or Attachments need accessible names,
+roles, state, typed actions, audits, current-app snapshots, or verified AI operation. Keep the
+semantic contract app-owned and consume it through the SpaceOS ROM `uiautomator spatial` extension;
+do not replace semantic actions with coordinate taps, logs, or private ECS inspection.
+
 ## Components Reference (By Topic)
 
 > Detailed, self-contained references are bundled under `reference/`.
@@ -123,7 +142,8 @@ Practical rule:
 
 ### Interaction & Hit Testing
 
-- Collision + Interactable prerequisites, targeting, gestures, hover, unit mapping:
+- Collision + Interactable prerequisites, component contracts, runtime enable/disable, targeting,
+  gestures, hover, unit mapping:
   - [Interaction and Hit Testing](reference/interaction-hit-testing.md)
 
 ### Coordinates & Units
@@ -135,6 +155,12 @@ Practical rule:
 
 - Budgets, optimization checklists, common bottlenecks:
   - [Performance Budgets and Optimization Checklist](reference/performance-budgets.md)
+
+### Experimental APIs
+
+- Compiler opt-in, application Manifest runtime opt-in, publication risk, and
+  fail-closed verification:
+  - [Experimental API Opt-In](reference/experimental-apis.md)
 
 ## Playbooks
 
@@ -233,9 +259,9 @@ boundaries:
 Before proposing a new implementation strategy, gather knowledge in this order:
 
 1. Inspect the user's project-local files (build files, version catalogs, manifests, dependency declarations) to identify the exact Spatial SDK BOM, current implementation, and failure signal. Record the declaring file in the answer.
-2. Inspect the nearest project `.pico-env.json`. Compare its knowledge `version` / `agentVaultWorkspace` major-minor line with the BOM; do not silently fall back to a global selector when answering for a project.
+2. Resolve the effective disk selection with `pico-cli project detect --project <target-dir> --format json`, preserving `--workspace-root <session-root>` when the resource workspace differs. Compare the selected knowledge major-minor line with the BOM; do not confuse disk alignment with the live MCP workspace.
 3. Read the most relevant skill instructions for workflow/routing guidance.
-4. Query `pico-dev-knowledge` MCP for non-trivial SDK/API facts, version-sensitive behavior, or cross-reference discovery only after checking its project version alignment.
+4. Use the general plugin's `knowledge-query` Skill for non-trivial SDK/API facts, version-sensitive behavior, or cross-reference discovery after checking disk version alignment. Pass the engineering `--project <target-dir>` and distinct resource `--workspace-root <session-root>`; follow its live activation, query, and restore protocol rather than calling MCP directly.
 5. Read related bundled references and project-local examples that match the exact SDK version.
 6. Verify current behavior through code inspection, builds, logs, or runtime evidence.
 7. Inspect `source.jar` or SDK binaries only as last-resort source validation or exact-symbol checks.
@@ -252,7 +278,15 @@ If `pico-dev-knowledge` is unavailable, continue with skill guidance, bundled re
 - **Surface and anchor work needs runtime evidence.** For plane, wall, table, anchor, room-geometry, or placement features, do not claim correctness from code alone. Verify with emulator/device capability checks, logs, screenshots/recordings, or clearly state that physical-device validation remains pending.
 - **Interaction requires both input and collision evidence.** For tap, raycast, grab, drag, rotate, scale, or controller interaction bugs, check input source/controller state, target transforms, collision/hit-test components, entity visibility, and coordinate space before replacing the interaction model.
 - **Entity and animation APIs are `@MainThread`.** Entity/component operations return to the main thread after async loading; animation playback, controller management, and timeline APIs are also main-thread-only. Offloading them to background threads causes silent corruption or crashes.
-- **`@ExperimentalSpatialApi` means unstable — disclose, opt-in, and guard.** APIs annotated with `@ExperimentalSpatialApi` may be renamed, changed, or removed in a future SDK version. Apps using them may be blocked from market publication. When recommending an experimental API, state it is experimental, require the caller to add `@OptIn(ExperimentalSpatialApi::class)`, wrap calls in try-catch to handle behavioral changes or unexpected exceptions gracefully, and note the market risk. Do not silently opt in or suppress the compiler error.
+- **Experimental APIs require two atomic opt-ins.** For any experimental opt-in
+  annotation declared by the selected PICO Spatial SDK version, read
+  [Experimental API Opt-In](reference/experimental-apis.md). Disclose the PICO
+  Store publication risk and obtain explicit acceptance before enabling the
+  API. Once accepted, add both the narrow Kotlin opt-in and
+  `pico.spatial.use_experimental_api=1` under the application Manifest's
+  `<application>` element in the same change. Missing, disabled, duplicate,
+  conflicting, malformed, or ambiguously targeted runtime configuration blocks
+  delivery; do not guess or claim that a successful build proves readiness.
 - **Performance fixes require measurements.** For stutter, frame drops, startup latency, high CPU/GPU load, or scene complexity, prefer `pico-cli perf`, Perfetto Trace, log evidence, or reproducible measurements. Do not guess root causes from code structure alone.
 - **Asset changes need scale and budget checks.** When adding models, textures, lighting, particles, physics, or animations, consider units, bounding boxes, triangle/texture budgets, loading strategy, and device performance impact.
 - **SpatialUI should stay app-side and public.** Use public SpatialUI APIs, PicoTheme roles, built-in components, and documented modifiers. Do not depend on restricted design-system internals or replicate native shell behavior manually unless the user explicitly needs a custom component and accepts the trade-off.
@@ -279,5 +313,6 @@ Use this as a pre-flight checklist:
 - [Interaction and Hit Testing](reference/interaction-hit-testing.md)
 - [Coordinates and Units](reference/coordinates-and-units.md)
 - [Performance Budgets and Optimization Checklist](reference/performance-budgets.md)
+- [Experimental API Opt-In](reference/experimental-apis.md)
 
-For deeper dives, prefer querying `pico-dev-knowledge` MCP for broader or version-specific documentation, and when source validation is needed, follow the file paths returned in `pico-dev-knowledge` results.
+For deeper dives, use the general `knowledge-query` Skill for broader or version-specific `pico-dev-knowledge` documentation, and when source validation is needed, follow the file paths returned in `pico-dev-knowledge` results.

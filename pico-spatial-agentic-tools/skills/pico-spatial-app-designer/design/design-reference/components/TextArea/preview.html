@@ -1,0 +1,28 @@
+<!-- @dsCard group="Input" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>TextArea · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>TextArea</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>TextArea</h1><p>Reference examples · original defaults unless explicitly overridden</p></header><div class="sui-stage"><sui-text-area placeholder="Write a note" width="320"></sui-text-area></div>
+<section class="example">
+  <h2>Plan recommendation · notes</h2>
+  <p class="example-note">Reserve three lines for a note. Grow with the text up to six visible lines, then scroll inside the field. The limit controls visible height, not input length. TextArea has no clear button.</p>
+  <div class="row" style="align-items:flex-start;gap:24px;overflow-x:auto">
+    <div class="stack">
+      <h3 id="note-empty-label">Empty · three initial lines</h3>
+      <sui-text-area id="note-empty" placeholder="Write a note" width="320" min-lines="3" max-lines="6" supporting-text="Start typing; the field grows up to six lines." aria-labelledby="note-empty-label"></sui-text-area>
+    </div>
+    <div class="stack">
+      <h3 id="note-growing-label">Growing · four lines</h3>
+      <sui-text-area id="note-growing" width="320" min-lines="3" max-lines="6" value="Meeting notes&#10;Review the latest prototype.&#10;Capture feedback from the team.&#10;Agree on the next steps." supporting-text="Delete text to shrink back to three lines." aria-labelledby="note-growing-label"></sui-text-area>
+    </div>
+    <div class="stack">
+      <h3 id="note-scroll-label">Long note · six lines, then scroll</h3>
+      <sui-text-area id="note-scroll" width="320" min-lines="3" max-lines="6" value="Workshop notes&#10;1. Review the current flow.&#10;2. Record the main pain points.&#10;3. Sketch possible improvements.&#10;4. Compare the proposals.&#10;5. Choose a direction.&#10;6. Build a small prototype.&#10;7. Try it with the team.&#10;8. Capture what we learned.&#10;9. Plan the next iteration." supporting-text="Scroll inside the field to read the rest." aria-labelledby="note-scroll-label"></sui-text-area>
+    </div>
+  </div>
+</section>
+<script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script></body></html>

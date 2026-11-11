@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import uuid
 import signal
 import shutil
@@ -16,10 +17,10 @@ from datetime import datetime
 FAST_PERF_NAME = "fast-perf.json"
 TRACE_PERF_NAME = "trace-perf.perfetto-trace"
 SIMPLE_PERF_NAME = "simple-perf.data"
-SUMMARY_YAML_NAME = "collector-summary.yaml"
+SUMMARY_JSON_NAME = "collector-summary.json"
 DEVICE_SIMPLEPERF_DATA = "/data/local/tmp/perf.data"
 
-# 如果 trace stop 需要固定端口，可改成 "9500"
+# Set this to "9500" if trace stop requires a fixed port.
 TRACE_STOP_PORT = None
 
 
@@ -56,7 +57,7 @@ class CollectorManager:
         self.fast_perf_path = self.output_dir / FAST_PERF_NAME
         self.trace_perf_path = self.output_dir / TRACE_PERF_NAME
         self.simple_perf_path = self.output_dir / SIMPLE_PERF_NAME
-        self.summary_yaml_path = self.output_dir / SUMMARY_YAML_NAME
+        self.summary_json_path = self.output_dir / SUMMARY_JSON_NAME
 
         self.live_session_id = None
         self.trace_session_id = None
@@ -409,7 +410,7 @@ class CollectorManager:
         self.validation_warnings = warnings
         return ok
 
-    def write_summary_yaml(
+    def write_summary_json(
         self, capture_id: str, capture_time: str, duration: int, cli_version: str
     ):
         def perf_entry(path: Path):
@@ -436,54 +437,57 @@ class CollectorManager:
         )
         status = "complete" if complete else "partial"
 
-        lines = [
-            "collector_result:",
-            "  schema_version: 1",
-            f"  status: {yaml_value(status)}",
-            f"  capture_id: {yaml_value(capture_id)}",
-            f"  started_at: {yaml_value(capture_time)}",
-            f"  package: {yaml_value(self.app_package)}",
-            f"  device_serial: {yaml_value(self.serial)}",
-            f"  duration_s: {yaml_value(duration)}",
-            f"  output_dir: {yaml_value(str(self.output_dir.resolve()))}",
-            "",
-            "  artifacts:",
-            "    fast_perf:",
-            f"      path: {yaml_value(fast_perf['path'])}",
-            f"      size_kb: {yaml_value(fast_perf['size_kb'])}",
-            "      required: true",
-            "    trace_perf:",
-            f"      path: {yaml_value(trace_perf['path'])}",
-            f"      size_kb: {yaml_value(trace_perf['size_kb'])}",
-            "      required: true",
-            "    simple_perf:",
-            f"      path: {yaml_value(simple_perf['path'])}",
-            f"      size_kb: {yaml_value(simple_perf['size_kb'])}",
-            f"      required: {'true' if self.simple_perf_enabled else 'false'}",
-            "",
-            "  collector:",
-            f"    script: {yaml_value(str(self.script_path.resolve()))}",
-            f"    command: {yaml_value(format_command(self.command_line))}",
-            f"    python_cmd: {yaml_value(self.python_cmd)}",
-            f"    pico_cli: {yaml_value(self.pico_cli)}",
-            f"    cli_version: {yaml_value(cli_version)}",
-            f"    simple_perf_script: {yaml_value(str(self.simple_perf_script.resolve()) if self.simple_perf_script else None)}",
-            "",
-            "  warnings:",
-        ]
-        warnings = getattr(self, "validation_warnings", [])
-        if warnings:
-            lines.extend([f"    - {yaml_value(item)}" for item in warnings])
-        else:
-            lines[-1] = "  warnings: []"
-        lines.append("  limitations:")
-        if self.limitations:
-            lines.extend([f"    - {yaml_value(item)}" for item in self.limitations])
-        else:
-            lines[-1] = "  limitations: []"
+        warnings = list(getattr(self, "validation_warnings", []) or [])
 
-        self.summary_yaml_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"[INFO] summary yaml written to {self.summary_yaml_path}")
+        document = {
+            "collector_result": {
+                "schema_version": 1,
+                "status": status,
+                "capture_id": capture_id,
+                "started_at": capture_time,
+                "package": self.app_package,
+                "device_serial": self.serial,
+                "duration_s": duration,
+                "output_dir": str(self.output_dir.resolve()),
+                "artifacts": {
+                    "fast_perf": {
+                        "path": fast_perf["path"],
+                        "size_kb": fast_perf["size_kb"],
+                        "required": True,
+                    },
+                    "trace_perf": {
+                        "path": trace_perf["path"],
+                        "size_kb": trace_perf["size_kb"],
+                        "required": True,
+                    },
+                    "simple_perf": {
+                        "path": simple_perf["path"],
+                        "size_kb": simple_perf["size_kb"],
+                        "required": bool(self.simple_perf_enabled),
+                    },
+                },
+                "collector": {
+                    "script": str(self.script_path.resolve()),
+                    "command": format_command(self.command_line),
+                    "python_cmd": self.python_cmd,
+                    "pico_cli": self.pico_cli,
+                    "cli_version": cli_version,
+                    "simple_perf_script": (
+                        str(self.simple_perf_script.resolve())
+                        if self.simple_perf_script
+                        else None
+                    ),
+                },
+                "warnings": warnings,
+                "limitations": list(self.limitations),
+            }
+        }
+
+        self.summary_json_path.write_text(
+            json.dumps(document, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[INFO] summary json written to {self.summary_json_path}")
 
 
 def make_output_dir(base_dir: Path = None) -> Path:
@@ -547,15 +551,6 @@ def size_in_kb(path: Path) -> int:
     return path.stat().st_size // 1024 if path.exists() else 0
 
 
-def yaml_value(value):
-    if value is None:
-        return "null"
-    text = str(value)
-    if any(ch in text for ch in [":", "#", "\\", '"']) or not text or text != text.strip():
-        return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
-    return text
-
-
 def format_command(args: list[str]) -> str:
     return " ".join(str(arg) for arg in args)
 
@@ -602,7 +597,7 @@ def parse_args():
 def print_result(output_dir, ok):
     print("\n[RESULT]")
     print(f"[RESULT] output directory: {output_dir}")
-    print(f"[RESULT] summary yaml    : {output_dir / SUMMARY_YAML_NAME}")
+    print(f"[RESULT] summary json    : {output_dir / SUMMARY_JSON_NAME}")
     if ok:
         print(
             "The acquisition processes have been completed and the results have been saved to separate directories."
@@ -622,7 +617,7 @@ def finalize_capture(
     cli_version: str,
 ):
     ok = mgr.verify_outputs()
-    mgr.write_summary_yaml(
+    mgr.write_summary_json(
         capture_id=capture_id, capture_time=capture_time, duration=duration, cli_version=cli_version
     )
     print_result(output_dir, ok)

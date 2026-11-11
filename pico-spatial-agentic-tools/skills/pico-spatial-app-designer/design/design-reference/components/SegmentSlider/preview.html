@@ -1,0 +1,63 @@
+<!-- @dsCard group="Selection" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SegmentSlider · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .segment-reference{width:320px;display:grid;gap:12px}
+    .setting-heading{display:flex;justify-content:space-between;gap:12px}
+    .position-labels{display:flex;justify-content:space-between;margin:0 16px;font-size:14px}
+    .position-labels span{width:0;display:flex;justify-content:center;white-space:nowrap}
+    .quality-control{width:240px;display:grid;gap:12px}
+    .level-labels{display:flex;justify-content:space-between;margin:0 16px}
+    .level-labels span{width:0;display:flex;flex-direction:column;align-items:center;font-size:12px;white-space:nowrap}
+    .level-labels strong{font-weight:600;font-size:14px}
+    #quality-example{overflow-x:auto}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>SegmentSlider</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>SegmentSlider</h1><p>Reference example · original defaults</p></header>
+  <div class="sui-stage">
+    <div class="segment-reference">
+      <div class="setting-heading"><span>Position</span><output id="position-value" for="positions">2 / 4</output></div>
+      <sui-segment-slider id="positions" step="2" segment-count="4" semantic-label="Position, from 0 to 4"></sui-segment-slider>
+      <div class="position-labels"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span></div>
+    </div>
+    <p class="example-note"><code>segment-count="4"</code> means 4 intervals and 5 selectable positions: 0–4.</p>
+  </div>
+  <section class="example" id="quality-example">
+    <h2>Plan recommendation · named quality levels</h2>
+    <p class="example-note">Five levels use four intervals. Each position maps to a named level below. The current readout shows the nearest level while dragging; release to snap to that position. For four options, use <code>segment-count="3"</code>.</p>
+    <div class="quality-control">
+      <div class="setting-heading"><span>Quality</span><output id="quality-value" for="quality">Medium · 2/4</output></div>
+      <sui-segment-slider id="quality" step="2" segment-count="4" size="regular" width="240" semantic-label="Quality: 0 Off, 1 Low, 2 Medium, 3 High, 4 Max"></sui-segment-slider>
+      <div class="level-labels">
+        <span><strong>0</strong>Off</span><span><strong>1</strong>Low</span><span><strong>2</strong>Medium</span><span><strong>3</strong>High</span><span><strong>4</strong>Max</span>
+      </div>
+    </div>
+  </section>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const levels = ['Off', 'Low', 'Medium', 'High', 'Max'];
+      const examples = [
+        { id: 'positions', output: 'position-value', format: step => step + ' / 4' },
+        { id: 'quality', output: 'quality-value', format: step => levels[step] + ' · ' + step + '/4' },
+      ];
+      examples.forEach(example => {
+        const slider = document.getElementById(example.id);
+        const readout = document.getElementById(example.output);
+        const update = step => { readout.textContent = example.format(step); };
+        slider.addEventListener('value-change', event => update(Math.round(event.detail.value * 4)));
+        slider.addEventListener('step-change', event => update(event.detail.step));
+        update(Number(slider.getAttribute('step')));
+      });
+    });
+  </script>
+</body>
+</html>

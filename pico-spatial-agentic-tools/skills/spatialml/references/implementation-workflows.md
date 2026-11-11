@@ -16,7 +16,9 @@ tensor encodings, permissions, and lifecycle rules are versioned SDK facts. Retr
    evidence determines the SDK version and existing conventions.
 2. Use `spatialml doctor` to confirm the Kotlin SDK and Spatial runtime mode when live CLI execution is in
    scope. Do not infer mode only from the requested output.
-3. Query `pico-dev-knowledge` with the SDK, mode, workflow goal, and named concept. Start broad enough
+3. Use the general plugin's `knowledge-query` Skill, passing the engineering `--project <target-dir>`
+   and distinct resource `--workspace-root <session-root>`. Follow its live activation, query, and
+   restore protocol; disk selection alone does not identify the connected graph. Query with the SDK, mode, workflow goal, and named concept. Start broad enough
    to retrieve the workflow page, then query the relevant operator or API card for exact bindings.
 4. Reconcile the result with project-local code. Prefer public documented APIs and preserve a working
    local pattern when it matches the installed SDK.

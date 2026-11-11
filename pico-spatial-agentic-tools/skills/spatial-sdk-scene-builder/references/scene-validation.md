@@ -7,7 +7,7 @@ Read this reference before declaring a PICO Spatial SDK scene complete.
 - Validate the source
 - Build and launch
 - Collect runtime evidence
-- Review the complete scene
+- Review the requested scope
 - Handle failures
 - Report completion
 
@@ -58,24 +58,22 @@ constraint holds.
 
 ## Build and Launch
 
-The managed `spatial-3d-generation` Run owns source validation and the deterministic
-Gradle build through its Codegen Child. Do not run a second build before submitting
-the Codegen authoring Handoff. Require the terminal root Result to include the
-source Artifact and successful build Evidence.
+Apply the same scene acceptance criteria in both paths. Use the evidence from
+how the work was actually completed:
 
-Use `spatial-emulator-usage` after that build only when emulator or device selection,
-installation, launch, screenshots, recordings, or logs are part of the request.
+- **Direct or direct continuation:** use the current app task's project build and
+  verify the changed scene scope. Repair compile failures in that app task and
+  rerun its build. No separate 3D Run, Codegen Handoff, or Root Result is required.
+- **Managed Codegen:** the managed `spatial-3d-generation` Run owns source validation and
+  the deterministic Gradle build through its Codegen Child. Do not run a second
+  build before submitting its authoring Handoff. Require the terminal root Result
+  to include the source Artifact and successful build Evidence. Resolve managed
+  compilation errors through the same Run's applicable Handoff.
 
-After the managed build:
-
-1. Inspect the root Workflow build Evidence and resolve any reported compilation
-   error through the same Run's current Handoff.
-2. When runtime evidence is required, install and launch the intended activity or
-   experience.
-3. Watch for crashes, asset-load failures, and relevant log errors.
-4. Navigate to the scene and allow asynchronous assets and layout to stabilize.
-5. Re-run the scene after lifecycle recreation when duplicate or stale Entities
-   are a plausible risk.
+After the applicable build, use `pico-emulator-usage` when device/emulator work
+or runtime evidence is required. Launch the intended activity or experience,
+watch for crashes and asset-load errors, and let the relevant scene stabilize.
+Re-run after lifecycle recreation when duplicate or stale Entities are a risk.
 
 ## Collect Runtime Evidence
 
@@ -132,10 +130,11 @@ Do not accept an unexplained `Vector3`, a pivot/center-only assertion, or a
 screenshot alone as proof of a hard containment, contact, or non-overlap
 requirement.
 
-## Review the Complete Scene
+## Review the Requested Scope
 
-Capture viewpoints that show the entire composition and any important local
-relationship. Review:
+For complete-scene work, capture the composition and important local relationships.
+For a focused change, capture what demonstrates the affected relationship or
+behavior. Review the following where applicable:
 
 - object presence and asset-load success
 - hierarchy-driven grouping and orientation
@@ -172,5 +171,5 @@ implemented and which requirement the failure blocks.
 
 Report the implemented source locations, scene hierarchy, asset and scale
 evidence, important transforms, build/launch result, source-gate output, runtime
-evidence path, and reviewed screenshot or recording paths. Describe the complete
-scene outcome first; present calculations and plans as supporting evidence.
+evidence path, and reviewed screenshot or recording paths. Describe the requested
+outcome first; present calculations and plans as supporting evidence.

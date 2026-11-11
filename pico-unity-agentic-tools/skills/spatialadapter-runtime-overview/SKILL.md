@@ -1,10 +1,16 @@
 ---
 name: spatialadapter-runtime-overview
-description: Use when starting with Spatial Adapter, PICO Spatial, or Unity Spatial runtime APIs, choosing a Spatial Adapter topic skill, or reviewing Unity-facing surfaces.
+description: Use to explore the Spatial Adapter API surface, compare API topics or high-level versus native workflows, or choose a topic skill when the required API is unclear. Use known camera, input, component, or runtime tasks directly with their topic skills. Platform names alone do not activate this skill.
 license: 'Apache-2.0'
 ---
 
 # SpatialAdapter Runtime Overview
+
+## When NOT to Use
+
+- Concrete implementation of a specific API — use the matching `spatialadapter-*` skill
+- Runtime initialization details — use `spatialadapter-runtime-core-api`
+- PICO Spatial SDK (Android/Kotlin) — use Spatial plugin skills
 
 ## Overview
 
@@ -16,12 +22,12 @@ Confirm PICO Spatial / Unity Spatial mode from `.pico-cli/config.json` when avai
 
 ## Trigger Keywords
 
-- `Spatial Adapter`
-- `PICO Spatial`
-- `Unity Spatial`
-- `SpatialAdapterRuntime`
-- `SpatialCamera`
-- `Spatial Input`
+- explore Spatial Adapter APIs
+- compare Spatial Adapter API topics
+- choose a Spatial Adapter topic skill
+- compare high-level Unity APIs with native bridge calls
+
+Platform names alone do not activate this skill. The request must ask for API discovery, comparison, or topic selection. A concrete API name alone belongs to its topic skill; keep concrete API names below as reference material. If a shared name such as `SpatialCamera` does not identify an action, clarify the action before choosing its topic skill.
 
 ## When to Use
 

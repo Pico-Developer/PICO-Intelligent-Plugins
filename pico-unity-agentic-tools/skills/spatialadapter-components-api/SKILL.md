@@ -1,10 +1,16 @@
 ---
 name: spatialadapter-components-api
-description: Use when working with Spatial Adapter, PICO Spatial, or Unity Spatial runtime components such as native text, video, hover, grounding shadow, or collider payloads.
+description: Use for Spatial Adapter native text, video playback, hover, grounding shadow, backend ColliderData conversion, or canvas sorting components. Spatial Input target colliders belong to spatialadapter-input-api. Platform names alone do not activate this skill.
 license: 'Apache-2.0'
 ---
 
 # SpatialAdapter Components API
+
+## When NOT to Use
+
+- Camera or window lifecycle — use `spatialadapter-camera-window-api`
+- Input handling — use `spatialadapter-input-api`
+- Runtime initialization — use `spatialadapter-runtime-core-api`
 
 ## Overview
 
@@ -16,12 +22,12 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
 
 ## Trigger Keywords
 
-- `Spatial Adapter`
-- `PICO Spatial`
-- `Unity Spatial`
 - `SpatialAdapterGroundingShadow`
 - `SpatialAdapterNativeText`
 - `SpatialAdapterVideoComponent`
+- backend ColliderData conversion or canvas sorting
+
+Platform names alone do not activate this skill. Require a named Spatial Adapter component or its configuration task. Use [spatialadapter-input-api](../spatialadapter-input-api/SKILL.md) for colliders used to target objects with Spatial Input; this skill covers backend collider payload conversion.
 
 ## When to Use
 

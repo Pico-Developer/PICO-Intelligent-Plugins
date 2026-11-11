@@ -1,0 +1,70 @@
+<!-- @dsCard group="Input" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>NumberField · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>NumberField</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>NumberField</h1><p>Reference examples · original defaults unless explicitly overridden</p></header><div class="sui-stage"><div class="sui-row"><sui-number-field value="12" min="0" max="99"></sui-number-field><sui-number-field value="3" size="small"></sui-number-field><sui-number-field value="72" unit="kg"></sui-number-field></div></div><script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script>
+<section class="example" id="number-scenarios">
+  <h2>Plan recommendation · quantity, weight and limits</h2>
+  <p class="example-note">These application examples set their own ranges, units and button steps. Use + / − to adjust, or type a value and leave the field to commit it. Out-of-range input is clamped to the nearest limit; the step controls button increments, not typed-value rounding.</p>
+  <div class="number-examples">
+    <div class="stack">
+      <h3>Quantity</h3>
+      <p class="muted">1–10 items · each button press changes the quantity by 1 item.</p>
+      <sui-number-field id="quantity" value="3" min="1" max="10" step="1" unit="items" fraction-digits="0" semantic-label="Quantity in items"></sui-number-field>
+      <p id="quantity-status" class="status" role="status">Current quantity: 3 items.</p>
+    </div>
+    <div class="stack">
+      <h3>Weight</h3>
+      <p class="muted">0–100 kg · each button press changes the weight by 0.5 kg. Displayed to one decimal place.</p>
+      <sui-number-field id="weight" value="72.0" min="0" max="100" step="0.5" unit="kg" fraction-digits="1" semantic-label="Weight in kilograms"></sui-number-field>
+      <p id="weight-status" class="status" role="status">Current weight: 72.0 kg.</p>
+    </div>
+    <div class="stack">
+      <h3>Quantity · lower limit (Small)</h3>
+      <p class="muted">1–10 items · step 1 item. Starts at the minimum: − is dimmed and unavailable. Press + to enable it again.</p>
+      <sui-number-field id="quantity-min" value="1" min="1" max="10" step="1" unit="items" fraction-digits="0" size="small" semantic-label="Quantity at lower limit in items"></sui-number-field>
+      <p id="quantity-min-status" class="status" role="status">Current quantity: 1 item. Minimum reached; decrease unavailable.</p>
+    </div>
+    <div class="stack">
+      <h3>Weight · upper limit</h3>
+      <p class="muted">0–100 kg · step 0.5 kg. Starts at the maximum: + is dimmed and unavailable. Press − to enable it again.</p>
+      <sui-number-field id="weight-max" value="100.0" min="0" max="100" step="0.5" unit="kg" fraction-digits="1" semantic-label="Weight at upper limit in kilograms"></sui-number-field>
+      <p id="weight-max-status" class="status" role="status">Current weight: 100.0 kg. Maximum reached; increase unavailable.</p>
+    </div>
+  </div>
+</section>
+<style>
+#number-scenarios .number-examples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:900px}
+#number-scenarios h3{margin:0;font-size:16px}
+#number-scenarios .stack{min-width:0;align-items:flex-start}
+#number-scenarios .stack p{margin:0}
+@media(max-width:600px){#number-scenarios .number-examples{grid-template-columns:minmax(0,1fr)}}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const examples = [
+    { id: 'quantity', name: 'quantity', digits: 0, unit: 'items' },
+    { id: 'weight', name: 'weight', digits: 1, unit: 'kg' },
+    { id: 'quantity-min', name: 'quantity', digits: 0, unit: 'items' },
+    { id: 'weight-max', name: 'weight', digits: 1, unit: 'kg' },
+  ];
+  examples.forEach(example => {
+    const field = document.getElementById(example.id);
+    const status = document.getElementById(example.id + '-status');
+    const update = value => {
+      const unit = example.unit === 'items' && value === 1 ? 'item' : example.unit;
+      let message = 'Current ' + example.name + ': ' + value.toFixed(example.digits) + ' ' + unit + '.';
+      if (value <= Number(field.getAttribute('min'))) message += ' Minimum reached; decrease unavailable.';
+      if (value >= Number(field.getAttribute('max'))) message += ' Maximum reached; increase unavailable.';
+      status.textContent = message;
+    };
+    field.addEventListener('value-change', event => update(event.detail.value));
+    update(Number(field.getAttribute('value')));
+  });
+});
+</script>
+</body></html>

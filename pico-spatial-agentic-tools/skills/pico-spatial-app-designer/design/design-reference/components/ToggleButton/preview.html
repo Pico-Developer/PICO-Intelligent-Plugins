@@ -1,0 +1,44 @@
+<!-- @dsCard group="Actions" height=480 subtitle="Stable labels and toggle states" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ToggleButton · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .toggle-gallery{width:560px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px;display:grid;gap:24px}
+    .section-title{margin:0 0 12px;font-size:14px;line-height:20px;font-weight:600}
+    .toggle-examples{display:flex;align-items:flex-start;flex-wrap:wrap;gap:24px}
+    .toggle-example{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+    .example-caption{color:var(--label-semidark-alpha);font-size:12px;line-height:16px}
+    @media(max-width:600px){.toggle-gallery{max-width:calc(100% - 32px);margin:0 16px;padding:16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>ToggleButton</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>ToggleButton</h1><p>Function labels stay the same when toggled</p></header>
+  <div class="sui-stage toggle-gallery">
+    <section aria-labelledby="states-title">
+      <h2 id="states-title" class="section-title">Initial states · Min (default)</h2>
+      <div class="toggle-examples">
+        <div class="toggle-example"><sui-toggle-button id="bold-off" text="Bold"></sui-toggle-button><span class="example-caption">Initially off</span></div>
+        <div class="toggle-example"><sui-toggle-button id="bold-on" text="Bold" checked></sui-toggle-button><span class="example-caption">Initially on</span></div>
+      </div>
+    </section>
+    <section aria-labelledby="sizes-title">
+      <h2 id="sizes-title" class="section-title">Sizes</h2>
+      <div class="toggle-examples">
+        <div class="toggle-example"><sui-toggle-button id="bold-small" size="small" text="Bold"></sui-toggle-button><span class="example-caption">Small</span></div>
+        <div class="toggle-example"><sui-toggle-button id="bold-max" size="max" text="Bold" checked></sui-toggle-button><span class="example-caption">Max</span></div>
+      </div>
+    </section>
+    <section aria-labelledby="icon-title">
+      <h2 id="icon-title" class="section-title">With an icon</h2>
+      <sui-toggle-button id="mute-toggle" text="Mute" leading-icon="ic_volume_slash"></sui-toggle-button>
+    </section>
+  </div>
+</body>
+</html>

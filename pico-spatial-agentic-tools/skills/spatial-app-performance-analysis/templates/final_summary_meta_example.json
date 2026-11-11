@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "Example of session-output-<timestamp>/final-summary.meta.json.",
+    "This is the machine-readable sidecar for final-summary.md.",
+    "Contract: references/routing/final-summary-contract.md",
+    "generate_report.py reads header fields directly from header.* and topic_outputs[].file."
+  ],
+
+  "schema_version": "1.0",
+
+  "header": {
+    "app_package": "com.example.spatial.app",
+    "app_name": "Example Spatial App",
+    "analysis_time": "2026-07-31 14:03:12 CST",
+    "app_type": "no_debug",
+    "device_type": "real",
+    "device_model": "PICO 4 Ultra",
+    "os_version": "6.1.0",
+    "trace_file": "trace-perf.perfetto-trace",
+    "fast_perf_file": "fast-perf.json",
+    "simple_perf_file": "",
+    "summary": "Dragging the model triggers a candidate cross-topic bottleneck between Spatial Engine resource rebuild and one slow Binder dependency."
+  },
+
+  "issue_type_key": ["spatial_frame_abnormal", "binder_latency"],
+  "activated_subprotocols": ["spatial-engine", "binder", "cpu_sched"],
+  "conclusion_level": "candidate",
+  "root_cause": "Main-thread S share spikes during dragging; candidates center on spatial-engine resource rebuilding and one slow Binder call.",
+
+  "next_actions": [
+    {
+      "action": "Reduce spatial-engine resource rebuilding on the drag path",
+      "priority": "P0",
+      "sources": ["./topic-result/output-spatial-engine.meta.json"]
+    },
+    {
+      "action": "Capture the Binder caller stack in the same window to locate the blocking point",
+      "priority": "P1",
+      "sources": ["./topic-result/output-binder.meta.json"]
+    }
+  ],
+
+  "limitations": [
+    "GPU counters are missing, so concurrent GPU saturation cannot be fully excluded"
+  ],
+
+  "topic_outputs": [
+    {
+      "topic": "spatial-engine",
+      "conclusion_level": "likely",
+      "file": "./topic-result/output-spatial-engine.meta.json"
+    },
+    {
+      "topic": "binder",
+      "conclusion_level": "candidate",
+      "file": "./topic-result/output-binder.meta.json"
+    }
+  ],
+
+  "routing_registry": [
+    { "topic": "memory", "status": "not_activated", "evidence": "No OOM / GC storm signature observed in the issue window." },
+    { "topic": "spatial-audio", "status": "not_activated", "evidence": "No audio IPC storm observed." }
+  ],
+
+  "sections_file": "final-summary.md",
+  "summary_sections_in_body": {
+    "topic_index": "A. Topic Output Index",
+    "evidence_chain": "B. Cross-Topic Evidence-Chain Analysis",
+    "directions": "C. Directions to Extend",
+    "final_plan": "D. Final Action Plan"
+  }
+}

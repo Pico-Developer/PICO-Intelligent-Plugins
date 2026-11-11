@@ -88,6 +88,18 @@ Box(Modifier.background(Color(0xFF1A1A1A)))
 > auto-complete on the current SDK before relying on them; the 15
 > roles above are the always-present subset.
 
+For ordinary app-authored body and metadata `Text`, `titleLarge` (20sp) is the
+soft typography ceiling. Dialog, popup, and detail-window headings keep their native title treatment or
+a stronger semantic title token. Ordinary form Sheet uses its short native title
+slot with inherited typography, without a custom surface_title exemption. A warning is
+a review signal, never an instruction to flatten title/body hierarchy.
+Prefer an exact token below that size. A direct
+`style = PicoTheme.typography.titleLarge`, `headlineMedium`,
+`headlineLarge`, or `display*` choice is allowed but produces a verifier
+warning that must be traced to the accepted design and reviewed. Omit `style`
+when a SpatialUI component owns the intended typography; its native default is
+outside this initial explicit-style check.
+
 ```kotlin
 Text(
     "Title",
@@ -254,3 +266,5 @@ must not import private token objects.
   opaque stock role like `PicoTheme.colorScheme.passable`.
 - For bright foreground on dark filled surfaces, prefer
   `PicoTheme.colorScheme.labelPrimaryLight` over `Color.White`.
+
+Custom surface titles use the accepted textRole: surface_title contract and matching design-style marker; validated titles bypass the ordinary-content size ceiling, while body and metadata remain checked. See the Designer design-spec contract.

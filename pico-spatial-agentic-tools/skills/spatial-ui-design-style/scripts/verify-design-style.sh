@@ -642,29 +642,73 @@ if isinstance(theme, dict) and "rootMaterial" in theme:
         "R10 design spec declares rootMaterial, which is not part of the design contract"
     )
 
-allowed = set()
+allowed_kinds = {"layout", "content", "spatialui", "text", "media", "domain_visual"}
+allowed_surfaces = set()
+allowed_parts = set()
+allowed_glass = set()
+glass_usages = {}
 for node in spec.get("nodes", []) if isinstance(spec, dict) else []:
     if not isinstance(node, dict) or not isinstance(node.get("id"), str):
         continue
-    appearance = node.get("appearance")
-    if not isinstance(appearance, dict):
-        continue
-    if "material" in appearance:
+    node_id = node["id"]
+    node_kind = node.get("kind")
+    if node_kind not in allowed_kinds:
         print(
-            "invalid_design_material\t"
-            f"R10 design node {node['id']!r} declares material, which is not part "
-            "of the appearance contract"
+            "invalid_design_kind\t"
+            f"R10 design node {node_id!r} declares unsupported kind {node_kind!r}"
         )
-    fill = appearance.get("fill")
-    if isinstance(fill, str) and fill.strip():
-        if node.get("kind") in {"layout", "domain_visual"}:
+    if node_kind == "spatialui" and node.get("component") == "sui-attachment-panel" and node.get("props", {}).get("background") == "material":
+        allowed_glass.add(node_id)
+    for variant in node.get("visualStates", {}).values():
+        if isinstance(variant, dict) and isinstance(variant.get("appearance"), dict):
+            state_fill = variant["appearance"].get("fill")
+            if state_fill and state_fill != "transparent":
+                if node_kind != "content":
+                    print(f"structural_design_surface\tR10 state fill on non-content node {node_id!r}")
+                else:
+                    allowed_surfaces.add(node_id)
+    appearance = node.get("appearance")
+    if isinstance(appearance, dict):
+        if "material" in appearance:
             print(
-                "structural_design_surface\t"
-                f"R10 design node {node['id']!r} ({node.get('kind')}) declares "
-                "fill; structural regions must remain transparent"
+                "invalid_design_material\t"
+                f"R10 design node {node_id!r} declares material, which is not part "
+                "of the appearance contract"
             )
-        else:
-            allowed.add(node["id"])
+        fill = appearance.get("fill")
+        if isinstance(fill, str) and fill.strip():
+            if node_kind in {"layout", "domain_visual"}:
+                print(
+                    "structural_design_surface\t"
+                    f"R10 design node {node_id!r} ({node_kind}) declares "
+                    "fill; structural regions must remain transparent"
+                )
+            else:
+                allowed_surfaces.add(node_id)
+
+    parts = node.get("parts")
+    if isinstance(parts, dict):
+        if node_kind != "domain_visual":
+            continue
+        for part_id, part in parts.items():
+            if not isinstance(part_id, str) or not isinstance(part, dict):
+                continue
+            part_has_fill = False
+            part_appearance = part.get("appearance")
+            if isinstance(part_appearance, dict):
+                part_fill = part_appearance.get("fill")
+                part_has_fill = isinstance(part_fill, str) and bool(part_fill.strip())
+            states = part.get("states")
+            if isinstance(states, dict):
+                for state in states.values():
+                    if not isinstance(state, dict):
+                        continue
+                    state_fill = state.get("fill")
+                    if isinstance(state_fill, str) and state_fill.strip():
+                        part_has_fill = True
+                        break
+            if part_has_fill:
+                allowed_parts.add((node_id, part_id))
 
 def strip_comments_preserving_lines(text: str) -> str:
     def blank(match: re.Match[str]) -> str:
@@ -673,8 +717,13 @@ def strip_comments_preserving_lines(text: str) -> str:
     text = re.sub(r"/\*.*?\*/", blank, text, flags=re.S)
     return re.sub(r"//[^\n]*", blank, text)
 
-marker_pattern = re.compile(
+surface_marker_pattern = re.compile(
     r"design-style:\s*design-surface\s+([A-Za-z0-9][A-Za-z0-9._:-]*)"
+)
+part_marker_pattern = re.compile(
+    r"design-style:\s*design-part\s+"
+    r"(?=.*\bnode\s*=\s*([A-Za-z0-9][A-Za-z0-9._:-]*))"
+    r"(?=.*\bpart\s*=\s*([A-Za-z0-9][A-Za-z0-9._:-]*))"
 )
 surface_usages = {}
 
@@ -690,6 +739,12 @@ for input_path in inputs:
         raw_lines = raw.splitlines()
         for match in re.finditer(r"\.backgroundMaterial\s*\(", code):
             line = code.count("\n", 0, match.start()) + 1
+            annotation = "\n".join(raw_lines[max(0, line - 4):line])
+            marker = re.search(r"design-style:\s*attachment-material\s+([A-Za-z0-9._:-]+)", annotation)
+            call = code[match.start():].split(")", 1)[0]
+            if marker and marker.group(1) in allowed_glass and re.search(r"enable\s*=\s*true", call) and re.search(r"style\s*=\s*Material\.Regular\b", call):
+                glass_usages.setdefault(marker.group(1), []).append(f"{path}:{line}")
+                continue
             print(
                 "app_authored_material\t"
                 f"R10 {path}:{line} backgroundMaterial is not allowed when "
@@ -716,16 +771,35 @@ for input_path in inputs:
         for offset, label in sorted(matches):
             line_index = code.count("\n", 0, offset)
             annotation = "\n".join(raw_lines[max(0, line_index - 3) : line_index + 1])
-            marker = marker_pattern.search(annotation)
-            if marker is None:
+            markers = [
+                ("surface", match.start(), match)
+                for match in surface_marker_pattern.finditer(annotation)
+            ] + [
+                ("part", match.start(), match)
+                for match in part_marker_pattern.finditer(annotation)
+            ]
+            if not markers:
                 print(
                     "unmapped_design_surface\t"
                     f"R10 {path}:{line_index + 1} {label} has no nearby "
-                    "'design-style: design-surface <node-id>' marker"
+                    "'design-style: design-surface <node-id>' or "
+                    "'design-style: design-part node=<node-id> part=<part-id>' marker"
                 )
                 continue
+            marker_kind, _, marker = max(markers, key=lambda item: item[1])
+            if marker_kind == "part":
+                node_id = marker.group(1)
+                part_id = marker.group(2)
+                if (node_id, part_id) not in allowed_parts:
+                    print(
+                        "unknown_design_surface\t"
+                        f"R10 {path}:{line_index + 1} marker names part "
+                        f"{node_id!r}.{part_id!r}, but that design part declares no fill"
+                    )
+                continue
+
             node_id = marker.group(1)
-            if node_id not in allowed:
+            if node_id not in allowed_surfaces:
                 print(
                     "unknown_design_surface\t"
                     f"R10 {path}:{line_index + 1} marker names {node_id!r}, "
@@ -736,6 +810,10 @@ for input_path in inputs:
                 f"{path}:{line_index + 1}"
             )
 
+for node_id in sorted(allowed_glass):
+    if len(glass_usages.get(node_id, [])) != 1:
+        print(f"attachment_material_count\tR10 {node_id!r} requires exactly one marked Regular glass content root")
+
 for node_id, locations in sorted(surface_usages.items()):
     if len(locations) > 1:
         print(
@@ -744,6 +822,171 @@ for node_id, locations in sorted(surface_usages.items()):
             f"background calls ({', '.join(locations)}); each fill node may own "
             "at most one app-authored background implementation"
         )
+PY
+}
+
+explicit_text_typography_ceiling_warnings() {
+  python3 - "$DESIGN_SPEC" "$(dirname "${BASH_SOURCE[0]}")/../../pico-spatial-app-designer/scripts/check_design_surface_discipline.py" "$@" <<'PY'
+import importlib.util
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+design_spec = sys.argv[1]
+resolver_path = Path(sys.argv[2])
+inputs = [Path(raw) for raw in sys.argv[3:]]
+allowed_titles = {}
+if design_spec:
+    try:
+        spec = json.loads(Path(design_spec).read_text(encoding="utf-8"))
+        module_spec = importlib.util.spec_from_file_location("surface_title_contract", resolver_path)
+        module = importlib.util.module_from_spec(module_spec)
+        module_spec.loader.exec_module(module)
+        if isinstance(spec, dict) and isinstance(spec.get("nodes"), list):
+            allowed_titles, _ = module.resolve_surface_titles(spec)
+    except (OSError, ValueError, ImportError, TypeError):
+        # A missing/invalid contract never grants typography exemptions.
+        allowed_titles = {}
+
+excluded = {"build", "generated", ".gradle", ".idea", "test", "androidTest", "res"}
+ceiling_tokens = {
+    "displayLarge": 40,
+    "displayMedium": 32,
+    "displaySmall": 28,
+    "headlineLarge": 24,
+    "headlineMedium": 20,
+    "titleLarge": 20,
+}
+text_call_pattern = re.compile(r"(?<![\w.])Text\s*\(")
+style_pattern = re.compile(
+    r"\bstyle\s*=\s*PicoTheme\s*\.\s*typography\s*\.\s*"
+    r"(displayLarge|displayMedium|displaySmall|headlineLarge|headlineMedium|titleLarge)\b"
+)
+spatial_text_import = re.compile(
+    r"^\s*import\s+com\.pico\.spatial\.ui\.design\.(?:Text|\*)\s*$",
+    re.M,
+)
+seen = set()
+
+
+def mask_kotlin_non_code(source):
+    masked = list(source)
+    line_comments = set()
+    length = len(source)
+    index = 0
+
+    def blank(start, end):
+        for position in range(start, end):
+            if source[position] not in "\r\n":
+                masked[position] = " "
+
+    while index < length:
+        if source.startswith("//", index):
+            line_comments.add(index)
+            end = source.find("\n", index + 2)
+            end = length if end == -1 else end
+            blank(index, end)
+            index = end
+        elif source.startswith("/*", index):
+            start = index
+            depth = 1
+            index += 2
+            while index < length and depth:
+                if source.startswith("/*", index):
+                    depth += 1
+                    index += 2
+                elif source.startswith("*/", index):
+                    depth -= 1
+                    index += 2
+                else:
+                    index += 1
+            blank(start, index)
+        elif source.startswith('"""', index):
+            start = index
+            end = source.find('"""', index + 3)
+            index = length if end == -1 else end + 3
+            blank(start, index)
+        elif source[index] in {'"', "'"}:
+            start = index
+            quote = source[index]
+            index += 1
+            while index < length:
+                if source[index] == "\\":
+                    index = min(index + 2, length)
+                elif source[index] == quote:
+                    index += 1
+                    break
+                else:
+                    index += 1
+            blank(start, index)
+        else:
+            index += 1
+    return "".join(masked), line_comments
+
+
+def text_calls(source):
+    for match in text_call_pattern.finditer(source):
+        open_index = source.find("(", match.start())
+        depth = 1
+        index = open_index + 1
+        while index < len(source):
+            if source[index] == "(":
+                depth += 1
+            elif source[index] == ")":
+                depth -= 1
+                if depth == 0:
+                    yield open_index + 1, source[open_index + 1 : index]
+                    break
+            index += 1
+
+
+# Attach a marker only to the immediately following Text call. Read markers
+# from genuine line comments, not Kotlin string literals or block comments.
+marker_pattern = re.compile(r"^\s*//\s*design-style:\s*surface-title\s+([A-Za-z0-9][A-Za-z0-9._:-]*)\s*$")
+records = []
+marker_usages = {}
+for raw_path in inputs:
+    root = raw_path
+    is_file = root.is_file()
+    candidates = [root] if is_file else sorted(root.rglob("*.kt"))
+    for path in candidates:
+        directories = () if is_file else (
+            os.path.basename(str(raw_path).rstrip("/")), *path.relative_to(root).parts[:-1]
+        )
+        if path.suffix != ".kt" or excluded.intersection(directories) or path in seen:
+            continue
+        seen.add(path)
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        searchable, line_comments = mask_kotlin_non_code(raw)
+        line_offsets = [0] + [match.end() for match in re.finditer("\n", raw)]
+        if spatial_text_import.search(searchable) is None:
+            continue
+        lines = raw.splitlines()
+        for arguments_offset, arguments in text_calls(searchable):
+            # text_calls yields just after the opening parenthesis.
+            call_start = searchable.rfind("Text", 0, arguments_offset)
+            call_line = searchable.count("\n", 0, call_start)
+            marker = None
+            if call_line > 0 and not searchable.splitlines()[call_line - 1].strip():
+                match = marker_pattern.fullmatch(lines[call_line - 1])
+                if match and line_offsets[call_line - 1] + lines[call_line - 1].find("//") in line_comments:
+                    marker = match.group(1)
+                    marker_usages[marker] = marker_usages.get(marker, 0) + 1
+            style = style_pattern.search(arguments)
+            if style is None:
+                continue
+            token = style.group(1)
+            line = searchable.count("\n", 0, arguments_offset + style.start()) + 1
+            source_line = lines[line - 1].strip() if line <= len(lines) else ""
+            records.append((path, line, token, source_line, marker))
+
+for path, line, token, source_line, marker in records:
+    declared = allowed_titles.get(marker)
+    if declared and marker_usages.get(marker) == 1 and declared["typography"] == token:
+        continue
+    print(f"{path}:{line}\t{token}\t{ceiling_tokens[token]}\t{source_line}")
 PY
 }
 
@@ -876,6 +1119,17 @@ echo "-- R5 theme-role routing"
 scan_without_fixed_figma_color 'Color\(0x[0-9A-Fa-f]{6,8}\)' error 'R5 hardcoded color literal; use PicoTheme.colorScheme.* unless this is an annotated fixed Figma/screenshot color' "${PATHS[@]}"
 scan 'TextStyle\(fontSize\s*=' error 'R5 hardcoded typography; use PicoTheme.typography.*' "${PATHS[@]}"
 scan "$MODIFIER_ALPHA_DISABLED_CALL" error 'R5 hardcoded disabled alpha 0.3f; use LocalDisableAlpha.current' "${PATHS[@]}"
+
+echo "-- R5b explicit Text typography ceiling"
+typography_ceiling_warnings=$(explicit_text_typography_ceiling_warnings "${PATHS[@]}")
+if [[ -n "$typography_ceiling_warnings" ]]; then
+  while IFS=$'\t' read -r location token size source_line; do
+    [[ -z "$location" ]] && continue
+    printf '[warning] R5b %s explicitly uses PicoTheme.typography.%s (%ssp), which is at or above Title Large (20sp); confirm that this emphasis is necessary and traceable to the accepted design :: %s\n' \
+      "$location" "$token" "$size" "$source_line"
+    WARNINGS=$((WARNINGS+1))
+  done <<<"$typography_ceiling_warnings"
+fi
 
 # ---------- R6 — indication / haptics ----------
 echo "-- R6 indication & optional haptics"

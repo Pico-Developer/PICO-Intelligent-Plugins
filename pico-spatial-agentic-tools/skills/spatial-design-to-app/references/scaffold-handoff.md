@@ -1,5 +1,9 @@
 # Scaffold Handoff Contract
 
+This is the legacy standalone UI flow's receipt, not a universal onboarding
+contract. Dev and other callers receive their own project/evidence handoff and do
+not emit this receipt to select a return destination.
+
 This contract records the narrow handoff from `spatial-app-onboarding` back to
 `spatial-design-to-app` during a product-specific `new_project` run.
 

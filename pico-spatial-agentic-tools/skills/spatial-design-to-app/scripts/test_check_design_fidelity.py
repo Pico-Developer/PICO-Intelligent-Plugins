@@ -15,6 +15,7 @@ SCRIPT = Path(__file__).resolve().parent / "check_design_fidelity.py"
 
 def sample_spec() -> dict[str, Any]:
     return {
+        "schemaVersion": "write-spec-draft-1",
         "initialStateId": "discover",
         "surfaces": [
             {
@@ -32,6 +33,10 @@ def sample_spec() -> dict[str, Any]:
                 "kind": "domain_visual",
                 "rendererKey": "app-shelf",
                 "purpose": "application shelf",
+                "role": "content",
+                "trigger": "always-visible",
+                "relationship": "peer",
+                "presentation": "inline",
                 "props": {"featuredCount": 1, "columns": 4},
                 "layout": {
                     "mode": "grid",
@@ -44,6 +49,10 @@ def sample_spec() -> dict[str, Any]:
                 "id": "search",
                 "kind": "spatialui",
                 "component": "sui-search-field",
+                "role": "content",
+                "trigger": "always-visible",
+                "relationship": "supports",
+                "presentation": "inline",
                 "props": {"placeholder": "Search"},
             },
         ],
@@ -84,10 +93,10 @@ def implementation_contract(spec: dict[str, Any]) -> dict[str, Any]:
     return {
         "initialStateId": spec["initialStateId"],
         "surfaces": keyed("surfaces"),
-        "nodes": keyed("nodes", {"id", "purpose"}),
+        "nodes": keyed("nodes"),
         "states": keyed("states"),
         "transitions": keyed("transitions"),
-        "actions": keyed("actions", {"id", "purpose"}),
+        "actions": keyed("actions"),
         "responsiveRules": keyed("responsiveRules"),
         "dataCases": ["error", "fallback", "normal"],
         "assets": keyed("assets", {"id", "purpose"}),
@@ -105,9 +114,48 @@ class CheckDesignFidelityTest(unittest.TestCase):
             "fun AppShelf() { WideAppGrid(); CompactAppGrid(); SearchField() }\n",
             encoding="utf-8",
         )
+        self.manifest = self.target / "app/src/main/AndroidManifest.xml"
+        self.write_manifest("1420x860")
         self.spec = sample_spec()
         self.spec_path = self.target / "design-spec.json"
         self.write_spec()
+
+    def write_manifest(self, size: str, unit: str = "dp") -> None:
+        self.manifest.write_text(
+            f"""<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application><activity android:name=".LaunchActivity">
+                <intent-filter><action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+                <meta-data android:name="pico.spatial.windowcontainer.defaultsize" android:value="{size}"/>
+                <meta-data android:name="pico.spatial.windowcontainer.defaultsize.unit" android:value="{unit}"/>
+              </activity></application></manifest>""",
+            encoding="utf-8",
+        )
+
+    def test_rejects_manifest_default_even_when_receipt_matches(self) -> None:
+        self.write_receipt()
+        self.write_manifest("1280x720")
+        result = self.run_check()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("planar_default_size_mismatch", result.stdout)
+
+    def test_non_launcher_and_commented_sizes_cannot_mask_wrong_launch_size(self) -> None:
+        self.write_receipt()
+        self.write_manifest("1280x720")
+        xml = self.manifest.read_text(encoding="utf-8")
+        xml = xml.replace(
+            "</application>",
+            '<!-- <meta-data android:name="pico.spatial.windowcontainer.defaultsize" android:value="1420x860"/> -->'
+            '<activity android:name=".OtherActivity"><meta-data android:name="pico.spatial.windowcontainer.defaultsize" android:value="1420x860"/></activity></application>',
+        )
+        self.manifest.write_text(xml, encoding="utf-8")
+        self.assertIn("planar_default_size_mismatch", self.run_check().stdout)
+
+    def test_rejects_missing_default_and_wrong_unit(self) -> None:
+        self.write_receipt()
+        for size, unit in [("", "dp"), ("1420x860", "meters")]:
+            self.write_manifest(size, unit)
+            self.assertIn("planar_default_size_mismatch", self.run_check().stdout)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -180,6 +228,16 @@ class CheckDesignFidelityTest(unittest.TestCase):
             (self.scratch / "design_fidelity_result.json").read_text(encoding="utf-8")
         )
 
+    def test_old_spec_is_rejected_even_with_matching_receipt(self) -> None:
+        self.spec["schemaVersion"] = "1.0"
+        self.write_spec()
+        self.write_receipt()
+        completed = self.run_check()
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertNotIn("Traceback", completed.stdout)
+        self.assertFalse(self.result()["passed"])
+        self.assertEqual(self.result()["errors"][0]["code"], "unsupported_design_schema_version")
+
     def test_matching_grid_and_responsive_contract_passes(self) -> None:
         self.write_receipt()
 
@@ -222,6 +280,22 @@ class CheckDesignFidelityTest(unittest.TestCase):
         self.assertNotEqual(0, completed.returncode, completed.stdout)
         self.assertIn("/implementation/initialStateId", completed.stdout)
         self.assertIn("/implementation/nodes/search/component", completed.stdout)
+
+    def test_component_affordance_mismatch_fails(self) -> None:
+        implementation = implementation_contract(self.spec)
+        self.spec["nodes"][0]["role"] = "detail"
+        self.spec["nodes"][0]["trigger"] = "selection-driven"
+        self.spec["nodes"][0]["relationship"] = "derives-from-selection"
+        self.spec["nodes"][0]["presentation"] = "subwindow"
+        self.write_spec()
+        implementation["nodes"]["app-shelf"]["presentation"] = "inline"
+        self.write_receipt(implementation)
+
+        completed = self.run_check()
+
+        self.assertNotEqual(0, completed.returncode, completed.stdout)
+        self.assertIn("/implementation/nodes/app-shelf/presentation", completed.stdout)
+        self.assertIn("expected='subwindow' actual='inline'", completed.stdout)
 
     def test_missing_implementation_map_fails_when_spec_exists(self) -> None:
         completed = self.run_check()

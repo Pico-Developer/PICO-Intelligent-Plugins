@@ -1,0 +1,38 @@
+<!-- @dsCard group="Display" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Badge · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>Badge</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>Badge</h1><p>Reference examples · original defaults unless explicitly overridden</p></header><div class="sui-stage"><div class="sui-row"><sui-dot-badge></sui-dot-badge><sui-number-badge number="8"></sui-number-badge><sui-number-badge number="120" size="regular"></sui-number-badge><sui-number-badge number="120" overflow="ellipsis"></sui-number-badge><sui-badge text="New"></sui-badge><sui-badge text="Beta" size="regular"></sui-badge></div></div><script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script><section class="example" id="image-badge-example">
+<h2>Plan composition · avatar with an unread badge</h2>
+<p class="example-note">Only the avatar content is cropped to a circle. The badge extends outside it and stays fully visible; its component defaults are unchanged.</p>
+<style>
+.image-with-badge {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: visible;
+}
+.image-crop {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--fill-light-alpha);
+}
+.image-crop img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 12px; box-sizing: border-box; }
+.unread-badge { position: absolute; top: 0; right: 0; transform: translate(25%, -25%); }
+.badge-demo-space { padding: var(--padding-regular); }
+</style>
+<div class="badge-demo-space">
+<div class="image-with-badge" role="img" aria-label="Profile, 8 unread updates">
+  <div class="image-crop">
+    <img src="../../assets/icons/svg/people/ic_person_fill.svg" alt="">
+  </div>
+  <sui-number-badge class="unread-badge" number="8" aria-hidden="true"></sui-number-badge>
+</div>
+</div>
+</section></body></html>

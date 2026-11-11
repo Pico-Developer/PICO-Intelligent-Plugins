@@ -53,6 +53,10 @@ Trigger words: pick up / grab / grasp / drag / grabbable / pickup / interactable
 - Use the initial `pico_xr_status` snapshot to check
   `r.data.controller.installed` and `r.data.hand.installed` before calling
   `pico_xr_grab`.
+- For Hand, `installed` means both model markers AND both Hand Interactor
+  markers are present. A model-only Hand state reports `installed=false`; call
+  `pico_xr_hand(action=enable)` again and refresh `pico_xr_status` before
+  continuing.
 - If neither input block is installed, **STOP before calling `pico_xr_grab`** and
   ask: **"Controller Grab or Hand Grab?"** Do not silently choose an input path.
 - When the request already specifies controller or hand, enable that input block

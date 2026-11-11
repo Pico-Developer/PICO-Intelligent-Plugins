@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Character scene — design example</title>
+<link rel="stylesheet" href="../../design-reference/runtime/tokens.css">
+<script src="../../design-reference/runtime/components.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#dad6d3;color:#222}main{padding:40px;width:max-content;margin:auto}header{max-width:900px;margin-bottom:24px}h1{font-size:24px;margin:0 0 8px}header p{font-size:14px;color:#555;max-width:760px;line-height:1.6}#scene-root{display:flex;align-items:center;gap:32px;width:900px;height:600px}#character-model{width:480px;height:440px;display:grid;place-items:center;perspective:900px}.figure{width:240px;height:360px;transition:transform .25s;transform:rotateY(0deg)}#character-info-panel{width:340px;padding:24px;display:flex;flex-direction:column;gap:16px}#panel-title{font:700 16px/20px system-ui;color:var(--r-label-primary)}#panel-copy{font-weight:500;font-size:16px;line-height:1.5;color:var(--r-label-secondary)}#panel-actions{display:flex;justify-content:flex-end;gap:8px}footer{margin-top:20px;font-size:13px;color:#555}
+</style></head><body><main>
+<header><h1>Character scene</h1><p>Design example: the flat figure stands for a future 3D character. Rotate and reset are simulated. Greet records a required waving animation; it does not animate the placeholder.</p></header>
+<sui-volume id="character-volume" width="900" height="600" depth="400">
+<div id="scene-root">
+<div id="character-model" aria-label="Placeholder for a rotatable 3D character">
+<svg class="figure" viewBox="0 0 240 360" aria-hidden="true"><ellipse cx="120" cy="340" rx="70" ry="12" fill="#000" opacity=".12"/><path d="M90 220h25v105H85zM125 220h25l5 105h-30z" fill="#384558"/><path d="M78 325h39v12H73zM124 325h40l4 12h-44z" fill="#26303e"/><path d="M80 105q40-20 80 0l20 110-27 5-5-65v85H92v-85l-5 65-27-5z" fill="#3779c8"/><path d="M117 103h6v135h-6z" fill="#c2d8f2"/><rect x="108" y="77" width="24" height="27" rx="10" fill="#dcb494"/><ellipse cx="120" cy="55" rx="36" ry="43" fill="#e9c3a4"/><path d="M84 55q-7-52 36-51 42 0 36 50l-16-28-39 8z" fill="#483d38"/></svg>
+</div>
+<sui-attachment-panel id="character-info-panel" background="material">
+<div id="panel-title">Character</div><div id="panel-copy">Blue jacket · stylized figure</div>
+<div id="panel-actions"><sui-button id="rotate">Rotate</sui-button><sui-button id="reset">Reset</sui-button><sui-button id="greet">Greet</sui-button></div>
+</sui-attachment-panel></div>
+</sui-volume>
+<footer role="status" id="demo-status">Preview only · model resource to be created</footer></main>
+<script type="application/json" id="scene-design-notes">{
+  "character-model": {
+    "represents": "3D character model",
+    "previewRepresentation": "Simplified placeholder; jacket color is confirmed, facial details are not specified",
+    "assetStatus": "to-create",
+    "appearance": [
+      "Stylized character wearing a blue jacket"
+    ],
+    "behaviors": [
+      "Rotate around the vertical axis in 30-degree steps; Reset returns to the initial orientation",
+      "Wave when Greet is activated"
+    ],
+    "previewLimitations": [
+      "Waving is not simulated; rotation only transforms a flat SVG placeholder"
+    ]
+  },
+  "character-info-panel": {
+    "relationship": "Inside the character scene, to the right of the character; exact scene distance is not yet specified",
+    "followBehavior": "Remain stationary when the character rotates"
+  }
+}</script>
+<script>
+let yaw=0; const figure=document.querySelector('.figure');
+document.getElementById('rotate').onclick=()=>{yaw+=30;figure.style.transform=`rotateY(${yaw}deg)`;};
+document.getElementById('reset').onclick=()=>{yaw=0;figure.style.transform='rotateY(0deg)';};
+document.getElementById('greet').onclick=()=>{document.getElementById('demo-status').textContent='Greet requested — waving animation is specified, not simulated.';};
+</script></body></html>

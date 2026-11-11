@@ -1,10 +1,16 @@
 ---
 name: spatialadapter-input-api
-description: 'Use for concrete Spatial Input implementation in Spatial Adapter, PICO Spatial, or Unity Spatial: target selection, click, tap, pinch, drag, manipulation, colliders, EnhancedTouch mapping, SpatialInputSupport, SpatialInputDevice, and interaction IDs.'
+description: Use for concrete Spatial Input implementation in Spatial Adapter, including target selection, click, tap, pinch, drag, manipulation, target colliders, EnhancedTouch mapping, SpatialInputSupport, SpatialInputDevice, and interaction IDs. Platform names alone do not activate this skill.
 license: 'Apache-2.0'
 ---
 
 # SpatialAdapter Input API
+
+## When NOT to Use
+
+- Native text, video, or visual components — use `spatialadapter-components-api`
+- Camera or window lifecycle — use `spatialadapter-camera-window-api`
+- Scene setup or SpatialCamera presence — use `spatialadapter-scene-setup`
 
 ## Overview
 
@@ -12,20 +18,18 @@ Use this skill when you need the Spatial Adapter input bridge between backend in
 
 ## Compatibility and Scope
 
-Confirm Spatial mode from the saved `mode`, installed package, and scene evidence; ask if they conflict. Verify `ByteDance.PICO.SpatialAdapter`, Input System APIs, and the project's render pipeline before using the templates or creating URP materials. API explanations are read-only. Before scene changes, verify the running Editor and an available scene-editing tool; if unavailable, report the blocker and provide manual steps. Preserve existing scripts and configured materials, wait for successful compilation after script writes, register Undo, and save the intended scene after authorized changes.
+Confirm Spatial mode from the saved `mode`, installed package, and scene evidence; ask if they conflict. Verify `ByteDance.PICO.SpatialAdapter`, Input System APIs, and the project's render pipeline before using the templates or creating a fallback selection material. API explanations are read-only. Before scene changes, verify the running Editor and an available scene-editing tool; if unavailable, report the blocker and provide manual steps. Preserve existing scripts and configured materials, wait for successful compilation after script writes, register Undo, and save the intended scene after authorized changes.
 
 ## Trigger Keywords
 
-- `Spatial Adapter`
-- `PICO Spatial`
-- `Unity Spatial`
 - `SpatialInputSupport`
 - `Spatial Input`
 - `IndirectPinch`
-- target selection
-- click, tap, or pinch
-- drag or manipulation
-- target collider
+- target selection, click, tap, or pinch in Spatial Input
+- drag or manipulate objects with Spatial Input
+- Spatial Input target colliders and EnhancedTouch mapping
+
+Platform names alone do not activate this skill. Require a Spatial Input API or interaction task. Ordinary Unity input or collider work without a Spatial Adapter integration remains with generic Unity skills; backend `ColliderData` conversion belongs to [spatialadapter-components-api](../spatialadapter-components-api/SKILL.md).
 
 ## When to Use
 
@@ -33,7 +37,7 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
 - Use when reading or mutating `SpatialInputState`.
 - Use when mapping `touchId` values to Spatial Adapter interaction slots.
 - Use when routing interaction logic based on the currently hit `GameObject`.
-- Use when handling click, tap, pinch, or target-selection interactions.
+- Use when handling click, tap, pinch, or target-selection interactions through Spatial Input.
 - Use when deciding what collider an interactable GameObject should have for Spatial Input.
 - Use when a user wants to drag or manipulate GameObjects with Spatial Adapter input.
 - Use when debugging primary versus secondary spatial input device state.
@@ -55,12 +59,25 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
 - Prefer the simplest collider that matches the object shape closely enough for reliable interaction.
 - For drag/manipulation scenarios, use the sample pattern from `ManipulationDemo`:
   - first search the project for `PieceSelectionBehavior.cs` and `ManipulationInputManager.cs`
-  - if both scripts already exist, add `PieceSelectionBehavior` to each manipulative GameObject, create a yellow Material using the `Universal Render Pipeline/Lit` shader, assign it to that object's `PieceSelectionBehavior.selectedMaterial`, and ensure the scene has one active `ManipulationInputManager`
+  - if both scripts already exist, add `PieceSelectionBehavior` to each manipulative GameObject, preserve any assigned `PieceSelectionBehavior.selectedMaterial`, create a pipeline-compatible yellow selection material only when that field is empty, and ensure the scene has one active `ManipulationInputManager`
   - if either script is missing, do not pretend the component can be attached anyway; first import the sample scripts or create project-local equivalents with the same responsibilities, let Unity compile, and then attach `PieceSelectionBehavior`
   - let `ManipulationInputManager` read `SpatialInputSupport.GetInputState(touch)` and drive the selected object
 - `PieceSelectionBehavior` is the per-object hook for manipulable pieces. `ManipulationInputManager` is the shared manager that performs the actual selection and movement logic.
 - In the lighter custom pattern, `PieceSelectionBehavior` does not require a `Rigidbody`; manipulable objects still need a suitable `Collider`, and `Rigidbody` should only be added when the project specifically needs physics behavior.
-- After attaching `PieceSelectionBehavior`, create a yellow URP Lit material and assign it to `selectedMaterial` so selected objects have visible feedback.
+- After attaching `PieceSelectionBehavior`, follow the guarded selection-material flow below so selected objects have visible feedback without replacing project configuration.
+
+## Selection Material Fallback
+
+- Preserve a non-null `selectedMaterial`; an existing project-configured material is authoritative and must not be replaced automatically.
+- Only when `selectedMaterial` is null, determine the effective render pipeline with `QualitySettings.renderPipeline ?? GraphicsSettings.defaultRenderPipeline` before choosing a shader.
+- Choose the fallback shader by the detected pipeline:
+  - Built-in Render Pipeline (the effective pipeline asset is null): use `Standard`.
+  - Universal Render Pipeline (`UniversalRenderPipelineAsset`): use `Universal Render Pipeline/Lit`.
+  - High Definition Render Pipeline (`HDRenderPipelineAsset`): use `HDRP/Lit`.
+- Detect URP and HDRP by the pipeline asset type or full type name so the fallback script does not require compile-time references to optional render-pipeline assemblies.
+- For a custom or unknown SRP, stop and ask the user to provide a compatible material or shader; do not guess a shader.
+- If `Shader.Find` returns null for the selected shader, stop and report the missing shader instead of creating a material with an invalid shader.
+- Create a yellow material asset and assign it to `selectedMaterial` only after the pipeline and shader checks pass. Register the assignment with Undo and save the intended scene and material asset.
 
 ## Manipulation Fallback
 
@@ -72,15 +89,15 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
   - `ManipulationInputManager`: shared scene manager that reads `SpatialInputSupport.GetInputState(touch)`, tracks the selected object by `interactionId`, and moves it during drag
 - Minimum object requirements for the fallback path: `Collider` and `PieceSelectionBehavior`.
 - `Rigidbody` is optional in the fallback path and should not be required by default when the manager directly updates the transform.
-- After adding `PieceSelectionBehavior`, also create a yellow Material with the `Universal Render Pipeline/Lit` shader and assign it to the component's `selectedMaterial` field.
+- After adding `PieceSelectionBehavior`, preserve an assigned selection material or follow [Selection Material Fallback](#selection-material-fallback) when the field is empty.
 - If the user only wants simple tap or pinch reactions rather than drag/manipulation, prefer a smaller custom interaction script instead of generating the full manipulation pattern.
 
 ## Fallback Templates
 
 - If the sample scripts are absent, generate both scripts before trying to add the component in Unity.
 - Place them in a normal runtime scripts folder such as `Assets/Scripts/SpatialAdapterInput/`.
-- After Unity recompiles successfully, add `PieceSelectionBehavior` to each manipulable GameObject, create a yellow Material using the `Universal Render Pipeline/Lit` shader, assign it to `selectedMaterial`, and create one scene object with `ManipulationInputManager`.
-- A good default asset pattern is to save a material such as `Assets/Materials/<ObjectName>Selected.mat`, set its shader to `Universal Render Pipeline/Lit`, and set its base color to yellow.
+- After Unity recompiles successfully, add `PieceSelectionBehavior` to each manipulable GameObject, apply the guarded selection-material flow above, and create one scene object with `ManipulationInputManager`.
+- When a new fallback is required, a good default asset pattern is `Assets/Materials/<ObjectName>Selected.mat` with the pipeline-compatible shader and a yellow base color.
 
 `PieceSelectionBehavior.cs`
 
@@ -253,5 +270,6 @@ Read [reference.md](reference.md) for enum values, field layouts, control defini
 - Adding custom drag logic directly to each object when the `ManipulationInputManager` plus `PieceSelectionBehavior` sample pattern already fits the requirement.
 - Trying to add `PieceSelectionBehavior` when the project does not contain the backing script yet. Create or import the script first so Unity can compile the component type.
 - Adding `PieceSelectionBehavior` to an object without also having a `ManipulationInputManager` active in the scene.
-- Adding `PieceSelectionBehavior` but forgetting to create and assign a yellow `Universal Render Pipeline/Lit` material to `selectedMaterial`, which leaves selection feedback invisible.
+- Replacing an existing `selectedMaterial`, or creating a URP material in a Built-in, HDRP, or unknown-SRP project.
+- Continuing after pipeline detection is inconclusive or `Shader.Find` returns null, which can create a broken selection material.
 - Keeping outdated `Rigidbody` and `isKinematic` assumptions in a transform-driven manipulation setup where the lighter pattern does not need them.

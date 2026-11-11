@@ -39,7 +39,7 @@ pico-cli perf <resource> <action> [options]
 | fast perf   | `fast-perf.json`            | Live performance report, suitable for quickly judging FPS, GPU, temperature, and jank overview                                          |
 | trace perf  | `trace-perf.perfetto-trace` | Perfetto trace, used for subsequent session loading, querying SpatialFrames / Slice / scheduling evidence, etc.                         |
 | simple perf | `simple-perf.data`          | simpleperf sampling results, used for analyzing hotspot functions and call stacks; enabled only when `--simple-perf-script` is provided |
-| summary     | `collector-summary.yaml`    | Meta-information of this capture, output paths, file sizes, warnings, and limitations                                                   |
+| summary     | `collector-summary.json`    | Meta-information of this capture, output paths, file sizes, warnings, and limitations                                                   |
 
 Internally, the script calls `pico-cli perf live start/stop` and `pico-cli perf trace record/stop`. These are daemon-managed operations, so the script uses the daemon-owned toolchain rather than passing custom executable paths. If simpleperf is enabled, it also starts simpleperf sampling through the specified app profiler script and pulls `perf.data` after stopping.
 
@@ -94,7 +94,7 @@ session-output-<timestamp>/performance-data/perf-data-20260730-192400/
 ├── fast-perf.json
 ├── trace-perf.perfetto-trace
 ├── simple-perf.data
-└── collector-summary.yaml
+└── collector-summary.json
 ```
 
 Explanation:
@@ -104,9 +104,9 @@ Explanation:
 | `fast-perf.json`            | Mandatory                                 | Quickly inspect FPS, GPU, temperature, jank, and raw timeseries                             |
 | `trace-perf.perfetto-trace` | Mandatory                                 | Load into perf daemon to execute SQL or Spatial diagnosis                                   |
 | `simple-perf.data`          | Mandatory only when simpleperf is enabled | Analyze hotspot functions and call stacks in combination with simpleperf tools              |
-| `collector-summary.yaml`    | Mandatory                                 | Record capture status, commands, version, output path, file size, warnings, and limitations |
+| `collector-summary.json`    | Mandatory                                 | Record capture status, commands, version, output path, file size, warnings, and limitations |
 
-If `--simple-perf-script` is not provided, `collector-summary.yaml` will mark simpleperf as not mandatory and record a `simpleperf_not_enabled` limitation. If `--duration` is less than 30 seconds or the duration is not fixed, corresponding limitations will also be recorded in the limitations section.
+If `--simple-perf-script` is not provided, `collector-summary.json` will mark simpleperf as not mandatory and record a `simpleperf_not_enabled` limitation. If `--duration` is less than 30 seconds or the duration is not fixed, corresponding limitations will also be recorded in the limitations section.
 
 ### pico-cli perf trace record: Capture Perfetto Trace
 
@@ -118,7 +118,7 @@ pico-cli perf trace record [options]
 | -------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `-t, --duration <seconds>` | `60`                         | Capture duration in seconds                                                                                    |
 | `-o, --output <path>`      | trace file in temp directory | Output trace path                                                                                              |
-| `-p, --pbtx <name\|path>`  | `default`                    | PBTX preset name or path to custom `.pbtx` file                                                                |
+| `--pbtx <name\|path>`      | `default`                    | PBTX preset name or path to custom `.pbtx` file                                                                |
 | `--adb <path>`             | resolved toolchain path      | Foreground recording only; `--detach` rejects custom adb, so configure the daemon toolchain before starting it |
 | `--detach`                 | `false`                      | Start daemon-managed detached recording and return a trace record session ID                                   |
 | `--port <port>`            | `9500`                       | Daemon port for `--detach` mode                                                                                |
@@ -192,11 +192,14 @@ python scripts/check_device.py -s <device_serial> --detail
 python scripts/check_device.py -s <device_serial> --json
 ```
 
-The output includes `final_verdict` (`real-device` / `emulator`), `confidence`, `is_pico_swan`, and `pico_os` (`PICO_OS6` / `NOT_PICO_OS6`). The judgment logic is based on weighted scores from dimensions such as `ro.kernel.qemu`, `ro.hardware`, `ro.product.model`, `ro.product.manufacturer`, `ro.product.device`, `ro.build.fingerprint`, etc.
+The output includes `final_verdict` (`swan` / `emulator` / `unknown`), `confidence`,
+`is_pico_swan`, and `pico_os` (`PICO_OS6` / `NOT_PICO_OS6` / `UNKNOWN`). QEMU properties
+distinguish emulator from physical Android; a physical target is classified as Swan only when its
+PICO brand/manufacturer and `ro.product.device=swan` identity also match.
 
 ### spatial_probe.py — Spatial Trace Availability Probe
 
-Check whether the loaded Spatial trace contains key tables like `OpenXRClientSpatialFrames`, `SpatialMetrics`, and target processes/threads, and output a YAML report. The external entry for the script is still `probe_identities()`, which is internally split into three segments according to responsibilities: `probe_app_identity()`, `probe_spatial_runtime_identity()`, and `probe_threads()`. `probe_app_identity()` only detects the target App process (`--package` / `--app-process`) and parses the App frame driving thread, writing to `identities.target_app` and `identities.app_frame_driving_threads`; `probe_spatial_runtime_identity()` only detects `com.pico.spatial.runtime`, `com.pico.xr.openxr_runtime`, and `compositor` / `surfaceflinger` candidates, writing to `identities.spr`, `identities.openxr_runtime`, and `identities.compositor_candidates`; `probe_threads()` keeps the key thread search logic unchanged, writing to `identities.key_threads`.
+Check whether the loaded Spatial trace contains key tables like `OpenXRClientSpatialFrames`, `SpatialMetrics`, and target processes/threads, and output a JSON report. The external entry for the script is still `probe_identities()`, which is internally split into three segments according to responsibilities: `probe_app_identity()`, `probe_spatial_runtime_identity()`, and `probe_threads()`. `probe_app_identity()` only detects the target App process (`--package` / `--app-process`) and parses the App frame driving thread, writing to `identities.target_app` and `identities.app_frame_driving_threads`; `probe_spatial_runtime_identity()` only detects `com.pico.spatial.runtime`, `com.pico.xr.openxr_runtime`, and `compositor` / `surfaceflinger` candidates, writing to `identities.spr`, `identities.openxr_runtime`, and `identities.compositor_candidates`; `probe_threads()` keeps the key thread search logic unchanged, writing to `identities.key_threads`.
 
 ```bash
 python scripts/spatial_probe.py \
@@ -204,9 +207,9 @@ python scripts/spatial_probe.py \
   --package <package>
 ```
 
-Common parameters: `--detail` (complete report), `--output <file>` (for example `./session-output-<timestamp>/performance-data/trace-probe-detail.yaml`), `--strict` (block analysis if probe fails)
+Common parameters: `--detail` (complete report), `--output <file>` (for example, write the detail report to the current run's `performance-data/trace-probe-detail.json`), `--strict` (block analysis if probe fails)
 
-**Frame Driving Thread Convention**: Subsequent SQL and topic analysis must read the frame driving thread `utid` from `identities.app_frame_driving_threads.candidates[0].utid` in `trace-probe-detail.yaml`; hardcoding the thread name `main` is prohibited.
+**Frame Driving Thread Convention**: Subsequent SQL and topic analysis must read the frame driving thread `utid` from `identities.app_frame_driving_threads.candidates[0].utid` in `trace-probe-detail.json`; hardcoding the thread name `main` is prohibited.
 
 ### run_query.py — Compatibility Trace Session SQL Query Tool
 
@@ -288,7 +291,7 @@ The daemon is a local control plane: it listens on loopback and pico-cli supplie
 | Command                              | Description                            |
 | ------------------------------------ | -------------------------------------- |
 | `pico-cli perf daemon start`         | Start daemon using default port `9500` |
-| `pico-cli perf daemon start -p 9500` | Start daemon on specified port         |
+| `pico-cli perf daemon start --port 9500` | Start daemon on specified port         |
 | `pico-cli perf daemon status`        | View daemon status                     |
 | `pico-cli perf daemon stop`          | Stop daemon                            |
 
@@ -302,7 +305,7 @@ pico-cli perf trace load <traceFile> [options]
 | ---------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `<traceFile>`                      | None                    | Absolute path to trace file, mandatory                                                                       |
 | `--shell <path>`                   | `trace_processor_shell` | Daemon-managed default only; a custom path is rejected, so configure the daemon toolchain before starting it |
-| `-p, --port <port>`                | `9500`                  | Daemon port                                                                                                  |
+| `--port <port>`                    | `9500`                  | Daemon port                                                                                                  |
 | `--metrics-config <path>`          | None                    | Custom metrics configuration JSON                                                                            |
 | `--rules-config <path>`            | None                    | Custom rules configuration JSON                                                                              |
 | `--spatial-diagnose <true\|false>` | `false`                 | Whether to enable spatial app rule diagnosis                                                                 |
@@ -338,7 +341,7 @@ pico-cli perf trace query --session <sessionId> --sql-file "<path_to_sql_file>"
 | `--sql <sql>`            | None          | SQL to be executed, mandatory                                |
 | `--sql-file <query.sql>` | None          | Path to SQL file to execute, design for complex query        |
 | `--execute`              | `false`       | Use `/execute` interface, suitable for non-SELECT statements |
-| `-p, --port <port>`      | `9500`        | Daemon port                                                  |
+| `--port <port>`          | `9500`        | Daemon port                                                  |
 
 Common SQL examples:
 

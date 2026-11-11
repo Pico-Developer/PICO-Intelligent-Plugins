@@ -9,9 +9,18 @@ runs supported commands, edits the app, and explains any confirmation or manual 
 1. Install Node.js 20 or newer and an AI coding assistant supported by `pico-cli`, such as Claude
    Code, Codex, Cursor, GitHub Copilot, or Trae CLI.
 2. Install `pico-cli` with `npm install -g @picoxr/pico-cli`.
-3. From the intended project directory, run `pico-cli setup` and select the applicable PICO plugin and
-   agent host.
-4. Close and reopen the assistant so its skills, project guidance, and knowledge tools are reloaded.
+3. Run `pico-cli setup` once, from outside any project directory. It installs the user-level PICO
+   tools, skills, knowledge, and the global MCP servers (`pico-dev-knowledge`,
+   `pico-spatial-editor`, `unity-mcp`) for the assistant you selected; it does not choose a platform
+   plugin. When the assistant runs setup non-interactively (`--yes`), it must also pass a region
+   explicitly, for example `--region cn`, because region is required on first run.
+4. Open or create the project directory in that assistant and describe what you want to build. The
+   assistant configures the project for the Kotlin Spatial SDK platform itself (`project configure`);
+   you do not need to run another setup command.
+5. Project configuration no longer adds project-level MCP servers — the MCP servers are user-level
+   from setup and already available. A session reopen is only needed when the assistant cannot see
+   newly installed project Skills in its tool list; otherwise project skills and guidance work in
+   the current session.
 
 After that, the user should normally speak to the assistant rather than manually reproduce the
 commands in this guide. A useful first request is:
@@ -57,10 +66,9 @@ The assistant translates the natural-language request into this workflow:
 1. Inspect the Kotlin Spatial SDK workspace and environment.
 2. Reduce the feature to `input -> inference -> output` and surface only decisions that materially
    affect the app, such as SDK choice, model choice, or whether results must be read back to app code.
-3. Apply the Kotlin SDK app-creation gate before changing SpatialML. A feature-bearing new Kotlin
-   app goes through `spatial-design-to-app`; when the user supplied no executable design, its
-   `pico-spatial-app-designer` gate produces and accepts one first. Onboarding is only a scaffold
-   substep, except for an explicitly featureless parent scaffold.
+3. Use `spatial-app-dev-workflow` for a new Kotlin app's overall delivery, with
+   `spatial-app-onboarding` for a missing scaffold and design/UI guidance as needed.
+   Return to SpatialML setup and inference integration after project prerequisites are ready.
 4. Run SpatialML setup and doctor, keeping project readiness separate from pySpatialML tool
    availability. Install `pyspatialml-pico` when package validation, model inspection, visualization,
    authoring, or package-scoped execution is needed and doctor reports that it is missing.
@@ -77,13 +85,14 @@ choice, authorization, unavailable dependency, or manual SDK/editor action.
 
 ## Parent SDK Boundaries
 
-- **Kotlin Spatial SDK:** SpatialML inference is a product feature, so a new app routes through
-  `spatial-design-to-app` and its executable-design gate. That workflow may call
-  `spatial-app-onboarding` only to create the scaffold. Direct onboarding is reserved for an
-  explicitly featureless parent scaffold. Pipeline packages load with
+- **Kotlin Spatial SDK:** use `spatial-app-dev-workflow` for app delivery, with
+  `spatial-app-onboarding` for scaffolding and scoped design/UI guidance. Standalone
+  onboarding supports a scaffold-only request. Pipeline packages load with
   `SpatialMLSession.loadPipelinePackageFromAssets(...)`.
 - **Unity:** hand the complete request to PICO Unity Agentic Tools' `spatialml` skill. If that plugin is
-  unavailable, report `BLOCKED` with installation and host-restart guidance.
+  unavailable, report `BLOCKED` and continue `pico-project-setup` for the intended Unity engineering
+  and resource roots. Read the returned continuation in the same session and verify native Unity
+  tools before dependent work; follow the reported Host activation actions.
   SpatialML is not a standalone project type, and WebSpatial is not its parent SDK.
 
 ## Terms a Beginner May See

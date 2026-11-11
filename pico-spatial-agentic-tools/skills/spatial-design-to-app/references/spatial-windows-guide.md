@@ -63,7 +63,7 @@ From `SpatialSDK/spatialui/foundation/src/main/kotlin/com/pico/spatial/ui/founda
 | `CoachmarkBox` / coachmarks               | instructional overlay               | anchored guidance layer                         | feature education and tutorials                                          | long-term business content    |
 | `SnackbarHost`                            | transient feedback host             | `Material.Thickest` or `None`                   | short feedback, toasts, snackbars                                        | persistent warnings           |
 | `TabBar`                                  | top/side/bottom window ornament     | `Material.None`, `SpatialWindowType.Tabbar`     | global page navigation                                                   | business panels               |
-| `Toolbar`                                 | bottom tool ornament                | ornament-style material semantics               | short grouped actions                                                    | primary content containers    |
+| `Toolbar`                                 | bottom tool ornament                | ornament-style material semantics               | composable task operation groups                                          | primary content containers    |
 
 ### 1.3.1 Four responsibility groups
 
@@ -97,6 +97,21 @@ A reliable D2C question is:
 - top / left / right / bottom page-switching ornament -> `TabBar`
 - bottom grouped actions -> `Toolbar`
 
+Use these negative boundaries when restoring a design package:
+
+| Component | Use for | Do not use for |
+| --------- | ------- | -------------- |
+| `SpatialPopup` | custom anchor-relative bubbles, light explanations, small custom panels, non-standard contextual UI | standard action menus, complex forms, blocking confirmation |
+| `Menu` | standard action lists, dropdown actions, overflow/more actions | complex custom layouts, forms, strong confirmation |
+| `SubMenu` | nested branches inside an open menu, such as sort-by choices | standalone floating panels |
+| `AlertDialog` | short blocking confirmation, destructive decisions, acknowledge/error/warning prompts | multi-field input or broad configuration |
+| `Sheet` | larger modal settings, filters, export options, short forms, selection flows | a handful of simple action items |
+| `DatePickerDialog` | date, deadline, and appointment-date selection | non-date tasks |
+| `SnackbarHost` | non-modal transient success/failure/undo feedback | decisions that require user confirmation |
+| `Augment` | lightweight persistent status/tool/help ornaments attached around the main window | transient menus, modal confirmation, independent workspaces |
+| `Subwindow` | long-lived selected-item detail, inspectors, previews, and reference panels tied to the main task | one-off confirmation or short feedback |
+| WindowContainer | independent workspace, player, debugger, or inspector with its own lifecycle/placement | UI that is subordinate to the current window/task |
+
 ### 1.5 Source-level pitfalls
 
 - `AlertDialog`, `DatePickerDialog`, and `Sheet` are not Web-style "outside click closes everything" layers by default; the closing state should still be modeled explicitly.
@@ -104,7 +119,7 @@ A reliable D2C question is:
 - `SpatialPopup` comes with minimum sizing behavior and behaves more like a contextual panel than a pure `wrapContent` tooltip.
 - `CoachmarkBox` is a combination of target + guidance layer, not an arbitrary generic popup container.
 - `SnackbarHost` is a host + state pattern, not a one-off standalone Snackbar composable.
-- `TabBar` and `Toolbar` belong to window-level ornament semantics and must stay at the root, not inside the page content flow.
+- `TabBar` and `Toolbar` belong to window-level ornament semantics, outside ordinary page layout flow. Toolbar may be declared inside a page Composable under WindowContainer; declaration nesting does not determine attachment placement.
 - High-level business code should prefer `TabBar`, `Toolbar`, or `Subwindow` over naked `Augment` unless the design-system component truly does not exist.
 
 ---
@@ -194,28 +209,24 @@ DatePickerDialog(
 import com.pico.spatial.ui.design.windows.Sheet
 
 Sheet(
-    leadingAction = null,
-    onDismissRequest = { onDismiss() },
-    title = { Text("Title") },
-    bottom = {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Button(
-                onClick = { onDismiss() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Vibrant.withVibrant(Vibrant.Neutral),
-                    contentColor = Color.Vibrant.withVibrant(Vibrant.Darkest)
-                )
-            ) { Text("Cancel") }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { onConfirm() }) { Text("Confirm") }
-        }
-    }
+    onDismissRequest = { onDismiss() }, // native top-left close IconButton
+    title = { Text("New event") },
+    trailingAction = {
+        Button(onClick = { onSave() }) { Text("Save") }
+    },
 ) {
-    // content
+    // Short form content; save is needed for this task, not every Sheet.
 }
 ```
 
 > `Sheet` is a modal popup panel. Prefer it for prompt and warning flows that need more explanatory content, stronger visual grouping, or a dedicated bottom action area. If the component already provides the modal structure, do not wrap its content in another heavy shell.
+
+Use the Subwindow operation-placement rules in
+`../../pico-spatial-app-designer/references/spatial-design-rules.md` for Sheet's
+native slots. Do not duplicate close/cancel at the bottom or add another
+TitleBar. Keep short Sheet titles in the native title slot without a custom
+surface_title exemption. Sheet maximum height is the owning App's current
+`screenHeightDp - 64dp`; check content and operations at the spec default size.
 
 > `BasicSheet`, `Sheet`, and `HeadImageSheet` belong to the same family. Use them before falling back to hand-built modal containers.
 
@@ -380,14 +391,47 @@ Toolbar(cornerSize = 37.dp) {
 }
 ```
 
-> `Toolbar` floats at the bottom edge of the window. It is not an in-page app bar or a generic content container.
+Toolbar automatically attaches to the current WindowContainer bottom; no
+attach/register call is needed. It may be declared inside a page Box/Column,
+occupies no ordinary layout space, and takes no positioning modifier. Conditional
+composition controls visibility; leaving the page composition removes it. Put a
+shared Toolbar outside page switching when its task scope spans pages. Stage and
+ordinary Android Compose without WindowContainer do not support this attachment.
+
+The legacy overload above aligns its bottom to the window bottom plus 32dp.
+The configurable overload below aligns its center to the window bottom (half
+overlap at any height), including when supportingContent is omitted:
+
+```kotlin
+Toolbar(
+    content = {
+        Button(onClick = onPrevious) { Text("Previous") }
+        Button(onClick = onNext) { Text("Next") }
+    },
+    supportingContent = {
+        Button(onClick = onFavorite) { Text("Favorite") }
+        Button(onClick = onInfo) { Text("Info") }
+    },
+    supportingConfiguration = ToolbarDefaults.supportingConfiguration(itemGap = 8.dp),
+)
+```
+
+Import `ToolbarDefaults` from `com.pico.spatial.ui.design.windows`. Verify the
+project SDK supports the configurable overload before emitting it. Main and
+supporting groups use `contentConfiguration` and `supportingConfiguration`;
+each configures enableMaterial, backgroundColor, cornerSize, contentPadding,
+itemGap, and minWidth. The gap between groups is native-owned. Preserve
+followViewpoints/focusable when specified. Do not convert preview offsets into
+unsupported native positioning arguments. For task suitability and grouping,
+see `../../pico-spatial-app-designer/references/spatial-design-rules.md` →
+Toolbar task operations.
 
 ### 8.3 Why `TabBar` / `Toolbar` are not content containers
 
 Even though both live under `design.windows`, they behave more like **window-level chrome ornaments** than subwindow content containers:
 
 - `TabBar`: edge navigation ornament with `SpatialWindowType.Tabbar`
-- `Toolbar`: action-strip ornament for short grouped operations
+- `Toolbar`: action ornament with freely composed task controls and optional concise context; see the Toolbar overloads above
 - both are conceptually closer to Augment-family attached layers than to modal windows such as `AlertDialog` or `Sheet`
 
 ### 8.4 `Augment` directly (foundation-level supplement)

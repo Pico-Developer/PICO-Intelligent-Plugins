@@ -10,6 +10,23 @@ Add SpatialML to an existing Kotlin Spatial SDK app, then validate the integrati
 a separate project type and this skill must not replace Kotlin SDK setup. Unity
 SpatialML is owned by the PICO Unity Agentic Tools plugin, not by this workflow.
 
+For an explicit Native OpenXR request, preserve the existing Native project and verify
+the installed CLI's SDK-specific capabilities. The Kotlin implementation guidance below
+does not establish Native support or its absence. Use the Native package branch in
+`references/pipeline-zoo.md`; do not create a Kotlin project to replace the requested app.
+
+## When to Use
+
+- Creating or extending SpatialML features in a Kotlin Spatial SDK app
+- Setting up a SpatialML pipeline, model, or Pipeline Zoo template
+- SpatialML onboarding, doctor, or implementation in a Spatial project
+
+## When NOT to Use
+
+- Runtime debugging of an existing SpatialML pipeline — use `spatialml-debugging`
+- Unity SpatialML — use the Unity plugin's `spatialml` skill
+- Generic SDK API questions — use `spatial-sdk-guideline`
+
 ## Recognize SpatialML Intent
 
 Runtime service logs, zero/stale outputs, global tensor probes, debug-flag changes, and readback
@@ -45,11 +62,10 @@ Kotlin SDK, SpatialML, Pipeline Zoo, application, and verification steps.
   with this workflow's setup, package, implementation, or runtime instructions.
 - If the workspace is empty and the SDK is unspecified, use Kotlin Spatial SDK. Do not route
   SpatialML to WebSpatial.
-- Treat a requested SpatialML behavior as an app feature. For a new Kotlin app, apply the global
-  executable-design gate before project creation: route through `spatial-design-to-app`, which uses
-  `pico-spatial-app-designer` when the user did not provide an executable design. Onboarding may run
-  only as that workflow's scaffold substep. Direct `spatial-app-onboarding` is reserved for an
-  explicitly featureless parent scaffold.
+- Treat a requested SpatialML behavior as an app feature. For a new Kotlin app, use
+  `spatial-app-dev-workflow` for overall development, `spatial-app-onboarding` for a missing
+  scaffold, and design/UI guidance as needed. Return here for SpatialML setup and implementation;
+  do not automatically start a UI workflow from the presence of an inference feature.
 - Explain confirmations, manual steps, and unavailable capabilities when they occur. Do not
   make beginners copy internal command sequences merely to advance the workflow.
 - End with build/run evidence from the Kotlin SDK, emulator, or device, or state exactly what remains
@@ -72,7 +88,7 @@ or call pyspatialml/pico-cli/subprocesses during this classification step.
 ```text
 [SpatialML Preflight]
   Request: <one-line summary of what the user wants>
-  Platform: <Kotlin Spatial SDK | Unity | empty workspace>
+  Platform: <Kotlin Spatial SDK | Native OpenXR | Unity | empty workspace>
   Input -> Inference -> Output:
     Input:   <VST camera | microphone | depth | mesh | custom tensor | other>
     Model:   <model file name or "unresolved — will search Pipeline Zoo | will adapt | TBD">
@@ -96,10 +112,15 @@ After the preflight, proceed through `Route The Request` below to choose the cor
 
 - A Unity project or explicit Unity request leaves this plugin immediately: hand the complete request
   to PICO Unity Agentic Tools' `spatialml` skill. If it is unavailable, report `BLOCKED`, name the
-  missing plugin, and require installation plus an agent-host restart.
+  missing plugin, and continue `pico-project-setup` for the intended Unity engineering and resource
+  roots. Read the returned continuation in the same session. Verify native Unity tools before
+  dependent work and follow the reported Host activation actions.
+- For Native OpenXR package work, read `references/pipeline-zoo.md` and follow the installed
+  CLI's Native detection, setup and install result. If the Native project or package source is
+  missing, report that prerequisite; do not infer an unsupported installer from Kotlin-only examples.
 - For a new Kotlin SpatialML app, apply its project-creation route before resuming this skill. A
-  feature-bearing Kotlin app routes through `spatial-design-to-app` and its
-  designer gate; onboarding is only a scaffold substep. Do not make SpatialML a separate project type.
+  feature-bearing Kotlin app uses `spatial-app-dev-workflow`, with onboarding as its scaffold
+  subtask and UI/design skills as needed. Do not make SpatialML a separate project type.
 - For Pipeline Zoo discovery, selection, installation, adaptation, import, loader use, or package
   verification, stay in this skill and read `references/pipeline-zoo.md` before acting.
 - A full app request continues from the package sub-workflow into Kotlin application integration,
@@ -152,10 +173,10 @@ Kotlin SDK's creation workflow before step 1:
 
 1. Run `pico-cli spatialml onboard --project <project> --format json`.
 2. If the result says the Kotlin SDK is missing, complete its setup first.
-   - Feature-bearing new Kotlin Spatial SDK apps: route through `spatial-design-to-app`. If the user
-     did not provide an executable design, its `pico-spatial-app-designer` gate must produce and
-     accept one before implementation. Use `spatial-app-onboarding` only as its scaffold substep.
-     Direct onboarding is allowed only when the requested parent scaffold is explicitly featureless.
+   - Feature-bearing new Kotlin Spatial SDK apps: use `spatial-app-dev-workflow` for development
+     and `spatial-app-onboarding` for the missing scaffold. Use specialist design guidance where
+     the request needs it, then return to this SpatialML task. Standalone onboarding remains valid
+     for a scaffold-only request.
      For an existing Android/Kotlin application without the Spatial SDK, follow the returned
      `porting-android-app` handoff to integrate the parent SDK while preserving the app.
 3. Run `pico-cli spatialml setup --project <project> --format json`.
@@ -170,12 +191,16 @@ with exit code `3`.
 Install or update the supported public tool with:
 
 ```bash
-uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico
+uv tool install --upgrade --python 3.13 --system-certs 'pyspatialml-pico>=0.5.3'
 pyspatialml --version
 ```
 
-pico-cli supports pySpatialML 0.5.0 or newer and normally resolves `pyspatialml` from `PATH`. Set
+pico-cli supports pySpatialML 0.5.3 or newer and normally resolves `pyspatialml` from `PATH`. Set
 `PICO_CLI_PYSPATIALML` to an explicit executable path when the command is installed elsewhere.
+Before handing package authoring or isolated host/device execution directly to pySpatialML, verify
+the selected executable reports at least 0.5.3. This minimum includes the JavaScript tensor/error,
+corrupt-model diagnostic, and visualization validation/readiness fixes. Upgrade older managed
+installs through `spatialml setup`; repair an explicit executable override in its owning environment.
 
 ## Prefer Pipeline Zoo Packages
 
@@ -245,6 +270,6 @@ substitute.
   reconstruction.
 - Model and package use LiteRT/TFLite, not QNN context binaries.
 - No Docker, bash-only conversion, direct `litert`, or AOT step was introduced.
-- pySpatialML is at least version 0.5.0, or its availability error is reported with the install/update
+- pySpatialML is at least version 0.5.3, or its availability error is reported with the install/update
   action.
 - Final runtime behavior is verified in the Kotlin SDK, emulator, or selected device as appropriate.

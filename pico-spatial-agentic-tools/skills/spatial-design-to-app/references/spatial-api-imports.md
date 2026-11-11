@@ -7,14 +7,35 @@ migrated_from: legacy-d2c-reference/spatial-api-reference.md (Phase B1.2)
 
 # SpatialUI Import Inference Reference
 
-Use this file for **import inference rules** and **package-path lookup** only.
+Use this file for **target-version API resolution**, **import inference rules**,
+and **package-path lookup**.
 
 - For component semantics, see `spatial-ui-components.md`.
 - For subwindows and floating layers, see `spatial-windows-guide.md`.
-- For ability APIs such as Hover, `backgroundMaterial`, `zOffset`, and 3D content, see `spatial-ui-design-style/references/spatial-capabilities.md`.
+- For ability APIs such as Hover, `backgroundMaterial`, `zOffset`, and 3D content, see [spatial capabilities](../../spatial-ui-design-style/references/spatial-capabilities.md).
 - For app entry, `WindowContainer`, and `Stage` setup rules, see `manifest-and-entry.md` + `structure-decisions.md` / `stage.md`.
 
 ---
+
+## Target SDK API resolution
+
+Read the project's resolved SDK/BOM version first. Reuse existing project usage
+and references whose version evidence matches that target. Do not restart API
+discovery for each component when its signature, import, and required behavior
+are already resolved for the same version in this task.
+
+Perform a focused lookup when an API is unlisted, a signature or scope is
+missing, version evidence does not match, or compilation reports a conflict.
+Follow [SDK lookup guidance](../../spatial-sdk-guideline/SKILL.md) for the
+versioned knowledge and public API sources; do not silently substitute another
+version. An inventory omission is a reason to verify, not to invent a fallback.
+
+For model-and-panel scenes, the
+[AttachmentPanel reference](../../pico-spatial-app-designer/design/design-reference/components/AttachmentPanel/README.md)
+owns the attachment example and source provenance; the
+[gesture reference](../../spatial-ui-ability/references/ability-gestures.md)
+owns hit targeting and drag units. Neither requires rewriting a working ECS
+implementation as `SpatialModelView`.
 
 ## 1. Import Inference Rules
 
@@ -65,29 +86,32 @@ Compose animation specs.
 
 ### Spatial / app-structure APIs
 
-| API                                                                       | Import                                                                                   |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `SpatialAppScope`                                                         | `com.pico.spatial.ui.foundation.dsl.SpatialAppScope`                                     |
-| `launch`                                                                  | `com.pico.spatial.ui.foundation.dsl.launch`                                              |
-| `DefaultWindowContainer`                                                  | `com.pico.spatial.ui.foundation.dsl.DefaultWindowContainer`                              |
-| `WindowContainer`                                                         | `com.pico.spatial.ui.foundation.dsl.WindowContainer`                                     |
-| `DefaultStage`                                                            | `com.pico.spatial.ui.foundation.dsl.DefaultStage`                                        |
-| `Stage`                                                                   | `com.pico.spatial.ui.foundation.dsl.Stage`                                               |
-| `Form` / `WindowContainerSize` / `Immersion` / `Placement` / `WorldScale` | `com.pico.spatial.ui.foundation.dsl.*`                                                   |
-| `windowConstraints`                                                       | Scope member extension on `WindowContainer` / `DefaultWindowContainer`; no direct import |
-| `zOffset`                                                                 | `com.pico.spatial.ui.foundation.layout.zOffset`                                          |
-| `rotate3D`                                                                | `com.pico.spatial.ui.foundation.effect3d.rotate3D`                                       |
-| `scale3D`                                                                 | `com.pico.spatial.ui.foundation.effect3d.scale3D`                                        |
-| `backgroundMaterial`                                                      | `com.pico.spatial.ui.foundation.material.backgroundMaterial`                             |
-| `Box3D` / `depth` / `requiredDepth` / `DepthAlignment`                    | `com.pico.spatial.ui.foundation.layout.*`                                                |
-| `SpatialView`                                                             | `com.pico.spatial.ui.foundation.content.SpatialView`                                     |
-| `SpatialModelView` / `Source` / `Resizability`                            | `com.pico.spatial.ui.foundation.content.*`                                               |
-| `spatialHoverEffect`                                                      | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect`                                |
-| Spatial Hover `spring`                                                    | `com.pico.spatial.ui.foundation.hover.spring`                                            |
-| Spatial Hover `tween`                                                     | `com.pico.spatial.ui.foundation.hover.tween`                                             |
-| `disableSpatialHoverEffect`                                               | `com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect`                         |
-| `tooltip`                                                                 | `com.pico.spatial.ui.foundation.tooltip`                                                 |
-| `Augment` / `AugmentContentAlignment`                                     | `com.pico.spatial.ui.foundation.window.*`                                                |
+| API                                                                       | Import                                                                                                                       |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `SpatialAppScope`                                                         | `com.pico.spatial.ui.foundation.dsl.SpatialAppScope`                                                                         |
+| `launch`                                                                  | `com.pico.spatial.ui.foundation.dsl.launch`                                                                                  |
+| `DefaultWindowContainer`                                                  | `com.pico.spatial.ui.foundation.dsl.DefaultWindowContainer`                                                                  |
+| `WindowContainer`                                                         | `com.pico.spatial.ui.foundation.dsl.WindowContainer`                                                                         |
+| `DefaultStage`                                                            | `com.pico.spatial.ui.foundation.dsl.DefaultStage`                                                                            |
+| `Stage`                                                                   | `com.pico.spatial.ui.foundation.dsl.Stage`                                                                                   |
+| `Form` / `WindowContainerSize` / `Immersion` / `Placement` / `WorldScale` | `com.pico.spatial.ui.foundation.dsl.*`                                                                                       |
+| `windowConstraints`                                                       | Scope member extension on `WindowContainer` / `DefaultWindowContainer`; no direct import                                     |
+| `zOffset`                                                                 | `com.pico.spatial.ui.foundation.layout.zOffset`                                                                              |
+| `rotate3D`                                                                | `com.pico.spatial.ui.foundation.effect3d.rotate3D`                                                                           |
+| `scale3D`                                                                 | `com.pico.spatial.ui.foundation.effect3d.scale3D`                                                                            |
+| `backgroundMaterial`                                                      | `com.pico.spatial.ui.foundation.material.backgroundMaterial`                                                                 |
+| `Box3D` / `depth` / `requiredDepth` / `DepthAlignment`                    | `com.pico.spatial.ui.foundation.layout.*`                                                                                    |
+| `SpatialView`                                                             | `com.pico.spatial.ui.foundation.content.SpatialView`                                                                         |
+| `SpatialModelView` / `Source` / `Resizability`                            | `com.pico.spatial.ui.foundation.content.*`                                                                                   |
+| `AttachmentPanel` (SpatialView DSL)                                       | Member of `AttachmentPanelBuilder` in `SpatialView(attachments = { ... })`; no top-level `AttachmentPanel` composable import |
+| `attachmentPanelComponent` / `panelSize`                                  | `com.pico.spatial.ui.foundation.content.*`                                                                                   |
+| `AttachmentPanelComponent` (ECS component)                                | `com.pico.spatial.core.ecs.AttachmentPanelComponent`                                                                         |
+| `spatialHoverEffect`                                                      | `com.pico.spatial.ui.foundation.hover.spatialHoverEffect`                                                                    |
+| Spatial Hover `spring`                                                    | `com.pico.spatial.ui.foundation.hover.spring`                                                                                |
+| Spatial Hover `tween`                                                     | `com.pico.spatial.ui.foundation.hover.tween`                                                                                 |
+| `disableSpatialHoverEffect`                                               | `com.pico.spatial.ui.foundation.hover.disableSpatialHoverEffect`                                                             |
+| `tooltip`                                                                 | `com.pico.spatial.ui.foundation.tooltip`                                                                                     |
+| `Augment` / `AugmentContentAlignment`                                     | `com.pico.spatial.ui.foundation.window.*`                                                                                    |
 
 ### Vibrant
 

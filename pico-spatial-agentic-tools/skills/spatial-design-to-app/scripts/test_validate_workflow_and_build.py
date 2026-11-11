@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import json
+import os
+import shlex
+import signal
+import time
 import shutil
 import subprocess
 import tempfile
@@ -8,6 +12,10 @@ from pathlib import Path
 
 
 SOURCE_SCRIPT = Path(__file__).resolve().parent / "validate_workflow_and_build.sh"
+SOURCE_EXPERIMENTAL_API_CHECKER = (
+    Path(__file__).resolve().parents[2]
+    / "spatial-sdk-guideline/scripts/check_experimental_api_opt_in.py"
+)
 
 
 class ValidateWorkflowAndBuildTest(unittest.TestCase):
@@ -16,8 +24,19 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         self.root = Path(self.temp_dir.name) / "skills"
         self.script_dir = self.root / "spatial-design-to-app/scripts"
         self.design_script_dir = self.root / "spatial-ui-design-style/scripts"
+        self.designer_script_dir = self.root / "pico-spatial-app-designer/design/scripts"
+        self.experimental_api_script_dir = self.root / "spatial-sdk-guideline/scripts"
         self.script_dir.mkdir(parents=True)
+        self.experimental_api_script_dir.mkdir(parents=True)
         shutil.copy(SOURCE_SCRIPT, self.script_dir / "validate_workflow_and_build.sh")
+        shutil.copy(
+            SOURCE_SCRIPT.parent / "verification-summary.mjs",
+            self.script_dir / "verification-summary.mjs",
+        )
+        shutil.copy(
+            SOURCE_EXPERIMENTAL_API_CHECKER,
+            self.experimental_api_script_dir / "check_experimental_api_opt_in.py",
+        )
         for name in (
             "check_handoff_receipts.py",
             "scan_implementation.py",
@@ -34,11 +53,12 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
             else:
                 path.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
             path.chmod(0o755)
-        self.target = Path(self.temp_dir.name) / "target"
+        self.target = Path(self.temp_dir.name) / "target with spaces"
         (self.target / "src/main/java/com/example").mkdir(parents=True)
         (self.target / "src/main/java/com/example/Demo.kt").write_text(
             "fun Demo() {}\n", encoding="utf-8"
         )
+        self.install_design_spec_checker()
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -64,6 +84,7 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
+            timeout=30,
         )
 
     def install_design_verifier(self, body: str = "#!/usr/bin/env bash\nexit 0\n") -> None:
@@ -71,6 +92,27 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         path = self.design_script_dir / "verify-design-style.sh"
         path.write_text(body, encoding="utf-8")
         path.chmod(0o755)
+
+    def install_design_spec_checker(self, exit_code: int = 0) -> None:
+        self.designer_script_dir.mkdir(parents=True, exist_ok=True)
+        path = self.designer_script_dir / "check_design_spec.py"
+        path.write_text(
+            "\n".join(
+                [
+                    "#!/usr/bin/env python3",
+                    "import json",
+                    "import sys",
+                    "from pathlib import Path",
+                    "spec = Path(sys.argv[1])",
+                    "out = spec.parent / 'design-spec-checker-args.json'",
+                    "out.write_text(json.dumps(sys.argv[1:]), encoding='utf-8')",
+                    "print('[design-spec-check] fixture invoked')",
+                    f"raise SystemExit({exit_code})",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
 
     def write_design_spec(self, brand_colors: dict[str, str]) -> Path:
         scratch = self.target / ".scratch"
@@ -96,6 +138,79 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         self.assertIn("[3/9] design JSON to app fidelity", result.stdout)
         self.assertIn("[design-fidelity] forced failure", result.stdout)
         self.assertNotIn("[4/9] Gradle sync/project discovery", result.stdout)
+
+    def test_success_receipt_identifies_current_inputs_and_required_checks(self) -> None:
+        self.install_design_verifier()
+        result = self.run_validate()
+        self.assertEqual(0, result.returncode, result.stdout)
+        summary = json.loads((self.target / ".scratch/verification_summary.json").read_text())
+        self.assertEqual("spatialcraft.compose-verification/v1", summary["schemaVersion"])
+        self.assertEqual(str(self.target.resolve()), summary["inputs"]["target"])
+        self.assertEqual(64, len(summary["inputs"]["sourceDigest"]))
+        self.assertTrue(summary["invocationId"])
+        self.assertEqual(10, len(summary["checks"]))
+        self.assertEqual({"passed"}, set(summary["checks"].values()))
+
+    def test_source_change_during_checks_cannot_leave_a_clean_summary(self) -> None:
+        self.install_design_verifier()
+        source = self.target / "src/main/java/com/example/Demo.kt"
+        (self.script_dir / "smoke_build.sh").write_text(
+            f"#!/usr/bin/env bash\necho changed >> '{source}'\nexit 0\n", encoding="utf-8"
+        )
+        result = self.run_validate()
+        self.assertEqual(1, result.returncode, result.stdout)
+        summary = json.loads((self.target / ".scratch/verification_summary.json").read_text())
+        self.assertFalse(summary["clean"])
+        self.assertEqual("failed", summary["status"])
+        self.assertTrue(summary["stale"])
+        self.assertIn("Validation inputs changed while checks were running.", summary["warnings"])
+
+    @unittest.skipIf(os.name == "nt", "POSIX process-group signals")
+    def test_interruption_cannot_restore_a_previous_clean_summary(self) -> None:
+        self.install_design_verifier()
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(signal=signum):
+                ready = self.target / ".scratch/ready"
+                ready.parent.mkdir(exist_ok=True)
+                ready.unlink(missing_ok=True)
+                summary_path = self.target / ".scratch/verification_summary.json"
+                summary_path.write_text('{"clean":true,"passed":true}')
+                (self.script_dir / "smoke_build.sh").write_text(
+                    f"#!/usr/bin/env bash\ntouch '{ready}'\nsleep 180\n", encoding="utf-8"
+                )
+                child = subprocess.Popen(
+                    [
+                        "bash",
+                        str(self.script_dir / "validate_workflow_and_build.sh"),
+                        str(self.target),
+                        "--input-mode",
+                        "visual_reference",
+                        "--generation-mode",
+                        "existing_module",
+                        "--no-design-colors",
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    start_new_session=True,
+                )
+                try:
+                    deadline = time.monotonic() + 5
+                    while (
+                        not ready.exists() and child.poll() is None and time.monotonic() < deadline
+                    ):
+                        time.sleep(0.02)
+                    self.assertTrue(
+                        ready.exists(), "Validator did not reach the controlled child boundary"
+                    )
+                    os.killpg(child.pid, signum)
+                    stdout, _ = child.communicate(timeout=5)
+                    self.assertIn(child.returncode, (-signum, 128 + signum), stdout)
+                    self.assertFalse(json.loads(summary_path.read_text())["clean"])
+                finally:
+                    if child.poll() is None:
+                        os.killpg(child.pid, signal.SIGKILL)
+                        child.communicate(timeout=5)
 
     def test_failed_run_replaces_previous_clean_summary(self) -> None:
         self.install_design_verifier()
@@ -189,9 +304,14 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         result = self.run_validate()
 
         self.assertEqual(0, result.returncode, result.stdout)
-        args = (self.target / ".scratch/design_fidelity_args.json").read_text(encoding="utf-8")
+        args = json.loads(
+            (self.target / ".scratch/design_fidelity_args.json").read_text(encoding="utf-8")
+        )
         self.assertIn("--design-spec", args)
-        self.assertIn(str(self.target / ".scratch/design-spec.json"), args)
+        self.assertEqual(
+            (self.target / ".scratch/design-spec.json").resolve(),
+            Path(args[args.index("--design-spec") + 1]).resolve(),
+        )
 
     def test_design_gate_result_is_forwarded_to_receipt_checker(self) -> None:
         self.install_design_verifier()
@@ -243,6 +363,17 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("spatial-ui-design-style verifier not found", result.stdout)
 
+    def test_missing_experimental_api_checker_is_invocation_error(self) -> None:
+        self.install_design_verifier()
+        (self.experimental_api_script_dir / "check_experimental_api_opt_in.py").unlink()
+
+        result = self.run_validate()
+
+        self.assertEqual(2, result.returncode, result.stdout)
+        self.assertIn("required script not found", result.stdout)
+        self.assertIn("check_experimental_api_opt_in.py", result.stdout)
+        self.assertNotIn("[preflight] invocation and design-color contract", result.stdout)
+
     def test_design_style_result_json_is_written_on_success(self) -> None:
         self.install_design_verifier("#!/usr/bin/env bash\necho design ok\nexit 0\n")
 
@@ -255,12 +386,12 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
 
     def test_design_style_receives_design_spec_when_present(self) -> None:
         design_spec = self.write_design_spec({})
-        args_file = self.target / "design-style-args.txt"
+        args_file = self.target / ".scratch/design-style-args.txt"
         self.install_design_verifier(
             "\n".join(
                 [
                     "#!/usr/bin/env bash",
-                    f"printf '%s\\n' \"$@\" > {args_file!s}",
+                    f"printf '%s\\n' \"$@\" > {shlex.quote(args_file.as_posix())}",
                     "exit 0",
                     "",
                 ]
@@ -270,9 +401,54 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
         result = self.run_validate()
 
         self.assertEqual(0, result.returncode, result.stdout)
-        args = args_file.read_text(encoding="utf-8")
+        args = args_file.read_text(encoding="utf-8").splitlines()
         self.assertIn("--design-spec", args)
-        self.assertIn(str(design_spec), args)
+        self.assertEqual(
+            design_spec.resolve(), Path(args[args.index("--design-spec") + 1]).resolve()
+        )
+
+    def test_design_spec_checker_receives_spec_before_source_admission(self) -> None:
+        design_spec = self.write_design_spec({})
+        self.install_design_verifier()
+
+        result = self.run_validate()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        args = json.loads(
+            (design_spec.parent / "design-spec-checker-args.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(1, len(args))
+        self.assertEqual(design_spec.resolve(), Path(args[0]).resolve())
+        self.assertLess(
+            result.stdout.index("[design-spec-check] fixture invoked"),
+            result.stdout.index("[1/9] intent brief and handoff receipts"),
+        )
+
+    def test_design_spec_checker_failure_cannot_be_bypassed_by_allow_degraded(self) -> None:
+        self.write_design_spec({})
+        self.install_design_verifier()
+        self.install_design_spec_checker(exit_code=7)
+
+        result = self.run_validate("--allow-degraded")
+
+        self.assertEqual(7, result.returncode, result.stdout)
+        self.assertIn("[design-spec-check] fixture invoked", result.stdout)
+        self.assertNotIn("[1/9] intent brief and handoff receipts", result.stdout)
+        summary = json.loads(
+            (self.target / ".scratch/verification_summary.json").read_text(encoding="utf-8")
+        )
+        self.assertFalse(summary["passed"])
+        self.assertEqual("failed", summary["status"])
+        self.assertEqual(7, summary["exit_code"])
+
+    def test_design_spec_checker_is_skipped_when_spec_absent(self) -> None:
+        self.install_design_verifier()
+
+        result = self.run_validate()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("[design-spec-check] fixture invoked", result.stdout)
+        self.assertFalse((self.target / ".scratch/design-spec-checker-args.json").exists())
 
     def test_missing_input_mode_is_an_invocation_error(self) -> None:
         self.install_design_verifier()
@@ -288,6 +464,7 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
+            timeout=30,
         )
 
         self.assertEqual(2, result.returncode, result.stdout)
@@ -310,6 +487,7 @@ class ValidateWorkflowAndBuildTest(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
+            timeout=30,
         )
 
         self.assertEqual(2, result.returncode, result.stdout)

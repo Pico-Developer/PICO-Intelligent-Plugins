@@ -1,0 +1,56 @@
+<!-- @dsCard group="Pickers" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timepicker · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .time-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:416px;text-align:center;font-size:14px;color:var(--label-semidark-alpha)}
+    .time-columns.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Timepicker</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Timepicker</h1><p>Reference examples · original defaults unless explicitly overridden</p></header>
+  <div class="sui-stage stack" style="gap:40px;align-items:flex-start">
+    <section class="stack" aria-labelledby="reminder-title" style="gap:16px">
+      <h2 id="reminder-title" style="margin:0;font-size:20px">Reminder time</h2>
+      <p class="muted" style="margin:0">24-hour clock · hours and minutes; seconds are hidden.</p>
+      <div class="time-columns" aria-hidden="true"><span>Hours</span><span>Minutes</span></div>
+      <sui-timepicker id="reminder-time" hour="9" minute="30" second="0" seconds="false" hours-text="h" minutes-text="min"></sui-timepicker>
+      <p id="reminder-result" class="status" role="status" style="margin:0">Reminder time: 09:30</p>
+    </section>
+    <section class="stack" aria-labelledby="duration-title" style="gap:16px">
+      <h2 id="duration-title" style="margin:0;font-size:20px">Countdown duration</h2>
+      <p class="muted" style="margin:0">Duration under 24 hours · include seconds when precision matters.</p>
+      <div class="time-columns three" aria-hidden="true"><span>Hours</span><span>Minutes</span><span>Seconds</span></div>
+      <sui-timepicker id="countdown-duration" hour="1" minute="20" second="30" seconds="true" hours-text="h" minutes-text="min" seconds-text="s"></sui-timepicker>
+      <p id="duration-result" class="status" role="status" style="margin:0">Duration: 1 h 20 min 30 s</p>
+    </section>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const reminder = document.getElementById('reminder-time');
+      const duration = document.getElementById('countdown-duration');
+      const pad = value => String(value).padStart(2, '0');
+      function showReminder() {
+        document.getElementById('reminder-result').textContent =
+          'Reminder time: ' + pad(reminder.getAttribute('hour')) + ':' + pad(reminder.getAttribute('minute'));
+      }
+      function showDuration() {
+        document.getElementById('duration-result').textContent =
+          'Duration: ' + Number(duration.getAttribute('hour')) + ' h ' +
+          Number(duration.getAttribute('minute')) + ' min ' + Number(duration.getAttribute('second')) + ' s';
+      }
+      reminder.addEventListener('time-change', showReminder);
+      duration.addEventListener('time-change', showDuration);
+      showReminder();
+      showDuration();
+    });
+  </script>
+</body>
+</html>

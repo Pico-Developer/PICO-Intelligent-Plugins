@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><path xmlns="http://www.w3.org/2000/svg" d="M19 4H5C3.34315 4 2 5.34315 2 7V17C2 18.6569 3.34315 20 5 20H19C20.6569 20 22 18.6569 22 17V7C22 5.34315 20.6569 4 19 4ZM19 6H5C4.44772 6 4 6.44772 4 7V17C4 17.5523 4.44772 18 5 18H19C19.5523 18 20 17.5523 20 17V7C20 6.44772 19.5523 6 19 6Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" />
+<path xmlns="http://www.w3.org/2000/svg" d="M5 8.25H10.5V9.75H5V8.25Z" fill="currentColor" />
+<path xmlns="http://www.w3.org/2000/svg" d="M5 11.25H10.5V12.75H5V11.25Z" fill="currentColor" />
+<path xmlns="http://www.w3.org/2000/svg" d="M5 14.25H10.5V15.75H5V14.25Z" fill="currentColor" />
+<path xmlns="http://www.w3.org/2000/svg" d="M17.3 9.375C17.3 10.2034 16.6285 10.875 15.8 10.875C14.9716 10.875 14.3 10.2034 14.3 9.375C14.3 8.54657 14.9716 7.875 15.8 7.875C16.6285 7.875 17.3 8.54657 17.3 9.375Z" fill="currentColor" />
+<path xmlns="http://www.w3.org/2000/svg" d="M14.3 12.375H17.3C17.9214 12.375 18.425 12.8787 18.425 13.5V15.375C18.425 15.7892 18.0893 16.125 17.675 16.125H13.925C13.5108 16.125 13.175 15.7892 13.175 15.375V13.5C13.175 12.8787 13.6787 12.375 14.3 12.375Z" fill="currentColor" />
+</svg>

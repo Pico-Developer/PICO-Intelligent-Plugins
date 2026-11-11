@@ -1,0 +1,4 @@
+interface:
+  display_name: "pico-auth-cli"
+  short_description: "Safely manage the local PICO login state"
+  default_prompt: "Use $pico-auth-cli to sign in, inspect status, refresh credentials, or sign out while routing through the current PICO region safely."

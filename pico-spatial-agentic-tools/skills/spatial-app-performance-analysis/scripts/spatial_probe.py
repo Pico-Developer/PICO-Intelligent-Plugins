@@ -10,7 +10,7 @@ Usage:
     python spatial_probe.py \
         --trace C:/perf-data/trace.perfetto-trace \
         --app-process com.example.spatial \
-        --output C:/perf-data/trace-probe.yaml \
+        --output C:/perf-data/trace-probe.json \
         --quiet
 
 Execution flow:
@@ -21,29 +21,29 @@ Execution flow:
 4. Query the loaded session through ``pico-cli perf trace query``.
 5. Check trace bounds, schema, row counts, generic and Spatial tables,
    tables, target processes, key threads, and the App frame-driving thread.
-6. Write a compact YAML summary or, with ``--detail``, a complete YAML result
+6. Write a compact JSON summary or, with ``--detail``, a complete JSON result
    containing the original trace path and session ID.
 
 Typical examples:
 
-    # Print a compact YAML summary to stdout.
+    # Print a compact JSON summary to stdout.
     python spatial_probe.py \
         --trace C:/perf-data/trace.perfetto-trace \
         --app-process com.example.spatial
 
-    # Save the compact YAML summary without printing it.
+    # Save the compact JSON summary without printing it.
     python spatial_probe.py \
         --trace C:/perf-data/trace.perfetto-trace \
         --app-process com.example.spatial \
-        --output C:/perf-data/trace-probe.yaml \
+        --output C:/perf-data/trace-probe.json \
         --quiet
 
-    # Save the complete YAML result, including every check and row count.
+    # Save the complete JSON result, including every check and row count.
     python spatial_probe.py \
         --trace C:/perf-data/trace.perfetto-trace \
         --app-process com.example.spatial \
         --detail \
-        --output C:/perf-data/trace-probe-detail.yaml \
+        --output C:/perf-data/trace-probe-detail.json \
         --quiet
 
     # Use a non-default profiler daemon port.
@@ -71,7 +71,7 @@ Compatibility:
   ``pico-cli perf trace query`` and does not require the Python ``perfetto``
   package.
 
-The command always returns YAML. The default output is a compact summary;
+The command always returns JSON. The default output is a compact summary;
 ``--detail`` preserves the complete machine-readable result. A successful
 probe can still be partial: missing tables and signals are reported as
 limitations instead of being treated as negative evidence.
@@ -92,13 +92,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
-
-try:
-    import yaml
-except ImportError as error:
-    raise SystemExit(
-        "Missing dependency: PyYAML. Install it with: python -m pip install pyyaml"
-    ) from error
 
 
 PROBE_VERSION = 1
@@ -295,7 +288,7 @@ class ProfilerSessionBackend(QueryBackend):
                 self.session_id,
                 "--sql",
                 sql,
-                "-p",
+                "--port",
                 str(self.daemon_port),
             )
         try:
@@ -383,7 +376,7 @@ class PerfTraceLoader:
             str(self.trace_path),
             "--spatial-diagnose",
             "true",
-            "-p",
+            "--port",
             str(self.daemon_port),
         )
         try:
@@ -474,6 +467,7 @@ def make_check(
 class ProbeRun:
     def __init__(self, arguments: argparse.Namespace) -> None:
         self.arguments = arguments
+        self.arguments.session = getattr(arguments, "session", None)
         self.result: dict[str, Any] = {
             "schema_version": 1,
             "probe_version": PROBE_VERSION,
@@ -493,6 +487,7 @@ class ProbeRun:
             "limitations": [],
         }
         self.table_map: dict[str, str] = {}
+        self.schema_source: str | None = None
         self.backend: QueryBackend | None = None
 
     def add_check(self, check: dict[str, Any]) -> None:
@@ -506,6 +501,17 @@ class ProbeRun:
             self.result["limitations"].append(
                 f"{check['id']}: {check['message']}"
             )
+
+    def resolve_table_name(self, requested: str) -> str | None:
+        actual = actual_name(self.table_map, requested)
+        if actual is not None:
+            return actual
+        # perfetto_tables lists intrinsic objects but omits common SQL views
+        # such as process, thread, and slice. Probe known objects directly
+        # when this fallback is the only schema source.
+        if self.schema_source == "perfetto_tables":
+            return requested
+        return None
 
     def query(self, sql: str, query_id: str) -> list[dict[str, Any]]:
         if self.backend is None:
@@ -524,25 +530,53 @@ class ProbeRun:
             raise
 
     def discover_schema(self) -> None:
-        schema_sql = """
+        sqlite_master_sql = """
 SELECT name, type
 FROM sqlite_master
 WHERE type IN ('table', 'view')
 ORDER BY name
 """.strip()
+        perfetto_tables_sql = """
+SELECT name
+FROM perfetto_tables
+ORDER BY name
+""".strip()
         try:
-            schema_rows = self.query(schema_sql, "schema_discovery")
-        except ProbeError:
-            return
+            schema_rows = self.backend.query(sqlite_master_sql)
+            schema_source = "sqlite_master"
+        except ProbeError as sqlite_master_error:
+            # Some Trace Processor versions expose only perfetto_tables. It
+            # contains object names but does not distinguish tables from views.
+            try:
+                schema_rows = self.backend.query(perfetto_tables_sql)
+                schema_source = "perfetto_tables"
+            except ProbeError as perfetto_tables_error:
+                self.add_check(
+                    make_check(
+                        "schema_discovery",
+                        STATUS_QUERY_FAILED,
+                        "schema discovery failed through sqlite_master and "
+                        f"perfetto_tables: sqlite_master: {sqlite_master_error}; "
+                        f"perfetto_tables: {perfetto_tables_error}",
+                        severity="error",
+                    )
+                )
+                return
         self.table_map, tables, views = resolve_table_names(schema_rows)
+        self.schema_source = schema_source
         self.result["schema"]["tables"] = tables
         self.result["schema"]["views"] = views
         self.add_check(
             make_check(
                 "schema_discovery",
                 STATUS_OBSERVED,
-                f"discovered {len(tables)} tables and {len(views)} views",
-                details={"table_count": len(tables), "view_count": len(views)},
+                f"discovered {len(tables)} tables and {len(views)} views "
+                f"through {schema_source}",
+                details={
+                    "source": schema_source,
+                    "table_count": len(tables),
+                    "view_count": len(views),
+                },
             )
         )
 
@@ -675,7 +709,7 @@ ORDER BY name
             return False
 
     def probe_bounds(self) -> None:
-        bounds_table = actual_name(self.table_map, "trace_bounds")
+        bounds_table = self.resolve_table_name("trace_bounds")
         rows: list[dict[str, Any]] = []
         bounds_source = "trace_bounds"
         if bounds_table:
@@ -810,7 +844,7 @@ WHERE dur >= 0
         )
         for capability, requested_tables in capability_table_groups.items():
             resolved_tables = {
-                requested: actual_name(self.table_map, requested)
+                requested: self.resolve_table_name(requested)
                 for requested in requested_tables
             }
             present_tables = {
@@ -921,7 +955,7 @@ WHERE dur >= 0
         self.probe_time_anomalies()
 
     def probe_time_anomalies(self) -> None:
-        slice_table = actual_name(self.table_map, "slice")
+        slice_table = self.resolve_table_name("slice")
         if not slice_table:
             return
         try:
@@ -973,7 +1007,7 @@ WHERE ts >= 0 AND dur >= 0
         *,
         exact: bool = True,
     ) -> list[dict[str, Any]]:
-        process_table = actual_name(self.table_map, "process")
+        process_table = self.resolve_table_name("process")
         if not process_table:
             self.add_check(
                 make_check(
@@ -1021,7 +1055,7 @@ LIMIT {int(self.arguments.max_identity_rows)}
         return rows
 
     def probe_app_identity(self) -> None:
-        """探测目标 App 进程与 App 帧驱动线程。"""
+        """Detect the target app process and its frame-driving thread."""
         try:
             package = self.arguments.package
             if package:
@@ -1051,7 +1085,7 @@ LIMIT {int(self.arguments.max_identity_rows)}
             )
 
     def probe_spatial_runtime_identity(self) -> None:
-        """探测 Spatial Runtime、OpenXR Runtime 与 compositor 候选进程。"""
+        """Detect candidate Spatial Runtime, OpenXR Runtime, and compositor processes."""
         try:
             self.query_processes(
                 "spr",
@@ -1077,13 +1111,13 @@ LIMIT {int(self.arguments.max_identity_rows)}
             )
 
     def probe_identities(self) -> None:
-        """保持对外入口不变，分阶段探测进程身份与关键线程。"""
+        """Preserve the public entry point while detecting process identities and key threads in stages."""
         self.probe_app_identity()
         self.probe_spatial_runtime_identity()
         self.probe_threads()
 
     def probe_threads(self) -> None:
-        thread_table = actual_name(self.table_map, "thread")
+        thread_table = self.resolve_table_name("thread")
         if not thread_table:
             self.add_check(
                 make_check(
@@ -1139,10 +1173,11 @@ LIMIT {int(self.arguments.max_identity_rows)}
         )
 
     def probe_frame_driving_threads(self) -> None:
-        slice_table = actual_name(self.table_map, "slice")
-        track_table = actual_name(self.table_map, "track")
-        thread_table = actual_name(self.table_map, "thread")
-        if not slice_table or not track_table or not thread_table:
+        slice_table = self.resolve_table_name("slice")
+        track_table = self.resolve_table_name("track")
+        thread_table = self.resolve_table_name("thread")
+        thread_track_table = self.resolve_table_name("thread_track")
+        if not slice_table or not track_table or not thread_table or not thread_track_table:
             self.result["identities"]["app_frame_driving_threads"] = {
                 "status": STATUS_MISSING_EVIDENCE,
                 "note": "slice, track, or thread table is unavailable",
@@ -1170,7 +1205,7 @@ FROM {quote_identifier(slice_table)} AS slice
 JOIN {quote_identifier(thread_table)} AS thread
   ON thread.utid = (
     SELECT thread_track.utid
-    FROM thread_track
+    FROM {quote_identifier(thread_track_table)} AS thread_track
     WHERE thread_track.id = slice.track_id
   )
 WHERE lower(slice.name) LIKE '%choreographer#beginspatialframe%'
@@ -1320,7 +1355,7 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--detail",
         action="store_true",
-        help="Output the complete YAML result instead of the compact summary.",
+        help="Output the complete JSON result instead of the compact summary.",
     )
     parser.add_argument(
         "--min-duration-seconds",
@@ -1499,18 +1534,20 @@ def write_output(
     detail: bool,
 ) -> None:
     document = dict(payload) if detail else build_summary_payload(payload)
-    rendered = yaml.safe_dump(
-        document,
-        allow_unicode=True,
-        sort_keys=False,
-        default_flow_style=False,
-    )
+    if output_path is not None:
+        suffix = output_path.suffix.lower()
+        if suffix in {".yaml", ".yml"}:
+            raise SystemExit(
+                "YAML output is no longer supported; use a .json path for --output "
+                "(e.g. --output trace-probe.json)."
+            )
+    rendered = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=False)
     if output_path is not None:
         resolved_output = output_path.expanduser().resolve()
         resolved_output.parent.mkdir(parents=True, exist_ok=True)
-        resolved_output.write_text(rendered, encoding="utf-8")
+        resolved_output.write_text(rendered + "\n", encoding="utf-8")
     else:
-        sys.stdout.write(rendered)
+        sys.stdout.write(rendered + "\n")
 
 
 def build_fatal_result(message: str) -> dict[str, Any]:
@@ -1539,6 +1576,7 @@ def build_fatal_result(message: str) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = parse_arguments(argv)
+    fatal_error = False
     try:
         if arguments.min_duration_seconds < 0:
             raise ValueError("--min-duration-seconds must be non-negative")
@@ -1548,6 +1586,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise ValueError("--max-identity-rows must be positive")
         probe_result = ProbeRun(arguments).run()
     except (OSError, ProbeError, ValueError) as error:
+        fatal_error = True
         probe_result = build_fatal_result(str(error))
 
     if arguments.output is not None:
@@ -1557,10 +1596,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         write_output(probe_result, None, arguments.detail)
 
-    if probe_result.get("status") == "error":
+    if fatal_error:
         return 1
     if arguments.strict and not probe_result.get("verdict", {}).get("analyze_ready"):
         return 2
+    if probe_result.get("status") == "error":
+        return 1
     return 0
 
 

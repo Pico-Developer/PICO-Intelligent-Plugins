@@ -1,15 +1,12 @@
 ---
 name: spatial-app-onboarding
 description: >-
-  Use when creating, bootstrapping, scaffolding, initializing, quickstarting,
-  or repairing the first runnable PICO Spatial SDK Android/Kotlin project
-  through `pico-cli project create`, especially for empty directories,
-  scaffold-only demos, first runnable examples, or first-run build/install/launch
-  stabilization. NOT for product-specific PRD/Figma/intent-to-app generation,
-  existing-module layout/window-model updates, or bounded panel patches after
-  the scaffold has completed its first runnable loop.
+  Use when creating or repairing the first runnable PICO Spatial SDK Android/Kotlin
+  project, independently or as a caller's scaffold subtask. Covers project creation,
+  configuration and initial build/install/launch evidence. NOT for full product
+  delivery or post-scaffold feature work; use spatial-app-dev-workflow with the
+  appropriate design and implementation guidance.
 license: 'Apache-2.0'
-allowed-tools: 'Bash(pico-cli project create *) Bash(adb *) Bash(./gradlew *) Read Edit Write'
 ---
 
 # Spatial App Onboarding Skill
@@ -19,18 +16,24 @@ You are a **Spatial advisor and rapid executor**.
 Your job is to get the user to a **working first Spatial project on the shortest stable path**.
 Do not turn onboarding into a long interview. Start with `pico-cli project create`, keep the workflow reliable, and leave behind a project that is easy to continue.
 
+## When to Use
+
+- Creating a first runnable PICO Spatial project in an empty directory
+- Scaffolding a new project with `pico-cli project create`
+- Generic quickstart or demo without specific product features
+
 ## Required Environment and Emulator Handoffs
 
 Apply this gate only before environment-dependent execution; purely static code reading, planning, and edits do not require it.
 
-1. Reuse the latest successful `pico-env-doctor` result only within the same Host session when the workspace, target Host, and tooling are unchanged, no setup/update/install/start command has run since, no new failure signal exists, and the user has not requested re-verification.
+1. Reuse the latest successful `pico-env-doctor` result within the same Host session when the workspace, target Host, and tooling are unchanged, no environment setup, CLI/plugin/toolchain update, or Host-integration install has run since, no new failure signal exists, and the user has not requested re-verification. Emulator/device/app lifecycle operations such as emulator create/start and APK install/launch do not by themselves invalidate that complete report; on a later turn, refresh only the affected target-specific state.
 2. Otherwise activate `pico-env-doctor` before running any `pico-cli` command or querying `pico-dev-knowledge` MCP. Continue only after a healthy result; if it reports a blocker, stop the dependent execution and report that blocker.
-3. After the gate passes, keep project scaffolding and first-run stabilization in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `spatial-emulator-usage`, then resume here with its evidence or blocker.
+3. After the gate passes, keep project scaffolding and first-run stabilization in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `pico-emulator-usage`, then resume here with its evidence or blocker.
 
 `pico-cli project create` command shape:
 
 ```bash
-pico-cli project create --name <name> --package <package> --template <planar|volumetric|stage> [--dir <path>] [--sdk <version>] [--force]
+pico-cli project create --sdk-type spatial --name <name> --package <package> --template <planar|volumetric|stage> [--dir <path>] [--sdk <version>] [--force]
 ```
 
 Do not pass the project name as a positional argument. Do not invent template
@@ -65,15 +68,17 @@ Generated-project SpatialUI self-check (run before declaring onboarding done):
 
 This skill is reusable across projects. Do not create, delete, or depend on marker files inside the skill folder.
 
-Routing boundary: this skill owns the first runnable scaffold and first-run stability loop. A scaffold is considered complete only after a generated Spatial SDK project exists and build/install/launch has passed, or an external prerequisite has been explicitly recorded as blocking the first-run loop. Once that completion point is reached, route behavior-only increments that preserve the visible UI and spatial structure to `spatial-app-dev-workflow`; route changes to visible controls, layout, panel hierarchy, attachment or window lifecycle, the container/window model, visual-reference implementation, PRD-to-app generation, or any request with unresolved design decisions to `spatial-design-to-app`. Continue here only for scaffold repair, first launch/build/install completion, or small changes needed to make the initial generated project understandable and runnable.
+Routing boundary: this skill owns the first runnable scaffold and first-run stability loop. A scaffold is complete after project creation and build/install/launch evidence, or an explicit external blocker. Continue here only for scaffold repair, first launch/build/install completion, or the small changes needed for that baseline.
 
-Hard stop for product generation: if the complete request contains product-specific UI generation, Figma/screenshot/mockup/visual reference assets, PRD-derived layout, multi-page app behavior, visual-fidelity goals, **or any named application feature, page, or business flow — even a single-line intent with no visual asset and no user-provided design package**, do not use onboarding as the primary workflow. Route to `spatial-design-to-app` (its designer gate escalates to `pico-spatial-app-designer` when no visual asset and no user design package are present). The decision is made solely on whether the user already provided an executable design, not on application complexity, keyword presence, or design depth. Onboarding is the primary workflow only when the request is genuinely scaffold-only — an empty scaffold or a first runnable demo with no product feature described. If `spatial-design-to-app` later calls this skill for its Build-stage scaffolding, perform only `pico-cli project create`, first-run checks, and the scaffold handoff described in `../spatial-design-to-app/references/scaffold-handoff.md`; do not implement product UI, navigation, page cards, custom icons, or visual-reference layout here.
+A model starter demo can establish this first runnable baseline by selecting a supported template and displaying the supplied model. It does not make onboarding the owner of subsequent product development; continue through `spatial-app-dev-workflow` when the request extends beyond that baseline.
 
-Use this skill when the user asks only to create, bootstrap, scaffold, initialize, quickstart, or try a featureless PICO Spatial SDK project. A 3D model or scene prompt that defines app behavior is feature-bearing and must enter through `spatial-design-to-app`. A user-provided executable design lets that workflow skip its designer gate; it does not turn onboarding into the implementation owner.
+A full product request belongs to `spatial-app-dev-workflow`. It may call onboarding with the resolved project constraints; existing UI/design materials do not prevent that scaffold subtask. Do not implement the full product or replace its design during onboarding. Direct scaffold-only requests are also supported.
+
+When called by another skill or workflow, return to the actual caller with project facts, paths, configuration, build/runtime evidence and unresolved blockers. Do not select a different owner based on whether later work is UI or behavior. When called by an existing `spatial-design-to-app` flow, keep its specific scaffold receipt contract; it does not apply to all callers. For a standalone task followed by app development, read `spatial-app-dev-workflow` and reuse the created project. Design and scaffolding order depends on the available prerequisites.
 
 At the start of each run:
 
-1. Inspect the current working directory for an existing Spatial SDK project structure and any project-specific agent guidance file (`AGENTS.md` or `CLAUDE.md`, matched case-insensitively)
+1. Resolve the absolute target project supplied by the user or the calling `pico-project-setup` continuation. Inspect that target, not the session cwd, for an existing Spatial SDK project and project-specific guidance (`AGENTS.md` or `CLAUDE.md`, matched case-insensitively). Preserve a distinct resource workspace root in configure and environment handoffs: later diagnostics use `pico-cli doctor --project <project-root> --workspace-root <session-root>` and the same pair for any approved `--fix`. Doctor `--project` alone does not infer a resource association from parent directories; do not guess a parent or create a mapping.
 2. If the project is empty or not yet a Spatial SDK project, run the onboarding workflow
 3. If the project already has a Spatial SDK scaffold, continue from the current project state instead of restarting or overwriting it
 4. If the target directory already contains project guidance, generate project files in that same directory; use the project name for `--name`, not as a child `--dir`, unless the user explicitly asks for a child directory
@@ -143,19 +148,18 @@ For an editor-authored requirement, skip the editor step only when:
 2. Runtime capability inspection shows that Spatial Editor cannot satisfy any part of the 3D content requirement.
 3. Spatial Editor is actually unavailable after reasonable recovery from installation, download, startup, connection, authorization, or backend-readiness failure.
 
-If Spatial Editor can satisfy part of the requirement, use it for that part. Exceptions 2 and 3 require runtime evidence from the editor workflow.
+If Spatial Editor can satisfy part of the requirement, use it for that part.
+Follow [3D execution choice](../spatial-editor/references/3d-execution.md) for the
+Editor-owned work. For direct execution, use the documented Editor tools and
+return verified content. For managed execution, call `start_editor_workflow`;
+the public Workflow Service owns the Run lifecycle and Editor Domain Drivers
+own installation, startup, readiness and recovery. For that path, do not call a
+dynamic backend readiness tool as a preflight. An initial lifecycle status is
+not failure evidence.
 
-For an editor-authored step, activate `spatial-editor` and call
-`start_editor_workflow`. The public Workflow Service owns the Run lifecycle, and
-Editor Domain Drivers own installation, startup, readiness, and recovery; do not
-call a dynamic backend readiness tool as a preflight. An initial lifecycle status
-is not failure evidence. Only a structured public Run blocker after one reasonable
-recovery attempt may authorize an App/ECS fallback, and the handoff must record the
-blocker, repair attempted, degraded scope, and user-visible impact.
-
-The Editor Domain Workflow owns capability checks, retries, evidence gates, and
-cleanup inside that public Run. Onboarding consumes only its completed Result or
-structured blocker.
+When the chosen path cannot complete the Editor deliverable, use its recovery
+instructions and return the concrete blocker, repair attempted, and impact. Do
+not substitute a different deliverable without the user's agreement.
 
 ### 2.2 Keep the core file generic
 
@@ -189,17 +193,19 @@ bundle-based, placeholder-friendly, and immediately runnable.
 
 Execution order:
 
-1. Run `pico-cli project create` with the target directory/name/package options known from the user prompt; when onboarding an existing target folder, omit `--dir` so files are generated beside the existing project guidance
-2. Choose and pass one supported `--template` value; use the user's explicit
+1. Choose and pass one supported `--template` value; use the user's explicit
    template/container mode, a calling workflow's resolved container contract, or
    the closest playbook default
+2. Run `pico-cli project create --sdk-type spatial --dir <absolute-target-project>` with the known target/name/package options. Keep the explicit target even when it already contains guidance; omitting `--dir` targets the session cwd. After success, reuse a successful configure result from this session when it covers the same Host and project/resource roots, its selected Knowledge `major.minor` matches the SDK/BOM line in the generated Gradle files, and no new resource failure is reported. `project create` already restores the managed `.gitignore` block.
+   When that evidence is unavailable, Knowledge needs alignment, or project resources need repair, run `pico-cli project configure --platform spatial --agent-tool current --yes --project <project-root> --format json` once, appending the original `--workspace-root <session-root>` when the roots differ. Configure can now select Knowledge against the generated SDK line. A deliberate Knowledge pin is preserved: if it differs from the SDK, follow `pico-env-doctor`'s alignment guidance instead of rerunning configure to change it. If `AGENT_HOST_UNRESOLVED` is returned, retry with the explicit Host id; report other failures without claiming configuration completion.
+   Read `data.continuation.guidance[]` and the matching `data.continuation.skills[].path`; use `data.continuation.mcpAfterReload[]` only for any retained native entries needing Host loading/approval. For dependent MCP work, discover the global user-level `pico-spatial-editor` MCP in the Host catalog, accepting hyphen/underscore normalization and `mcp__` prefixes. Call only exact advertised names and verify the required native tools are visible before using them. Follow `data.hostActions[]` for trust or resource discovery; do not reconfigure just to make tools appear.
 3. Route post-scaffold 3D work by ownership: obtain a `spatial-editor` handoff for editor-authored
    content, or hand Kotlin/code-owned Entity implementation to `spatial-sdk-scene-builder`; when
    both are required, preserve that split
 4. Modify only what the MVP needs: package name, entry logic, handoff integration, required config, and required tests
 5. Place user assets where the generated project and docs expect them
 6. Remove sample code or assets that distract from the first MVP
-7. When invoked as a `spatial-design-to-app` scaffold substep, write `<target>/.scratch/onboarding_handoff.json` before returning, record the final package and its `package_source`, and set `product_ui_implemented=false`. Product UI implementation must resume in `spatial-design-to-app`.
+7. When invoked as a `spatial-design-to-app` scaffold substep, write `<target>/.scratch/onboarding_handoff.json` before returning, record the final package and its `package_source`, and set `product_ui_implemented=false`. For that caller, product UI implementation resumes in `spatial-design-to-app`; other callers receive their own requested handoff, not a fabricated design-to-app receipt.
 
 Package-name rules:
 
@@ -240,7 +246,7 @@ Important constraints:
 
 ## 4. Run Local Checks, Then Hand Off Runtime Operations
 
-Run scaffolding and local build commands in this skill. Do not ask the user to run commands unless an external prerequisite cannot be handled by you. Use `spatial-emulator-usage` for the device/emulator portion instead of duplicating its command flow here.
+Run scaffolding and local build commands in this skill. Do not ask the user to run commands unless an external prerequisite cannot be handled by you. Use `pico-emulator-usage` for the device/emulator portion instead of duplicating its command flow here.
 
 At minimum, complete these steps:
 
@@ -248,7 +254,7 @@ At minimum, complete these steps:
 2. Check the Gradle wrapper and local build prerequisites.
 3. Run the SpatialUI self-check from the hard-constraint section: confirm `PicoTheme` wrapping and remove any Material/Material3 usage before building.
 4. Run `./gradlew assembleDebug` and fix build failures automatically.
-5. Activate `spatial-emulator-usage` with the APK path, package/activity, target preference, and first-run acceptance check. It owns target/connectivity checks, install, launch, and runtime logs or captures.
+5. Activate `pico-emulator-usage` with the APK path, package/activity, target preference, and first-run acceptance check. It owns target/connectivity checks, install, launch, and runtime logs or captures.
 6. Resume onboarding with the returned evidence or exact blocker, then ask the user to confirm the expected result appears on-device when a launch succeeded.
 
 If the template does not already include a suitable launch/liveness test, add a minimal `androidTest` that:
@@ -256,7 +262,7 @@ If the template does not already include a suitable launch/liveness test, add a 
 - launches the main activity
 - asserts basic app liveness
 
-When the scaffold needs connected instrumentation or liveness validation, add the minimal `androidTest` here, then hand the project root, selected target, and `connectedAndroidTest` task to `spatial-emulator-usage`. Resume onboarding with its test evidence or blocker; do not execute the device-scoped task directly in this skill.
+When the scaffold needs connected instrumentation or liveness validation, add the minimal `androidTest` here, then hand the project root, selected target, and `connectedAndroidTest` task to `pico-emulator-usage`. Resume onboarding with its test evidence or blocker; do not execute the device-scoped task directly in this skill.
 
 If an environment problem blocks progress, tell the user clearly.
 Examples include:
@@ -311,19 +317,15 @@ You may end onboarding when:
 - the project builds successfully
 - it has been installed and launched
 - all 2D UI uses SpatialUI with `PicoTheme` wrapping and no Material/Material3 remains
-- the user confirms they saw the expected result
+- runtime evidence establishes the expected first-run result, or missing observation is recorded as a blocker without claiming verification
 - `AGENTS.md` has been written
-- the user is satisfied, or has no immediate extension request
+- remaining product work is handed back to the caller or clearly identified for the user
 
 When ending:
 
-1. Ask whether the user is satisfied with the onboarding result
-2. Remind them that future development should continue with the project's `AGENTS.md`
-3. Route any immediate follow-up by ownership:
-   - stay in onboarding only for scaffold repair or completion of the first build/install/launch loop
-   - activate `spatial-design-to-app` for UI or panel changes that require interpreting a design,
-     PRD, visual reference, layout, window model, or panel hierarchy
-   - activate `spatial-app-dev-workflow` to implement an already-defined follow-up increment that
-     does not need the design workflow to resolve those decisions
+1. Report the scaffold, configuration, first-run evidence and any blocker.
+2. Return to the actual caller when invoked as a subtask. Preserve its existing design and unfinished request; do not ask the user to approve a second development mode merely because scaffolding ended.
+3. For standalone onboarding, deliver the result. If application development continues, activate `spatial-app-dev-workflow` for the next increment, with UI or other specialist guidance as needed.
+4. Stay in onboarding only for scaffold repair or completion of the first build/install/launch loop.
 
 Do not reclaim follow-up work merely because the user wants more changes in the same project.

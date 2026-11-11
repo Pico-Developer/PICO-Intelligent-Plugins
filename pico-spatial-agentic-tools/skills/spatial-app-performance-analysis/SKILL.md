@@ -8,6 +8,18 @@ license: 'Apache-2.0'
 
 Analyze PICO OS6 performance issues based on evidence, rather than guessing the root cause based on symptom names alone. This Skill is a routing Skill: `SKILL.md` is responsible for workflow selection, while specific topic analysis methods are located under `references/`.
 
+## When to Use
+
+- Diagnosing rendering, frame-rate, or latency issues in a PICO Spatial app
+- Capturing and analyzing Perfetto traces for spatial performance
+- Identifying bottlenecks in the 2D drawing or 3D rendering pipeline
+
+## When NOT to Use
+
+- App feature development — use `spatial-app-dev-workflow` for overall development and delivery; use `spatial-design-to-app` for scoped UI work
+- Environment setup or CLI diagnostics — use `pico-env-doctor`
+- Emulator lifecycle — use `pico-emulator-usage`
+
 ## Execution Conventions
 
 **Important**: If the user directly provides performance data (at least including perfetto-trace) and the target app package (or the target app package can be parsed from the performance data), then `Collect Context` and `Capture Performance Data` can be skipped (this is very obvious).
@@ -30,7 +42,9 @@ Analyze PICO OS6 performance issues based on evidence, rather than guessing the 
 
 Skipped if Performance Data is provided, or if all context is provided directly by user.
 
-Context collection is a mandatory step that must be actually executed before analysis, not just planned. Perform [Session Context Collection](references/common/session-context.md); see that file for complete rules. First auto-detect the detectable mandatory items yourself by running the read-only scripts (device type via `check_device.py`, APK type via `check_debuggable.py`), and ask the user only for what cannot be detected (typically the app package name). Then run the mandatory **Environment Confirmation Gate** in that file to confirm the resolved app package, device type, and APK type with the user before capturing data. Prefer the host's structured confirmation capability (for example `AskUserQuestion`) when available, and fall back to the plain-text follow-up template otherwise.
+When `Collect Context` is required rather than skipped, context collection is a mandatory step that must be actually executed before analysis, not just planned. Perform [Session Context Collection](references/common/session-context.md); see that file for complete rules. First auto-detect the detectable mandatory items yourself by running the read-only scripts (device type via `check_device.py`, APK type via `check_debuggable.py`), and ask the user only for what cannot be detected (typically the app package name). Then run the mandatory **Environment Confirmation Gate** in that file to confirm the resolved app package, device type, and APK type with the user before capturing data. Prefer the host's structured confirmation capability (for example `AskUserQuestion`) when available, and fall back to the plain-text follow-up template otherwise. Auto-resolving a value is never a substitute for this gate: a package name inferred from the foreground app via `check_foreground.py`, or any device/APK value resolved by scripts, MUST still be presented to the user and acknowledged before capture, including when every mandatory item could be auto-detected and in headless single-turn sessions.
+
+If the detected device is an emulator rather than physical hardware, explicitly tell the user that emulator results are not equivalent to real-device performance and are provided for reference only.
 
 Under a plan mode, complete this entire step (detection + Environment Confirmation Gate) during the plan phase; do not defer it into a "how to collect context" plan item. In the same plan phase, also try to collect the reproduction path and user-visible symptom (Recommended, not Mandatory items that help shape the capture command and analysis entry) by presenting structured choices — for example numbered candidate scenarios `1` / `2` plus an `Other` free-text option — instead of an open-ended question. Neither the reproduction path nor the symptom is required to proceed: do not hard-block when the user is non-technical, cannot give reproduction steps, or cannot match any option. Offer an explicit "I can't describe it / you decide from the data" option, continue with capture using a default window (or data-derived candidates once data exists), and record any missing reproduction path / symptom as a limitation.
 
@@ -38,15 +52,15 @@ Under a plan mode, complete this entire step (detection + Environment Confirmati
 
 Skipped if Performance Data is provided directly by user.
 
-After context collection is complete, execute [Performance Data Collection](references/common/capture-performance-data.md). Based on the results, decide whether to enter the data capture branch or the primary analysis routing. If capture is needed, run the mandatory **Capture Confirmation Gate** in that file to confirm the capture command and its parameters (app, serial, output, scope) with the user before executing it, and confirm the capture duration as its own separate step first; prefer the host's structured confirmation capability (for example `AskUserQuestion`) when available. Once data is ready, return to "Analysis Workflow Routing" below to select a topic.
+After context collection is complete, execute [Performance Data Collection](references/common/capture-performance-data.md). Based on the results, decide whether to enter the data capture branch or the primary analysis routing. If capture is needed, run the mandatory **Capture Confirmation Gate** in that file to confirm the capture command and its parameters (app, serial, output, scope) with the user before executing it, and confirm the capture duration as its own separate step first; prefer the host's structured confirmation capability (for example `AskUserQuestion`) when available. The user merely mentioning a duration or device in the request (for example "capture 30 seconds on the device") authorizes only that single value, not the full resolved command; whenever the app package, serial, output root, or scope is defaulted or auto-resolved by the Skill, the complete command MUST be shown and explicitly approved before execution — resolving every parameter automatically (foreground app detected, single device attached) is not an exemption, including in headless single-turn sessions. Once data is ready, return to "Analysis Workflow Routing" below to select a topic.
 
 Under a plan mode, the planning phase ends here by presenting the performance-data plan (the resolved capture command and parameters, or the list of existing artifacts to analyze) as the last step before execution. Do not actually run the capture command, load traces, or start topic analysis until the plan is approved.
-When a trace exists but the identities of the target App, Spatial Runtime, OpenXR Runtime, compositor, or frame driving threads are not yet solidified, first execute `spatial_probe.py --detail --output session-output-<timestamp>/performance-data/trace-probe-detail.yaml` according to the [PICO CLI Perf User Guide](references/common/tools.md), using the compatibility entry `probe_identities()` to generate `trace-probe-detail.yaml`. This entry internally schedules `probe_app_identity()` and `probe_spatial_runtime_identity()`.
+When a trace exists but the identities of the target App, Spatial Runtime, OpenXR Runtime, compositor, or frame driving threads are not yet solidified, first execute `python scripts/spatial_probe.py --trace <trace_path> --package <package_name> --detail --output session-output-<timestamp>/performance-data/trace-probe-detail.json` according to the [PICO CLI Perf User Guide](references/common/tools.md), using the compatibility entry `probe_identities()` to generate `trace-probe-detail.json`. This entry internally schedules `probe_app_identity()` and `probe_spatial_runtime_identity()`.
 When users need to capture traces, load traces, query diagnostic tables, export reports, or perform live performance inspections, use the [PICO CLI Perf User Guide](references/common/tools.md).
 
 ## Analyze Performance Problem
 
-- Incomplete session context, missing app package name, device type, or APK type: Use [Session Context Collection](references/common/session-context.md).
+- When `Collect Context` is required, incomplete session context (missing app package name, device type, or APK type): Use [Session Context Collection](references/common/session-context.md).
 - When the user has not specified performance data Trace, do not use any local files or data without authorization. Use [Performance Data Collection](references/common/capture-performance-data.md) for capture.
 
 ### Entry Topic Selection
@@ -78,7 +92,7 @@ Main protocol routing is not the final analysis result. Add only the currently e
 
 The execution order is as follows:
 
-1. Complete the normative [PICO Spatial PerformanceKB Mandatory Gate](references/common/knowledge-base-usage.md) before relying on KB guidance or finalizing a root-cause conclusion. KB retrieval remains assistive: never treat it as proof of the current root cause.
+1. Complete the normative [PICO Spatial PerformanceKB Mandatory Gate](references/common/knowledge-base-usage.md) before relying on KB guidance or finalizing a root-cause conclusion. Use the general plugin's `knowledge-query` Skill for the `pico-dev-knowledge` lookup, preserving `--project <target-dir>` and, when distinct, `--workspace-root <session-root>` through its live activation, query, and restore protocol. KB retrieval remains assistive: never treat it as proof of the current root cause.
 2. Execute the currently selected subprotocol according to its subprotocol contract, including availability checks, evidence sequence, closure assessment, controller handoff, and output requirements. For an App-side jank entry, execute `analysis-kotlin-spatial-app-jank.md` before any Binder, Memory, or CPU Scheduling extension.
 3. Return the subprotocol's `controller_handoff` to the Main protocol before selecting the next queue item. Newly activated subprotocols are appended dynamically; they are not required to be known before the first subprotocol runs.
 4. For directions to be extended, do not stop at the name list. You must clearly write the trigger signal, missing evidence, and which subprotocol the Main protocol should execute next or what data needs to be supplemented.
@@ -87,7 +101,8 @@ The execution order is as follows:
 7. For any activated chain, strong evidence on one side (for example the Binder caller side) does not complete that sub-protocol while the other side (the callee/server side) is still resolvable from the same trace.
 8. Route by relevance, not by keyword presence. When several clues (Binder, GC/memory, runnable/CPU, main-thread, audio, or spatial frame pipeline) coexist, the Main protocol loads every subprotocol whose temporal overlap and dependency evidence pass the shared gate. Budget share and current root-cause ranking must not suppress an executable subprotocol.
 9. Final conclusions can only be output after all selected topics have completed analysis. If a topic cannot be executed due to insufficient evidence, clearly mark the reason why that topic was not executed and the minimum evidence requirements in the conclusion.
-10. Before finalization, perform the mandatory completion barrier in `final-summary-contract.md`: stage supplied inputs, close the routing ledger, execute every topic that passed the gate, write the summary and classification, then generate and validate `report.html`. A missing report or missing staged input is an artifact failure, not a reason to silently finish with Markdown/YAML only.
+10. Before finalization, perform the mandatory completion barrier in `final-summary-contract.md`: stage supplied inputs, close the routing ledger, execute every topic that passed the gate, write the summary and classification, then generate and validate `report.html`. A missing report or missing staged input is an artifact failure, not a reason to silently finish with only Markdown/JSON intermediate artifacts.
+11. After completing the analysis and generating the report, but before ending the task, ensure that every trace session opened by this analysis has been closed.
 
 ## Output Conventions
 
@@ -104,9 +119,9 @@ If only performing routing judgment and no topic has been executed yet, output:
 
 If at least one topic has been executed, every topic result MUST follow the unified contract in [Output Contract](references/routing/output-contract.md):
 
-- Always emit a YAML header first, filling the required fields such as `issue_type_key`, `protocol`, `activated_subprotocols`, `target`, `evidence`, `conclusion_level`, `root_cause`, `next_actions`, and `limitations`.
-- Then emit the fixed 6 human-readable sections defined in the same contract.
-- Do not output only the 6 prose sections without the YAML header, because cross-topic aggregation depends on the machine-readable fields.
+- Always emit the `.meta.json` sidecar first, filling the required machine fields such as `issue_type_key`, `protocol`, `activated_subprotocols`, `target`, `evidence`, `conclusion_level`, `root_cause`, `next_actions`, and `limitations`. The sibling `.md` is pure Markdown with no YAML / no front matter.
+- Then emit the fixed 6 human-readable sections defined in the same contract inside the Markdown body.
+- Do not output only the 6 prose sections without the `.meta.json` sidecar, because cross-topic aggregation depends on the machine-readable fields.
 
 The required 6 body sections are:
 
@@ -121,11 +136,11 @@ The required 6 body sections are:
 
 For multi-topic sessions:
 
-- Write one topic file per executed topic under `session-output-<timestamp>/topic-result/output-<topic>.md`, and each topic file MUST also follow the unified output contract above.
-- Also produce `session-output-<timestamp>/final-summary.md` per [Final Summary Contract](references/routing/final-summary-contract.md). This summary keeps a YAML header plus Markdown body and is the canonical cross-topic aggregation artifact.
-- As the final step, after `final-summary.md` exists, distill the topic outputs into `root-cause-classification.yaml` using the chain `abnormal window → critical path → budget owner → mechanism → evidence refs → category`; choose the most specific category only after the chain is proven, and use a conservative category or `undetermined` when it is not. Do not map Binder waits to service contention without server-side contention evidence, or scene-complexity counters to GPU without same-window GPU execution evidence. Keep this machine-checkable artifact separate from per-topic headers and `final-summary.md`; it is orthogonal to `issue_type_key`. See [Root Cause Classification Contract](references/routing/root-cause-classification-contract.md).
-- When generating `report.html`, pass `session-output-<timestamp>/final-summary.md` to `generate_report.py`; the script is responsible for extracting the YAML header and body, then loading the referenced topic outputs. The exact data each report section requires is defined in the [HTML Report Data Contract](references/routing/report-data-contract.md); fields without a real source stay blank rather than being filled with placeholder data.
+- Write one topic file per executed topic under `session-output-<timestamp>/topic-result/output-<topic>.md`, and each topic file MUST also follow the unified output contract above. Alongside each `.md`, write its machine-readable sidecar `output-<topic>.meta.json` per the [Topic Output Contract](references/routing/output-contract.md); the `.md` is pure Markdown with no YAML / no front matter, and all machine fields live in the sidecar JSON.
+- Also produce `session-output-<timestamp>/final-summary.md` and its sidecar `session-output-<timestamp>/final-summary.meta.json` per [Final Summary Contract](references/routing/final-summary-contract.md). The `.md` is the human-readable body; the `.meta.json` carries every machine field (header, topic references, root_cause, limitations, next_actions, …) and is the canonical cross-topic aggregation artifact.
+- As the final step, after `final-summary.md` + `final-summary.meta.json` exist, distill the topic outputs into `root-cause-classification.json` using the chain `abnormal window → critical path → budget owner → mechanism → evidence refs → category`; choose the most specific category only after the chain is proven, and use a conservative category or `undetermined` when it is not. Do not map Binder waits to service contention without server-side contention evidence, or scene-complexity counters to GPU without same-window GPU execution evidence. Keep this machine-checkable artifact separate from per-topic sidecars and `final-summary.meta.json`; it is orthogonal to `issue_type_key`. See [Root Cause Classification Contract](references/routing/root-cause-classification-contract.md).
+- When generating `report.html`, pass `session-output-<timestamp>/final-summary.meta.json` to `generate_report.py` via `--input`; the script loads the sidecar JSON and the referenced topic sidecars + Markdown bodies. The exact data each report section requires is defined in the [HTML Report Data Contract](references/routing/report-data-contract.md); fields without a real source stay blank rather than being filled with placeholder data.
 
 ## Compatibility
 
-This Skill operates primarily as a Markdown-driven routing Skill. Scripts under `scripts/` are provided as optional helpers for data capture, identity probing, report data querying, and report generation; they are not required for pure trace/SQL evidence analysis. No cloud services are required. For PICO Spatial performance diagnosis, an exposed `pico-spatial-knowledge` MCP or configured PerformanceKB is governed by the mandatory gate above; when no such backend is available, follow the explicit unavailable-backend fallback and record the limitation. When users provide Perfetto traces, SQL results, or screenshots, analyze existing evidence according to the selected reference workflow.
+This Skill operates primarily as a Markdown-driven routing Skill. Scripts under `scripts/` for data capture, identity probing, and report data querying are optional when equivalent evidence is already available. However, after at least one analysis topic has been executed, generating and validating `report.html` with `generate_report.py` is a mandatory completion step, as defined by the [Final Summary Contract](references/routing/final-summary-contract.md). No cloud services are required. For PICO Spatial performance diagnosis, the general plugin's `pico-dev-knowledge` MCP is governed by the mandatory gate above and queried only through its `knowledge-query` Skill; when that backend is unavailable, follow the explicit unavailable-backend fallback and record the limitation. When users provide Perfetto traces, SQL results, or screenshots, analyze existing evidence according to the selected reference workflow.

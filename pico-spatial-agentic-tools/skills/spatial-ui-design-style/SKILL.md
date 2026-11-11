@@ -15,7 +15,21 @@ This skill is the **code-admission ruleset** for any PICO spatial application
 that emits Compose UI. It is intentionally short. Detailed guidance is split
 into [`references/`](./references); read on demand.
 
-Routing boundary: this skill is a mandatory sub-contract whenever Compose UI is emitted or edited. It should be loaded by `spatial-design-to-app`, `spatial-app-onboarding`, screenshot/Figma codegen, or manual UI-edit flows before writing UI code. It is not the primary route for app generation, scaffold creation, design-package production, container/window-model decisions, or 3D scene planning.
+Routing boundary: this skill is a mandatory sub-contract whenever Compose UI is emitted or edited. It should be loaded by `spatial-app-dev-workflow`, `spatial-design-to-app`, `spatial-app-onboarding`, screenshot/Figma codegen, or manual UI-edit flows before writing UI code. It is not the primary route for app generation, scaffold creation, design-package production, container/window-model decisions, or 3D scene planning.
+
+Return the scoped guidance, changes or verification to the actual caller. Direct entry is valid; read `spatial-app-dev-workflow` when the task expands into full application delivery, without replaying completed work.
+
+## When to Use
+
+- Applying PicoTheme, design tokens, hover/haptics rules to SpatialUI Compose code
+- Running the design-style verifier as a mandatory build/verification contract
+- Ensuring SpatialUI component and token compliance in generated apps
+
+## When NOT to Use
+
+- Spatial capability implementation (gestures, depth, Augment) — use `spatial-ui-ability`
+- Full app delivery — use `spatial-app-dev-workflow`
+- 3D scene work — use `spatial-editor` or `spatial-sdk-scene-builder`
 
 ## Highest-Priority Decision Table (Read First)
 
@@ -30,8 +44,9 @@ shortcut, and generic Compose / Material habits.
 | 4   | Window / root-node background   | **Use the system-default `Material.Regular` glass** — write nothing on the root. The on/off switch differs by container: `DefaultWindowContainer` → manifest `pico.spatial.windowcontainer.materialbackground` (per-Activity); `WindowContainer(...)` / `Augment(...)` → DSL parameter `enableMaterialBackground` (default `true`).                                                                                                                             | To switch glass style or go opaque, first flip the **right** switch off (`materialbackground="0"` for `DefaultWindowContainer`, `enableMaterialBackground = false` for `WindowContainer/Augment`), then either `Modifier.backgroundMaterial(enable = true, style = Material.<Style>)` or `// design-style: opaque-root` + `Modifier.background(<role>)`. **Never paint solid color over glass.** |
 | 5   | Foreground / background pairing | Prefer SpatialUI component-owned state colors. In a component slot that provides `LocalContentColor`, omit `Text.color` / `Icon.tint` so content inherits the component foreground. On an ordinary app-owned surface, choose an intentional semantic foreground for the actual background. When customizing a state, consider its effective container and content colors together; do not infer white text or a dark fill merely because the state is selected. | Explicit slot colors are allowed only when the accepted design requires them and they remain readable against that component state's effective background. A foreground may remain unchanged across states when it is readable on every corresponding background.                                                                                                                                |
 | 6   | Content surface discipline      | Structural `layout` / `domain_visual` regions remain transparent. Do not add app-authored borders or material. When a `design-spec.json` exists, every app-authored `background` or content `Card` maps exactly once to a bounded content node with `appearance.fill`; `.backgroundMaterial(...)` is forbidden for restoration.                                                                                                                                 | Standard SpatialUI control internals, input focus, accessibility focus, dialogs, popups, and system window backgrounds keep their library-owned treatment. They are not app-authored layout decoration.                                                                                                                                                                                          |
+| 7   | Explicit app text typography    | Prefer exact `PicoTheme.typography` tokens below `titleLarge` (20sp) for ordinary body and metadata; preserve semantic overlay titles and their native slots. The verifier warns when `Text(...)` directly sets `style = PicoTheme.typography.<token>` to `titleLarge` or a larger token. Keep component-owned defaults implicit by omitting `style` when the accepted design does not override it.                                                             | A token at or above 20sp may remain when it is traceable to the accepted design and its stronger visual emphasis is explicitly reviewed.                                                                                                                                                                                                                                                         |
 
-## Six Core Principles
+## Seven Core Principles
 
 1. **Always wrap with `PicoTheme`, and preserve its native palette.** Top-level
    `Activity` / `DefaultWindowContainer` / `Stage` MUST be wrapped with
@@ -92,8 +107,23 @@ shortcut, and generic Compose / Material habits.
    `// design-style: design-surface <node-id>` immediately before every
    app-authored `.background(...)` or content `Card(...)`; the node must declare
    `appearance.fill`, and the ID must not be reused by another surface call.
+   For a background implementing a declared `domain_visual.parts` subregion, use
+   `// design-style: design-part node=<node-id> part=<part-id>` instead; that
+   part must declare `appearance.fill` or at least one state fill. Do not create
+   synthetic design nodes or unsupported `kind: visual` entries to justify code.
    Reject `rootMaterial`, `appearance.material`, and `.backgroundMaterial(...)`
    rather than carrying them into app code.
+7. **Apply the soft ceiling to ordinary content, preserving title hierarchy.**
+   `titleLarge` (20sp) is the soft ceiling for an app-owned `Text.style`.
+   Prefer smaller exact `PicoTheme.typography` tokens for body and metadata.
+   Dialog, Sheet, popup, and detail-window titles keep their native title slot
+   or a stronger exact semantic title token. Never shrink or delete a heading
+   just to clear a warning. Review title/body contrast in the open-overlay state.
+   The verifier warns on a
+   direct `Text(style = PicoTheme.typography.<token>)` use of `titleLarge`,
+   `headlineMedium`, `headlineLarge`, or any `display*` token so review can
+   confirm its design source and necessity. Text that omits `style` keeps its
+   component or theme default and is outside this initial check.
 
 ## Stateful Color Restoration (HARD)
 
@@ -268,3 +298,40 @@ Always emit, with the final code:
 
 Review / update history lives in the repository change history.
 Append new dated entries at the top using the template in that file.
+
+## Gap, custom radii, and explicit surface titles
+
+Use the shared [Gap and radius reference](../pico-spatial-app-designer/references/spatial-design-rules.md#gap-and-radius)
+for app-authored sibling gaps and custom bounded surface radii. Preserve Native
+shape/padding ownership and content-top alignment. Independent repeated ListItems
+default to 8dp; joined Native lists retain their own separators.
+
+Subwindow has no built-in title slot; compose its own TitleBar inside it.
+A window heading placed outside that TitleBar at the start of content declares `textRole: "surface_title"`
+in the accepted design and restores that exact token. Put one
+`// design-style: surface-title <node-id>` immediately before its `Text` call.
+With `--design-spec`, the verifier grants a ceiling exemption only to a unique
+marker for a valid surface-title node with the same typography token. Missing,
+unknown, duplicate, or mismatched markers keep the normal warning. A heading in TitleBar or another native title component cannot use this
+exemption. Do not exempt all Text in a Subwindow. Keep ordinary-content checks and inspect open surfaces
+for a largest, distinct local title.
+
+### Component defaults and property-level overrides
+
+Apply the [component-default contract](../spatial-design-to-app/references/spatial-ui-components.md): SideNavigationItem minimum height 48dp
+(`Modifier.heightIn(min = 48.dp)`), content padding start 16dp and others 8dp,
+and parent-list gap 4dp. TitleBar **primary title only** uses explicit
+`fontWeight = FontWeight.Bold` (700); the SDK does not guarantee this weight.
+TitleBar subtitles identified by `props["subtitle-node-id"]` are the canonical exception: declare `textStyle: { "typography": "bodyMedium", "color": "labelSecondary" }` on that text node, render it explicitly in Preview, and restore it as `Text(style = PicoTheme.typography.bodyMedium, color = PicoTheme.colorScheme.labelSecondary)` in Compose. Keep the existing title slot and composed title group; do not add a subtitle slot or infer subtitles by child order. This default needs no `styleOverrideEvidence`; other subtitle styles still require authoritative evidence.
+Other slot typography and foreground remain inherited. Web uses the same
+height and weight defaults. A property-level authoritative override changes
+only that property; custom spacing never cancels the height default.
+
+Record explicit height/weight requirements on the owning component using
+`props["min-height-dp"]` / `props["title-font-weight"]` and
+`styleOverrideEvidence` with a user/Figma/screenshot source and non-empty
+reference. Do not manufacture override evidence from generated defaults.
+Add a matching `// design-node: <node-id>` before the Compose call for these
+overrides. Resolve the independent `side_navigation_item_height` and
+`titlebar_title_weight` scanner failures and unverified warnings before
+claiming fidelity; dynamic or opaque values are not verified passes.

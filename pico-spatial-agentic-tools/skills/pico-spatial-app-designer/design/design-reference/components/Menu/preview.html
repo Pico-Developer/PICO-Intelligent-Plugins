@@ -1,0 +1,75 @@
+<!-- @dsCard group="Overlay" height=360 subtitle="SDK-aligned · icon examples" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menu · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Menu</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Menu</h1><p>Icon examples · command callbacks are intentionally empty</p></header>
+  <div class="sui-stage" style="min-height:360px">
+    <sui-button id="menu-t" size="small" text="Open menu" data-opens="menu-m"></sui-button>
+    <sui-menu id="menu-m" for="menu-t" hidden>
+      <sui-menu-item title="Copy" leading-icon="ICON7-A059" data-action="copy"></sui-menu-item>
+      <sui-menu-item title="Share" subtitle="Send to a contact" leading-icon="ICON7-P003" data-action="share"></sui-menu-item>
+      <sui-menu-item title="Delete" leading-icon="ICON7-P264" data-action="delete"></sui-menu-item>
+    </sui-menu>
+    <div class="sui-row" style="margin-top:16px">
+      <sui-basic-menu-item style="min-width:160px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 16px;min-height:48px">
+          <sui-icon name="ICON7-S029" size="24" aria-hidden="true"></sui-icon>
+          <sui-text text="Custom content"></sui-text>
+        </div>
+      </sui-basic-menu-item>
+    </div>
+    <div class="sui-row">
+      <sui-button id="nested-parent" text="Nested menu" data-opens="nested-menu"></sui-button>
+      <sui-menu id="nested-menu" for="nested-parent" hidden keep-open>
+        <sui-menu-item id="nested-item" title="Move to" leading-icon="ICON7-S029" trailing-icon="ICON7-P006" data-opens="nested-child"></sui-menu-item>
+      </sui-menu>
+      <!-- Explicit example override: compensate for the child's 8px panel padding so item rows align. -->
+      <sui-sub-menu id="nested-child" for="nested-item" hidden offset-y="-8">
+        <sui-menu-item title="Favorites" leading-icon="ICON7-P564" data-action="favorites"></sui-menu-item>
+        <sui-menu-item title="Archive" leading-icon="ICON7-S029" data-action="archive"></sui-menu-item>
+      </sui-sub-menu>
+    </div>
+  </div>
+  <script>
+    (() => {
+      // Application-owned command callbacks. Replace null when integrating a real action.
+      const actions = { copy: null, share: null, delete: null, favorites: null, archive: null };
+      const hide = menu => {
+        menu.setAttribute('hidden', '');
+        menu.querySelectorAll('[data-opens]').forEach(trigger => {
+          const child = document.getElementById(trigger.dataset.opens);
+          if (child) hide(child);
+        });
+      };
+      document.addEventListener('click', event => {
+        const trigger = event.target.closest('[data-opens]');
+        if (!trigger) return;
+        const menu = document.getElementById(trigger.dataset.opens);
+        if (!menu) return;
+        if (menu.hasAttribute('hidden')) menu.removeAttribute('hidden');
+        else hide(menu);
+      });
+      document.addEventListener('dismiss-request', event => hide(event.target));
+      document.addEventListener('select', event => {
+        const item = event.target.closest('sui-menu-item');
+        if (!item || item.hasAttribute('data-opens')) return;
+        actions[item.dataset.action]?.();
+        // A leaf selection closes the whole menu branch; submenu triggers keep it open.
+        const submenu = item.closest('sui-sub-menu');
+        const owner = submenu && document.getElementById(submenu.getAttribute('for'));
+        const menu = owner?.closest('sui-menu');
+        if (menu) hide(menu);
+      });
+    })();
+  </script>
+</body>
+</html>

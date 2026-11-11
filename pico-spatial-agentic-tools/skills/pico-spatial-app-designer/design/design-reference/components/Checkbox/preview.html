@@ -1,0 +1,87 @@
+<!-- @dsCard group="Selection" height=560 subtitle="States and partial selection" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkbox · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .checkbox-gallery{width:720px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px;display:grid;gap:24px}
+    .section-title{margin:0 0 12px;font-size:14px;line-height:20px;font-weight:600}
+    .state-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px}
+    .checkbox-row{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14px;line-height:20px;cursor:pointer}
+    .checkbox-row>span{min-width:0}
+    .checkbox-row sui-checkbox,.checkbox-row sui-tri-state-checkbox{flex:none}
+    .checkbox-row.is-disabled{cursor:default}
+    .selection-group{max-width:280px}
+    .selection-children{padding-left:24px}
+    @media(max-width:600px){.checkbox-gallery{max-width:calc(100% - 32px);margin:0 16px;padding:16px}.state-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Checkbox</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Checkbox</h1><p>States, clickable labels and partial selection</p></header>
+  <div class="sui-stage checkbox-gallery">
+    <section aria-labelledby="states-title">
+      <h2 id="states-title" class="section-title">States and sizes</h2>
+      <div class="state-grid">
+        <div class="checkbox-row"><sui-checkbox semantic-label="Unchecked"></sui-checkbox><span>Unchecked</span></div>
+        <div class="checkbox-row"><sui-checkbox checked semantic-label="Checked"></sui-checkbox><span>Checked</span></div>
+        <div class="checkbox-row"><sui-tri-state-checkbox state="indeterminate" semantic-label="Indeterminate"></sui-tri-state-checkbox><span>Indeterminate</span></div>
+        <div class="checkbox-row"><sui-checkbox size="small" semantic-label="Small unchecked"></sui-checkbox><span>Small · unchecked</span></div>
+        <div class="checkbox-row"><sui-checkbox size="small" checked semantic-label="Small checked"></sui-checkbox><span>Small · checked</span></div>
+        <div class="checkbox-row is-disabled"><sui-checkbox checked disabled semantic-label="Disabled checked"></sui-checkbox><span>Disabled · checked</span></div>
+      </div>
+    </section>
+    <section aria-labelledby="selection-title">
+      <h2 id="selection-title" class="section-title">Select all and partial selection</h2>
+      <div class="selection-group" role="group" aria-labelledby="selection-title">
+        <div class="checkbox-row"><sui-tri-state-checkbox id="select-all" state="indeterminate" semantic-label="Select all"></sui-tri-state-checkbox><span>Select all</span></div>
+        <div class="selection-children">
+          <div class="checkbox-row"><sui-checkbox id="select-photos" checked semantic-label="Photos"></sui-checkbox><span>Photos</span></div>
+          <div class="checkbox-row"><sui-checkbox id="select-videos" semantic-label="Videos"></sui-checkbox><span>Videos</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    customElements.whenDefined('sui-checkbox').then(() => {
+      const gallery = document.querySelector('.checkbox-gallery');
+      const all = document.getElementById('select-all');
+      const children = [document.getElementById('select-photos'), document.getElementById('select-videos')];
+
+      // Labels and row space activate the same control; direct clicks already toggle it.
+      gallery.addEventListener('click', event => {
+        const row = event.target.closest('.checkbox-row');
+        if (!row) return;
+        const control = row.querySelector('sui-checkbox,sui-tri-state-checkbox');
+        if (event.composedPath().includes(control) || control.hasAttribute('disabled')) return;
+        const checkbox = control.shadowRoot.querySelector('[role="checkbox"]');
+        checkbox.focus();
+        checkbox.click();
+      });
+
+      function setChecked(control, checked) {
+        control.setAttribute('state', checked ? 'on' : 'off');
+        control.toggleAttribute('checked', checked);
+      }
+
+      function updateParent() {
+        const count = children.filter(control => control.state === 'on').length;
+        all.setAttribute('state', count === children.length ? 'on' : count === 0 ? 'off' : 'indeterminate');
+        all.toggleAttribute('checked', count === children.length);
+      }
+
+      all.addEventListener('checked-change', event => {
+        children.forEach(control => setChecked(control, event.detail.checked));
+        updateParent();
+      });
+      children.forEach(control => control.addEventListener('checked-change', updateParent));
+      updateParent();
+    });
+  </script>
+</body>
+</html>

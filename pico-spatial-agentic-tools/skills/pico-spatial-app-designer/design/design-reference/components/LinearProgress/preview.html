@@ -1,0 +1,64 @@
+<!-- @dsCard group="Feedback" height=680 subtitle="Sizes and download states" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinearProgress · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .progress-gallery{width:560px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px;display:grid;gap:24px}
+    .progress-gallery>section{min-width:0}
+    .section-title{margin:0 0 12px;font-size:14px;line-height:20px;font-weight:600}
+    .size-examples{display:grid;gap:16px;padding:16px;background:#8b8fa0;border-radius:12px;width:272px;max-width:100%;color:#fff}
+    .size-example{display:grid;gap:8px;font-size:12px;line-height:16px}
+    .size-examples sui-linear-progress{width:100%}
+    .download-examples{display:grid;gap:24px}
+    .download-state{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:12px;align-items:center}
+    .download-copy{min-width:0}
+    .download-name{display:block;font-size:14px;line-height:20px;font-weight:600;overflow-wrap:anywhere}
+    .download-status{display:block;font-size:12px;line-height:16px;color:var(--label-semidark-alpha)}
+    .download-percent{font-size:14px;line-height:20px;font-variant-numeric:tabular-nums}
+    .download-state sui-linear-progress{grid-column:1 / -1;width:100%}
+    @media(max-width:600px){.progress-gallery{max-width:calc(100% - 32px);margin:0 16px;padding:16px}.preview-nav{flex-wrap:wrap;gap:8px 16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>LinearProgress</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>LinearProgress</h1><p>Sizes and download progress states</p></header>
+  <div class="sui-stage progress-gallery">
+    <section aria-labelledby="sizes-title">
+      <h2 id="sizes-title" class="section-title">Sizes · default white indicator</h2>
+      <div class="size-examples">
+        <div class="size-example"><span>Small (default) · 60%</span><sui-linear-progress value="0.6" semantic-label="Small size example, 60 percent"></sui-linear-progress></div>
+        <div class="size-example"><span>Regular · 30%</span><sui-linear-progress value="0.3" size="regular" semantic-label="Regular size example, 30 percent"></sui-linear-progress></div>
+      </div>
+    </section>
+    <section aria-labelledby="downloads-title">
+      <h2 id="downloads-title" class="section-title">Download states · 0%, in progress, complete</h2>
+      <div class="download-examples">
+        <div class="download-state">
+          <sui-icon name="ic_document" size="24" aria-hidden="true"></sui-icon>
+          <div class="download-copy"><span class="download-name">Scene notes.pdf</span><span class="download-status">Waiting to download</span></div>
+          <span class="download-percent">0%</span>
+          <sui-linear-progress id="download-waiting" value="0" progress-color="var(--label-darkest-alpha)" semantic-label="Scene notes.pdf, waiting to download, 0 percent"></sui-linear-progress>
+        </div>
+        <div class="download-state">
+          <sui-icon name="ic_document" size="24" aria-hidden="true"></sui-icon>
+          <div class="download-copy"><span class="download-name">Scene notes.pdf</span><span class="download-status">Downloading</span></div>
+          <span class="download-percent">60%</span>
+          <sui-linear-progress id="download-active" value="0.6" progress-color="var(--label-darkest-alpha)" semantic-label="Scene notes.pdf, downloading, 60 percent"></sui-linear-progress>
+        </div>
+        <div class="download-state">
+          <sui-icon name="ic_check_circle" size="24" aria-hidden="true"></sui-icon>
+          <div class="download-copy"><span class="download-name">Scene notes.pdf</span><span class="download-status">Download complete</span></div>
+          <span class="download-percent">100%</span>
+          <sui-linear-progress id="download-complete" value="1" progress-color="var(--label-darkest-alpha)" semantic-label="Scene notes.pdf, download complete, 100 percent"></sui-linear-progress>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

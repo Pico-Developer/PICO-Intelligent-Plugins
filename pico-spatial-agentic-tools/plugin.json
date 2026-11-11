@@ -1,12 +1,11 @@
 {
   "name": "pico-spatial-agentic-tools",
-  "description": "Agentic tools for PICO Spatial SDK development (skills and MCP). Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, SDK migration compatibility checks, and PICO CLI device workflows.",
-  "version": "0.6.1",
+  "description": "Project Skills for PICO Spatial SDK development. Shared MCP services and Hooks are provided by the user-level general plugin. Helps AI agents assist with Spatial ECS, scene/anchor workflows, device debugging, performance/profiler analysis, emulator and project setup, SDK migration compatibility checks, and PICO CLI device workflows.",
+  "version": "0.7.0",
   "author": {
     "name": "PICO Immersive Pte. Ltd."
   },
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "homepage": "https://developer.picoxr.com/",
   "keywords": [
     "pico",

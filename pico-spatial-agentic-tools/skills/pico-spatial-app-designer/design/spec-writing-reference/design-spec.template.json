@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "write-spec-draft-1",
+  "metadata": {
+    "projectName": "__PROJECT_NAME__",
+    "revision": 1,
+    "preview": "__RELATIVE_PREVIEW_PATH__",
+    "references": [
+      {
+        "path": "__REFERENCE_PATH__",
+        "version": "__VERSION_OR_SNAPSHOT__"
+      }
+    ]
+  },
+  "experience": {
+    "subject": "__CONFIRMED_TASK__",
+    "form": "__CONFIRMED_FORM__"
+  },
+  "theme": {
+    "brandColors": {}
+  },
+  "surfaces": [
+    {
+      "id": "main",
+      "type": "__CONTAINER_TYPE__",
+      "defaultSize": {
+        "width": null,
+        "height": null,
+        "unit": "dp"
+      },
+      "rootNodeId": "app-root"
+    }
+  ],
+  "initialStateId": "initial",
+  "states": [
+    {
+      "id": "initial",
+      "surfaceRoots": {
+        "main": "app-root"
+      },
+      "values": {}
+    }
+  ],
+  "actions": [],
+  "nodes": [
+    {
+      "id": "app-root",
+      "kind": "layout",
+      "purpose": "__REGION_PURPOSE__",
+      "layout": {
+        "mode": "column"
+      },
+      "children": [
+        "main-titlebar",
+        "body"
+      ]
+    },
+    {
+      "id": "main-titlebar",
+      "kind": "spatialui",
+      "component": "sui-title-bar",
+      "props": {
+        "title-node-id": "main-title"
+      },
+      "children": [
+        "main-title"
+      ]
+    },
+    {
+      "id": "main-title",
+      "kind": "text",
+      "content": "__WINDOW_TITLE__"
+    },
+    {
+      "id": "body",
+      "kind": "layout",
+      "purpose": "__BODY_CONTENT__",
+      "layout": {
+        "mode": "column"
+      },
+      "children": []
+    }
+  ],
+  "assets": []
+}

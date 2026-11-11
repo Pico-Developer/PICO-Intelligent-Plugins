@@ -122,8 +122,13 @@ Trigger words: virtual hand / hand / hand interaction / hand tracking / hands.
 ### Status
 
 - Call: `pico_xr_hand(action=status)`.
-- `installed` is true only when BOTH hand markers are present. If only one
-  is mounted, `reason` explains the partial state.
+- `installed` is true only when both model markers (`[PICO_MCP] Hand Left` /
+  `[PICO_MCP] Hand Right`) AND both Hand Interactor markers
+  (`[PICO_MCP] Hand Interactor L` / `[PICO_MCP] Hand Interactor R`) are
+  present. The models alone provide visuals/tracking but cannot initiate Grab.
+- A model-only Hand state reports `installed=false`; relay `reason` and call
+  `pico_xr_hand(action=enable)` again to repair/mount the missing interactors
+  before treating Hand as ready.
 
 ## Typical pipeline — enable, PICO-native cold start
 

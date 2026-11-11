@@ -11,11 +11,23 @@ Use this workflow for an existing Kotlin Spatial SDK app. Route Unity work to th
 `spatialml` skill and its implementation/package references. A runtime debugging request does not
 require a new design or onboarding workflow.
 
+## When to Use
+
+- Debugging a SpatialML pipeline that runs but produces wrong or empty output
+- Diagnosing tensor all-zeros, readback failures, or operator errors
+- Runtime diagnosis of an existing SpatialML application
+
+## When NOT to Use
+
+- Initial SpatialML setup or Pipeline Zoo implementation — use `spatialml`
+- Generic SDK questions — use `spatial-sdk-guideline`
+- App performance profiling — use `spatial-app-performance-workflow`
+
 ## Probe a Kotlin global output
 
 - Detect the resolved `securemr` and `readback` artifacts/BOM and imports. This is the **Spatial
   service** path. Run `pico-env-doctor` before environment-dependent work, reusing a valid session
-  result. Use `spatial-app-dev-workflow` and `spatial-emulator-usage` for relevant build/device work.
+  result. Use `spatial-app-dev-workflow` and `pico-emulator-usage` for relevant build/device work.
 - Verify public APIs in the installed artifacts or current Kotlin knowledge cards. Readback extensions
   live in `com.pico.spatial.ml.readback`. Missing imports may mean the separate readback artifact is
   missing; follow the project's BOM rather than choosing a new version blindly.
@@ -55,7 +67,10 @@ globalOutput.readbackContentSuspend().use { content ->
 
 ## Retrieve service debugging knowledge
 
-Query available `pico-dev-knowledge` tools for SpatialML service logging, global tensor readback,
+Use the general plugin's `knowledge-query` Skill for `pico-dev-knowledge` lookups. Pass the engineering
+`--project <target-dir>` and distinct resource `--workspace-root <session-root>`; follow its live
+activation, query, and restore protocol instead of querying the connected graph directly. Query
+for SpatialML service logging, global tensor readback,
 `debug.pico.spatialml.debug`, and the detected SDK, runtime mode, and version. Retrieve the relevant
 service behavior, readback, and operator API knowledge before writing bindings. If lookup is
 unavailable, use the essential contract below and verify APIs against the installed SDK. Do not
@@ -160,5 +175,7 @@ probe contract and observed values; diagnosis versus remaining hypotheses; fix a
 property cleanup and resource status. Recheck the original issue and normal permission behavior with
 debugging off. Remove or gate temporary instrumentation; measure performance with diagnostics off.
 If no compatible device is available, deliver source/build findings and precise remaining device
-checks without claiming runtime verification. Use pySpatialML for identified package/model
-comparisons and platform diagnostics for whole-app/service evidence.
+checks without claiming runtime verification. Before using pySpatialML for identified package/model
+comparisons, verify the selected executable with `pyspatialml --version` and require 0.5.3 or newer;
+use the installation guidance in `spatialml` to repair an older release. Use platform diagnostics
+for whole-app/service evidence.

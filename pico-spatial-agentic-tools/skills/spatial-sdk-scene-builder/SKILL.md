@@ -1,10 +1,22 @@
 ---
 name: spatial-sdk-scene-builder
-description: Implements and repairs code-owned Entity scenes in a PICO Spatial Android/Kotlin app, including loading, hierarchy, transforms, placement, alignment, clipping, and validation. For a feature-bearing new app, use only after spatial-design-to-app and spatial-app-onboarding establish an accepted design and scaffold. Use spatial-editor for new or revised Editor-authored content. When an existing `.bundle` and `.scenes.json` pair needs app integration, this skill may handle the Kotlin Entity step within the enclosing app integration workflow. Do not infer Kotlin ownership merely because an app will consume Editor-authored content.
+description: Implements and repairs code-owned Entity scenes in a PICO Spatial Android/Kotlin app, including loading, hierarchy, transforms, placement, alignment, clipping, and validation. For app-level delivery, use spatial-app-dev-workflow as the development backbone and apply this skill to the current scene implementation step. Use spatial-editor for new or revised Editor-authored content. When an existing `.bundle` and `.scenes.json` pair needs app integration, this skill may handle the Kotlin Entity step within the enclosing app integration workflow. Do not infer Kotlin ownership merely because an app will consume Editor-authored content.
 license: 'Apache-2.0'
 ---
 
 # Build 3D Scenes with PICO Spatial SDK
+
+## When to Use
+
+- Planning spatial layouts by measuring 3D asset bounding boxes
+- Generating transform JSON or `.spatialsdk/scene_transforms.json`
+- Scale, position, and rotation planning for code-defined Entity scenes
+
+## When NOT to Use
+
+- Editor-based visual scene authoring or material editing — use `spatial-editor`
+- Pure UI panel layout — use `spatial-ui-ability`
+- App scaffolding or project creation — use `spatial-app-onboarding`
 
 ## Outcome
 
@@ -24,15 +36,48 @@ particle emitters, and other effect-bearing Entities remain in scope when the
 task is to create, attach, transform, or validate them in code.
 
 A transform plan or coordinate calculation is supporting evidence, not the
-implemented result. If a feature-bearing request starts from an empty directory,
-enter through `spatial-design-to-app` and its executable-design gate. That workflow
-may use `spatial-app-onboarding` only to establish the scaffold; resume this skill
-for scene implementation after the accepted design and scaffold exist. A genuinely
-featureless scaffold or first-runnable demo may use onboarding directly. Existing
-apps that request a local Entity change stay in this skill and do not re-enter the
-new-app design gate.
+implemented result. For new or existing app delivery, follow
+`spatial-app-dev-workflow` as the development backbone. Read
+`spatial-app-onboarding` when the project needs a scaffold. Read the relevant
+`spatial-design-to-app` design guidance when the current scene or UI has an
+unresolved design question; a visible Entity change does not transfer the whole
+app task to that skill or automatically start its managed workflow.
+
+Direct entry for a bounded scene task is valid. Inspect the requested outcome,
+existing source, assets and design before deciding which guidance is missing.
+Reuse an adequate design; do not require a new design artifact just to classify
+or repair an existing scene. If the task also requires full app delivery, read
+the dev skill and retain that broader completion responsibility.
+
+Perform scene implementation within the current assignment, then return source
+changes, asset references and validation evidence to the enclosing development
+task. When already running as a dev node, follow the assigned role and route;
+reading this skill does not restart dev at Planner or select another entry node.
+The managed 3D workflow below remains available for scoped scene work. Coordinate
+its source writes and builds with the app task; it does not take ownership of the
+whole app or independently claim a shared device.
 
 ## Ownership Boundary
+
+Imported visual assets may be attached under an existing ECS or scene root when supported.
+Code ownership does not require procedural-only visuals; verify the asset's supported
+loading and integration path for the current project.
+
+For an Editor bundle, select the intended manifest scene and pass its exact
+`runtimeSceneKey` to the SDK model loader. The key depends on that request's pack
+root; preserve its case and every path segment. Do not derive it from `name`,
+`sourcePath`, `bundlePath` or an authoring entry path, or add/remove a prefix.
+For older/external bundles without the field, obtain a verified key for that exact
+bundle or repackage it. Read `spatial-bundle-scene-reader` for bounded manifest inspection.
+Before resolving a manifest path, follow that reader's loaded-scene scope verification: keep the
+SDK return separate from the manifest scope Entity. All bundle model-loading interfaces,
+including `loadModel` and `loadModelSuspend`, return the same hierarchy for the same packed model;
+use the same scope verification for each. For the verified Editor 6.2.5 / SDK 6.2.8
+layout, resolve manifest paths from the return's unique direct child, checking the selected
+manifest's complete top-level names and `rootCount`. That child's name can change; do not match
+it against `root` or `Root`. Pass the verified manifest scope path separately from its runtime name.
+The outer return has no manifest entity record.
+Stop on unknown layouts; use direct-child name matching at every subsequent level.
 
 - Use this skill when the requested deliverable is Kotlin code that owns Entity
   creation or loading, hierarchy, transforms, bounds-aware relationships, or
@@ -48,6 +93,11 @@ new-app design gate.
 - Use `spatial-sdk-guideline` for broader API behavior such as light parameters,
   particle-system behavior, materials, animation, physics, and interaction;
   this skill still owns the participating Entities' hierarchy and transforms.
+- Before selecting an API marked with an experimental opt-in annotation
+  declared by the selected PICO Spatial SDK version, read
+  `../spatial-sdk-guideline/reference/experimental-apis.md`. Obtain explicit
+  acceptance of the PICO Store publication risk and have the enclosing app
+  workflow apply the application Manifest runtime gate before starting Codegen.
 
 The ownership and capability lists above classify work; they do not prescribe scene
 content. Create, preserve, reject, or route an Entity or relationship only when the
@@ -60,8 +110,10 @@ object, layout, or acceptance condition.
 `pico-dev-knowledge` is available for Spatial SDK documentation, API facts,
 examples, and version-related context. Before choosing or implementing a new or
 non-trivial Spatial SDK API, first identify the project's exact SDK version from
-its local declarations, then call `pico-dev-knowledge` `query_graph` for that
-version. This is required for API availability and semantics that are easy to misapply,
+its local declarations, then use the general plugin's `knowledge-query` Skill for that
+version. Pass the engineering `--project <target-dir>` and distinct resource
+`--workspace-root <session-root>`; follow its live activation, query, and restore protocol
+instead of calling the connected graph directly. This is required for API availability and semantics that are easy to misapply,
 including ECS Systems and Components, units, SpatialView and WindowContainer
 coordinate spaces, owner-relative visual bounds, `getVisualBounds`, public
 coordinate conversion, transform ownership, lifecycle, and threading.
@@ -80,7 +132,7 @@ workflow references; neither a lookup nor a signature alone is runtime proof.
 The managed Workflow may enter the Builder/Codegen Handoff before this research
 is complete. Stay in that Handoff while resolving the project version and API
 evidence: before the first Kotlin write or `spatialcraft.spatial-codegen-change-set/v1`
-submission, identify the version, call `query_graph`, and read the returned public
+submission, identify the version, use `knowledge-query`, and read the returned public
 documentation or API-reference locations. A `query_graph` response that only
 identifies candidate documents is not itself the API answer.
 
@@ -94,11 +146,20 @@ inspection only after that failed query. If public signature evidence still cann
 establish required units, lifecycle, threading, or other semantics, leave Kotlin
 unchanged, remain in the current Handoff, and report the exact blocker.
 
-## Workflow
+## Execution Choice
 
-Use the public `spatial-3d-generation` root Workflow for both complete-scene and
-focused-placement work. Never start `spatial-codegen-workflow` directly and never
-submit a Child Run ID.
+Follow [3D execution choice](../spatial-editor/references/3d-execution.md). Both
+complete-scene and focused-placement work can use the same authoring methods and
+invariants. When direct, make the requested changes in the current task and
+follow [scene validation](references/scene-validation.md) using that task's evidence.
+Identify the affected scene, entities, spatial relationships, and invariants;
+apply the relevant ownership, placement, and verification guidance below.
+
+## Managed Workflow
+
+The steps below apply after selecting managed execution. Start the public
+`spatial-3d-generation` root. Never start `spatial-codegen-workflow` directly and
+never submit a Child Run ID.
 
 1. **Start one managed root Run.** Call `start_3d_generation_workflow` with a
    `spatialcraft.spatial-3d-generation-input/v1` input. Set
@@ -115,22 +176,30 @@ submit a Child Run ID.
    Kotlin scene authoring, inspect project instructions, identify the SDK version,
    complete the knowledge/public-document sequence above, locate the active
    `SpatialView`, Stage, or `WindowContainer`, and preserve existing patterns.
-   Create or load code-owned Entities only in the accepted scope. Return
-   `spatialcraft.spatial-codegen-change-set/v1` with one workspace-relative Kotlin
-   `sceneEntry` and the exact `changedFiles`; do not run Gradle yourself.
+   If the selected API is experimental, confirm that the enclosing app workflow
+   already applied `pico.spatial.use_experimental_api=1` to the unambiguous
+   application Manifest. If it did not, stop before the Kotlin write and return
+   to that workflow; do not submit a source-only opt-in.
+   Create or load code-owned Entities for the accepted goal and make the project
+   changes it needs. Return `spatialcraft.spatial-codegen-change-set/v1` with a
+   project-relative Kotlin `sceneEntry`; do not enumerate changed files or run Gradle yourself.
 4. **Resolve spatial constraints in two stages.** First solve internal support,
    contact, containment, alignment, and anchor relationships in the base scene.
    Then, when the complete composition is bounded, apply one explicit uniform fit
    on `fittedSceneRoot` beneath an identity `placementOwner`. Measure final visual
    bounds in that owner, and re-measure after every applied transform.
 5. **Let the Workflow validate and build.** Call the returned bounded wait tool.
-   The deterministic Codegen modules validate path ownership and changed sources,
-   run the project's fixed Gradle wrapper with JDK 21, and publish source/build
-   artifacts and evidence. Never replace this with an arbitrary shell command or
+   The deterministic Codegen modules pin the scene entry, run the project's fixed
+   Gradle wrapper with JDK 21, and publish entry/build artifacts and evidence.
+   Other project files remain in the project. Never replace this with an arbitrary shell command or
    claim success from the authoring response.
 6. **Inspect the terminal result.** Require `backend="codegen"`,
    `scene.format="spatial-sdk-kotlin-scene"`, a source entry Artifact, successful
-   build Evidence, and no required acceptance error. Use `spatial-emulator-usage`
+   build Evidence, and no required acceptance error. Before accepting an
+   experimental result, run the bundled
+   `check_experimental_api_opt_in.py --target <project-root>` checker from the
+   `spatial-sdk-guideline` skill; a successful managed Gradle build does not
+   replace this runtime-configuration gate. Use `pico-emulator-usage`
    separately only when device launch, screenshots, recordings, or runtime logs are
    also required.
 
@@ -207,8 +276,8 @@ to read a reference before completion.
 
 Use `spatial-sdk-guideline` for broader SDK features such as material behavior,
 light parameters, particle behavior, animation, physics, and interaction. Use
-`spatial-emulator-usage` for optional device launch and runtime evidence after the
-managed Codegen build succeeds.
+`pico-emulator-usage` for optional device launch and runtime evidence after the
+app or managed Codegen build succeeds.
 
 ## Completion Contract
 

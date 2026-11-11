@@ -1,67 +1,82 @@
----
-issue_type_key: spatial_frame_abnormal
-protocol: spatial-engine
-activated_subprotocols: [binder, memory, cpu_sched]
-topic_state:
-  activation: activated
-  execution: completed
-  closure_level: server_cause
-  causal_role: primary_cause
-  controller_handoff: []
-time_window: "2026-07-31 14:03:12 ~ 2026-07-31 14:03:25"
-symptoms: "Obvious frame drops while dragging the model, with visual stutter and delayed head-tracking follow."
-target:
-  package: "com.example.spatial.app"
-  process: "com.example.spatial.app"
-  threads: ["Spatial_Main", "Eng-Render", "RenderThread"]
-evidence:
-  - id: e1
-    type: perfetto_trace
-    location: "trace-perf.perfetto-trace"
-    one_line_finding: "Continuous Late Frames appear within the issue window, and the APP Produce stage exceeds the budget."
-  - id: e2
-    type: perfetto_sql
-    location: "sql-report-queries.md#spatial"
-    one_line_finding: "The peak window of Late/Miss Frames overlaps with Eng-Render runnable starvation."
-  - id: e3
-    type: screenshot
-    location: "Perfetto screenshot provided by the user (SpatialFrames panel)"
-    one_line_finding: "Late Frames are concentrated within 1–2 seconds after the drag gesture starts."
-conclusion_level: likely
-root_cause: "Within the issue window, the Eng-Render thread is runnable but not running for a long time, causing the EngineRender stage to exceed the budget and trigger Late Frames."
-next_actions:
-  - "Within the issue window, further confirm the contending threads (same CPU/same cluster) and scheduling policy; if needed, dive deeper via the cpu_sched sub-protocol."
-  - "Reduce render workload on the drag path: reduce the number of objects updated per frame, merge DrawCalls, or lower material complexity."
-  - "Collect another trace with GPU tracks/frequency enabled to rule out GPU/Compositor-side bottlenecks."
-limitations:
-  - "The current trace does not include full GPU counters, so it cannot confirm whether the GPU is saturated within the same window."
-extensions:
-  spatial:
-    abnormal_frame_types: ["late"]
-    stage: "EngineRender"
-    bottleneck_side: "engine"
-    pressure_source: "render_workload"
-  cpu_sched:
-    thread_state_summary: "Eng-Render: runnable but insufficient running"
-    sched_latency_ms: 18.4
-    runqueue: "big cluster rq length is relatively high"
-    cpu_cluster_freq: "big cluster frequency briefly drops"
-    contenders: ["system_server:Binder", "surfaceflinger"]
----
-
 # Unified Output Contract
 
-This document defines the unified output contract after any `analysis-*` topic analysis is completed. The goal is twofold: first, to ensure every analysis conclusion has a consistent structure for review and collaboration; second, to make it machine-queryable, aggregatable, and automatable via the YAML header (e.g., Graphify).
+This document defines the unified output contract after any `analysis-*` topic analysis is completed. The goal is twofold: first, to ensure every analysis conclusion has a consistent structure for review and collaboration; second, to make it machine-queryable, aggregatable, and automatable via the sidecar meta JSON (e.g., Graphify).
 
-This contract consists of two parts: the top YAML header (required, machine-readable) and the main body with 6 sections (required, human-readable). Any topic must output at least these two parts. If topic-specific fields are needed, extend under `extensions` in the YAML.
+Every topic analysis produces **two sibling files** in `session-output-<timestamp>/topic-result/`:
 
-## 1. YAML Header (Required, Machine-Readable)
+- `output-<topic>.md` — the **human-readable** body with the fixed 6 sections.
+- `output-<topic>.meta.json` — the **machine-readable** sidecar; the authoritative source for all structured fields.
 
-The YAML header is used to structurally record "what the issue is, where the evidence is, how certain the conclusion is, and what to do next". Field conventions are as follows (all fields except `extensions` are recommended to be filled as much as possible; key fields must be filled).
+The `.md` and `.meta.json` MUST have the same basename and live in the same directory. The `.meta.json` carries all machine fields; the `.md` is pure Markdown (no YAML / no front matter).
+
+## 1. Topic Meta JSON (Required, Machine-Readable)
+
+The topic meta JSON is used to structurally record "what the issue is, where the evidence is, how certain the conclusion is, and what to do next". Field conventions are as follows (all fields except `extensions` are recommended to be filled as much as possible; key fields must be filled).
+
+### 1.0 Minimal shape
+
+```json
+{
+  "schema_version": "1.0",
+  "topic": "spatial-engine",
+  "protocol": "spatial-engine",
+  "issue_type_key": ["spatial_frame_abnormal"],
+  "activated_subprotocols": ["spatial-engine"],
+  "topic_state": {
+    "activation": "activated",
+    "execution": "completed",
+    "closure_level": "server_cause",
+    "causal_role": "primary_cause",
+    "controller_handoff": []
+  },
+  "conclusion_level": "likely",
+  "time_window": "2026-07-31 14:03:12 ~ 2026-07-31 14:03:25",
+  "symptoms": "Obvious frame drops while dragging the model, with visual stutter and delayed head-tracking follow.",
+  "target": {
+    "package": "com.example.spatial.app",
+    "process": "com.example.spatial.app",
+    "threads": ["Spatial_Main", "Eng-Render", "RenderThread"]
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "type": "perfetto_trace",
+      "location": "trace-perf.perfetto-trace",
+      "one_line_finding": "Continuous Late Frames appear within the issue window, and the APP Produce stage exceeds the budget."
+    }
+  ],
+  "root_cause": "Within the issue window, the Eng-Render thread is runnable but not running for a long time, causing the EngineRender stage to exceed the budget and trigger Late Frames.",
+  "next_actions": [{ "action": "Reduce render workload on the drag path", "priority": "P0" }],
+  "limitations": [
+    "The current trace does not include full GPU counters, so it cannot confirm whether the GPU is saturated within the same window."
+  ],
+  "extensions": {
+    "spatial": {
+      "abnormal_frame_types": ["late"],
+      "stage": "EngineRender",
+      "bottleneck_side": "engine",
+      "pressure_source": "render_workload"
+    }
+  },
+  "sections_file": "output-spatial-engine.md",
+  "sections_in_body": {
+    "symptom": "① Symptom",
+    "existing_evidence": "② Existing Evidence",
+    "investigation_process": "③ Investigation Process",
+    "root_cause_judgment": "④ Root Cause Judgment",
+    "actions": "⑤ Actions (Optimization/Troubleshooting)",
+    "limitations_and_next_validation": "⑥ Limitations and Next Validation"
+  }
+}
+```
+
+A larger end-to-end example lives at [`templates/topic_meta_example.json`](../../templates/topic_meta_example.json).
 
 ### 1.1 Required Key Fields
 
-- `issue_type_key`: performance issue type enum key (Graphify query primary key)
+- `schema_version`: current contract version (string, currently `"1.0"`).
+- `topic`: the current topic id (e.g., `spatial-engine` / `binder` / `memory` / `cpu_sched` / `spatial-audio` / `kotlin-spatial-app-jank`).
+- `issue_type_key`: performance issue type enum key list (Graphify query primary key).
   - enum values:
     - `spatial_frame_abnormal`
     - `binder_latency`
@@ -69,23 +84,25 @@ The YAML header is used to structurally record "what the issue is, where the evi
     - `cpu_sched_latency`
     - `spatial_audio_perf`
     - `app_main_thread_jank`
-- `protocol`: the main protocol/current topic for this analysis (e.g., `spatial-engine` / `binder` / `memory` / `cpu_sched` / `spatial_audio` / `app_jank`)
-- `activated_subprotocols`: list of activated sub-protocols (e.g., `[binder, memory, cpu_sched]`)
+- `protocol`: the main protocol for this analysis (e.g., `spatial-engine` / `binder` / `memory` / `cpu_sched` / `spatial_audio` / `app_jank`).
+- `activated_subprotocols`: list of activated sub-protocols (e.g., `["binder", "memory", "cpu_sched"]`).
 - `topic_state`: lifecycle state for the current topic. `activation` records that routing added the topic; `execution` is `completed`, `completed_with_evidence_gap`, or `blocked`; `closure_level` is defined by the topic; `causal_role` is the post-analysis role. These fields must not be inferred from one another.
-- `controller_handoff`: optional list of cross-topic evidence items handed to the Main protocol. The subprotocol does not name, activate, or skip another subprotocol.
-- `time_window`: the issue time window (recommended to write a readable time range or a timestamp range within the trace)
-- `symptoms`: user-visible symptom summary (1–2 sentences)
-- `target`: target package/process/key threads (recommended to include at least `package`/`process`; threads are optional)
-- `evidence`: list of evidence items (each should include at least: evidence type, location, one-line conclusion)
+- `topic_state.controller_handoff`: optional list of cross-topic evidence items handed to the Main protocol. The subprotocol does not name, activate, or skip another subprotocol.
+- `time_window`: the issue time window (recommended to write a readable time range or a timestamp range within the trace).
+- `symptoms`: user-visible symptom summary (1–2 sentences).
+- `target`: target package/process/key threads (recommended to include at least `package`/`process`; `threads` are optional).
+- `evidence`: list of evidence items (each should include at least: evidence type, location, one-line conclusion).
 - `conclusion_level`: conclusion confidence level
   - `confirmed`: evidence closed loop; can directly prove the root cause
   - `likely`: highly relevant with a plausible mechanism, but still missing 1–2 key evidence points
   - `candidate`: candidate direction; some correlation exists but insufficient to explain the whole symptom
   - `insufficient_evidence`: insufficient evidence; cannot form a reliable root cause
-- `root_cause`: one-line root cause (when `insufficient_evidence`, you can write "Evidence is still missing; no conclusion yet")
-- `next_actions`: list of next actions (optimization/troubleshooting/evidence supplementation)
-- `limitations`: constraints/missing evidence (e.g., the trace misses some tracks, missing GC logs, etc.)
-- `extensions.knowledge_base`: record of KB assistance. For a PICO Spatial diagnosis with an exposed `pico-spatial-knowledge` MCP or configured PerformanceKB backend, this record is mandatory and governed by the [PICO Spatial PerformanceKB Mandatory Gate](../common/knowledge-base-usage.md): fill the backend, gate stage statuses, matched entries, and selected observation states. For generic OS6 workflows with no exposed backend, it is optional and records the unavailable/retrieval-failed status instead. KB-derived content remains advisory and cannot replace trace evidence.
+- `root_cause`: one-line root cause (when `insufficient_evidence`, you can write "Evidence is still missing; no conclusion yet").
+- `next_actions`: list of next actions (optimization/troubleshooting/evidence supplementation). Each item is an object `{ "action": "...", "priority": "P0|P1|P2" }`.
+- `limitations`: constraints/missing evidence (e.g., the trace misses some tracks, missing GC logs, etc.).
+- `sections_file`: relative path (within the topic-result directory) to the sibling `.md` body file.
+- `sections_in_body`: map of section id → the exact Markdown heading text used in the `.md` body. Downstream tools match headings verbatim.
+- `extensions.knowledge_base`: record of KB assistance. For a PICO Spatial diagnosis with the general plugin's `pico-dev-knowledge` MCP exposed, this record is mandatory and governed by the [PICO Spatial PerformanceKB Mandatory Gate](../common/knowledge-base-usage.md): fill the actual backend name, gate stage statuses, matched entries, and selected observation states. Run retrieval through the general plugin's `knowledge-query` Skill rather than calling the MCP directly. For generic OS6 workflows with no exposed backend, it is optional and records the unavailable/retrieval-failed status instead. KB-derived content remains advisory and cannot replace trace evidence.
 
 ### 1.2 Recommended evidence Item Format
 
@@ -98,13 +115,13 @@ The YAML header is used to structurally record "what the issue is, where the evi
 
 ### 1.3 extensions: Topic Extension Fields (Optional)
 
-Each topic can extend topic-specific fields under `extensions` in the YAML header. Below is the recommended extension field set for each topic. You can fill them as needed based on actual evidence; omit missing fields.
+Each topic can extend topic-specific fields under `extensions` in the topic meta JSON. Below is the recommended extension field set for each topic. You can fill them as needed based on actual evidence; omit missing fields.
 
 - `extensions.spatial` (spatial frame abnormal / Spatial main protocol)
-  - `abnormal_frame_types`: list of abnormal frame types (e.g., late/miss/discard)
+  - `abnormal_frame_types`: list of abnormal frame types (e.g., `late`/`miss`/`discard`)
   - `stage`: abnormal stage (`APP Produce` / `SPR Consume` / `EngineRender` / `GPU` / `Compositor`)
-  - `bottleneck_side`: bottleneck side (e.g., app/spr/engine/gpu/compositor)
-  - `pressure_source`: pressure source (e.g., render_workload/binder_wait/gc/memory_pressure, etc.)
+  - `bottleneck_side`: bottleneck side (e.g., `app`/`spr`/`engine`/`gpu`/`compositor`)
+  - `pressure_source`: pressure source (e.g., `render_workload`/`binder_wait`/`gc`/`memory_pressure`, etc.)
 - `extensions.binder` (Binder topic)
   - `caller`: caller (process/thread)
   - `callee`: callee (process/thread; often `system_server` or a service process)
@@ -136,12 +153,12 @@ Each topic can extend topic-specific fields under `extensions` in the YAML heade
 - `extensions.knowledge_base` (cross-topic KB assistance)
   - `status`: `available` / `unavailable` / `retrieval_failed`
   - `global_triage`: `matched` / `not_matched` / `query_failed` / `not_run`
-  - `selected_observations`: list of `{name, state, reason}` where `state` is `planned` / `queried` / `unavailable` / `not_applicable` / `deferred`
+  - `selected_observations`: list of `{ "name": "...", "state": "...", "reason": "..." }` where `state` is `planned` / `queried` / `unavailable` / `not_applicable` / `deferred`
   - `window_anchored_query`: one-line query and result summary, or an explicit skip reason
 
 ## 2. Main Body (Required, Fixed 6 Sections)
 
-The main body explains "how the conclusion was reached". It must contain the following 6 sections, and it is recommended that each section can be quickly reproduced and verified by others.
+The main body (the `.md` file) explains "how the conclusion was reached". It must contain the following 6 sections. Each section heading MUST match the value declared in `sections_in_body`. Downstream renderers match the headings verbatim and extract the content between consecutive section headings.
 
 ### ① Symptom
 
@@ -157,7 +174,7 @@ Describe the investigation steps in a reproducible way: which tracks/tables/metr
 
 ### ④ Root Cause Judgment
 
-Provide a one-line root cause conclusion and describe the "evidence closed-loop degree", while marking the confidence level (consistent with `conclusion_level` in the YAML).
+Provide a one-line root cause conclusion and describe the "evidence closed-loop degree", while marking the confidence level (consistent with `conclusion_level` in the sidecar JSON).
 
 ### ⑤ Actions (Optimization/Troubleshooting)
 
@@ -167,32 +184,43 @@ Provide actionable recommendations. Prefer actions that are "minimal change/fast
 
 Clarify the boundary of the current analysis: what key evidence is missing, what assumptions are not yet verified, whether you need to recollect the trace (e.g., with sched, GPU counters, GC logs, etc.), and what it means if the next validation passes/fails.
 
-## 3. Full Output Example (spatial_frame_abnormal)
+## 3. Cross-File Reference Rules
 
-The YAML header above already provides a complete example that can be reused directly. You can use it as a template: replace fields such as `issue_type_key`, `protocol`, `time_window`, `target`, `evidence`, `root_cause`, etc. with the real information for the current issue, and add `extensions.spatial` (and other activated sub-protocol extension fields) under `extensions` as needed.
+To avoid ambiguity, cross-file references follow two simple rules:
 
-Below we complete the example’s 6 main-body sections to demonstrate the integrated output of "machine-readable + human-readable".
+- **Machine-to-machine references** → always point to the `.meta.json` (the authoritative entry).
+  - Examples: `final-summary.meta.json.next_actions[].sources`, `final-summary.meta.json.topic_outputs[].file`.
+- **Human / HTML display references** → point to the `.md`.
+  - Examples: "see output-binder.md" in prose, "View topic details" button in the HTML report.
+
+## 4. Full Output Example (spatial_frame_abnormal)
+
+A complete topic sidecar example that can be reused directly lives at [`templates/topic_meta_example.json`](../../templates/topic_meta_example.json). Below we complete the example's 6 main-body sections (which live in the sibling `.md`) to demonstrate the integrated output of "machine-readable sidecar + human-readable body".
 
 ### ① Symptom
 
-Within 1–2 seconds after dragging the model (continuous gesture operation), there are obvious frame drops, the image stutters, and there is delayed follow during headset rotation. The user subjectively feels it as "every time I drag, it stutters". The issue is reproducible, and it is more obvious only after resource loading is completed in a particular scenario.
+Within 1–2 seconds after dragging the model (continuous gesture operation), there are obvious frame drops accompanied by visual stutter; head-tracking follow is slightly delayed; the issue is reproducible with the same gesture.
 
 ### ② Existing Evidence
 
-Evidence 1: Perfetto trace (`trace-perf.perfetto-trace`) shows continuous Late Frames within the issue window, and the APP Produce stage clearly exceeds the budget. Evidence 2: SQL query results show that the peak window of Late/Miss Frames overlaps with Eng-Render runnable starvation (runnable but lacking running). Evidence 3: The SpatialFrames panel screenshot indicates Late Frames are concentrated within a short window after the drag gesture starts.
+- Perfetto trace shows continuous Late Frames in `trace-perf.perfetto-trace` within the issue window.
+- Perfetto SQL queries show the APP Produce stage exceeds the budget and the Eng-Render runnable starvation window overlaps with the Late Frame peak (see `references/sql-query/sql-report-queries.md#spatial`).
+- A user-provided SpatialFrames screenshot concentrates Late Frames inside the 1–2s window after the drag starts.
 
 ### ③ Investigation Process
 
-First, use the user symptom to determine the issue window, and lock the Late Frame cluster in SpatialFrames/SpatialMetrics. Then align Eng-Render and related render-thread slices, and confirm that within the same window there is a signal of "the thread is runnable but cannot get CPU". Next, check whether there is an obvious long Binder wait or GC Stop-the-world overlapping the window, to rule out candidate directions such as "stuck in service calls" or "stuck in GC". The current evidence better supports that scheduling contention causes the EngineRender stage to exceed the budget.
+Starting from the SpatialFrames panel, narrowed the issue window to the first 2 seconds after the drag; aligned the Late Frame cluster with the Eng-Render runnable-but-not-running segments; ruled out GC storms (no concurrent copying STW in the same window) and spatial-audio IPC storms (no bursty audio create/destroy); converged on resource rebuild on scene switch as the dominant cause.
 
 ### ④ Root Cause Judgment
 
-The root cause judgment is: within the issue window, the Eng-Render thread is runnable but not running for a long time, causing the EngineRender stage to exceed the budget and trigger Late Frames. The confidence level is likely, because scheduling starvation highly matches the abnormal-frame window, but it still lacks full GPU counters and finer-grained evidence about contending threads/scheduling policy to fully close the loop.
+Resource rebuild on scene switch produces a GPU-bound workload spike that collapses the frame budget. `conclusion_level: likely` — the mechanism is plausible and strongly correlated, but GPU counters are missing and would be needed to upgrade to `confirmed`.
 
 ### ⑤ Actions (Optimization/Troubleshooting)
 
-It is recommended to first strengthen the evidence closed loop: within the same window, identify the primary contending threads (same CPU/same cluster) and CPU frequency changes; if needed, dive deeper via the cpu_sched sub-protocol. For optimization actions, prioritize reducing render workload on the drag path, such as reducing the number of objects updated per frame, merging DrawCalls, and lowering material complexity, and validate whether Late Frames significantly decrease. If anomalies still exist, recollect a trace with GPU counters/frequency data to rule out GPU/Compositor-side bottlenecks.
+- Amortize scene-switch resource rebuild across multiple frames (P0).
+- Reduce per-frame draw-call count on the drag path (P1).
+- Recollect a trace with GPU tracks + frequency enabled to definitively rule out GPU saturation (troubleshooting).
 
 ### ⑥ Limitations and Next Validation
 
-The current limitation is that the trace does not include full GPU-side counters, so it cannot confirm whether the GPU is saturated in the same window; meanwhile, the identification of contending threads is still relatively coarse. Next validation proceeds in two parallel tracks: (1) recollect a trace including sched and GPU counters to verify whether scheduling starvation or GPU saturation better matches the abnormal-frame window; (2) reduce workload on the drag path and run regression validation—if Late Frames decrease accordingly, it further supports "EngineRender workload/scheduling contention" as the primary cause.
+The current trace lacks GPU counters, so GPU saturation cannot be fully excluded as a concurrent root cause. If the next trace (with GPU counters) still shows the same Late Frame cluster while GPU is not saturated, this conclusion can be upgraded to `confirmed`; if GPU is saturated, the primary cause switches to the GPU-side bottleneck.

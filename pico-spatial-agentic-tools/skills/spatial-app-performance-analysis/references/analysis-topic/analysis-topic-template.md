@@ -77,30 +77,38 @@ At minimum, a topic execution must contain one path-level observation, one mecha
 
 ## Controller Handoff
 
-After completing the topic-specific analysis, hand back only evidence that crosses the topic boundary. Do not name, activate, or prescribe another subprotocol. The handoff should contain:
+After completing the topic-specific analysis, hand back only evidence that crosses the topic boundary. Do not name, activate, or prescribe another subprotocol. The handoff should contain (JSON shape; lives inside the topic `.meta.json` sidecar):
 
-```yaml
-controller_handoff:
-  - evidence_refs: [<stable evidence ids>]
-    signal: <observed cross-topic signal>
-    time_window: <overlap with the abnormal window>
-    dependency_relation: direct | dependency | adjacent | unrelated
-    question_for_controller: <what the main controller should assess>
+```json
+{
+  "controller_handoff": [
+    {
+      "evidence_refs": ["<stable evidence ids>"],
+      "signal": "<observed cross-topic signal>",
+      "time_window": "<overlap with the abnormal window>",
+      "dependency_relation": "direct | dependency | adjacent | unrelated",
+      "question_for_controller": "<what the main controller should assess>"
+    }
+  ]
+}
 ```
 
 An empty handoff is valid. The Main protocol independently scans the shared topic registry and applies the Activation Gate; it must not infer that no other subprotocol is relevant merely because this handoff is empty.
 
 ## Output Supplement
 
-Add topic-specific fields under `extensions.<topic-key>` in the unified [Output Contract](../routing/output-contract.md). Keep the common lifecycle fields in the topic output:
+Add topic-specific fields under `extensions.<topic-key>` in the unified [Output Contract](../routing/output-contract.md). Keep the common lifecycle fields in the topic `.meta.json` sidecar:
 
-```yaml
-topic_state:
-  activation: activated
-  execution: completed | completed_with_evidence_gap | blocked
-  closure_level: <topic-defined level>
-  causal_role: <topic-defined role>
-  controller_handoff: [<cross-topic evidence items>]
+```json
+{
+  "topic_state": {
+    "activation": "activated",
+    "execution": "completed | completed_with_evidence_gap | blocked",
+    "closure_level": "<topic-defined level>",
+    "causal_role": "<topic-defined role>",
+    "controller_handoff": ["<cross-topic evidence items>"]
+  }
+}
 ```
 
 ## Topic Checklist

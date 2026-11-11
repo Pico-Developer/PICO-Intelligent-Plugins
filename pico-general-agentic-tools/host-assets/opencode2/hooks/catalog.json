@@ -3,46 +3,59 @@
   "plugins": [
     {
       "id": "pico-general-agentic-tools",
-      "version": "1.0.0",
+      "version": "0.2.0",
       "skills": [
-        "knowledge-query"
-      ],
-      "mcpServers": []
-    },
-    {
-      "id": "pico-spatial-agentic-tools",
-      "version": "1.0.0",
-      "skills": [
+        "capture-camera",
+        "knowledge-query",
+        "pico-app-interaction",
+        "pico-aps-cli",
+        "pico-auth-cli",
         "pico-cli",
         "pico-cli-device-target",
         "pico-cli-screenshot",
+        "pico-emulator-usage",
         "pico-env-doctor",
+        "pico-project-setup",
+        "pico-release-cli",
+        "pico-sgs-cli",
+        "release-to-vibelab"
+      ],
+      "mcpServers": [
+        "pico-dev-knowledge",
+        "pico-spatial-editor",
+        "unity-mcp"
+      ]
+    },
+    {
+      "id": "pico-spatial-agentic-tools",
+      "version": "0.7.0",
+      "skills": [
         "pico-spatial-app-designer",
         "pico-workflow-integrator",
         "porting-android-app",
+        "spatial-accessibility",
         "spatial-app-dev-workflow",
         "spatial-app-onboarding",
         "spatial-app-performance-analysis",
         "spatial-app-performance-analysis-ext",
+        "spatial-app-performance-workflow",
+        "spatial-bundle-scene-reader",
         "spatial-design-to-app",
         "spatial-editor",
-        "spatial-emulator-usage",
         "spatial-sdk-guideline",
         "spatial-sdk-scene-builder",
         "spatial-sdk-update",
         "spatial-ui-ability",
         "spatial-ui-design-style",
         "spatialml",
-        "spatialml-debugging"
+        "spatialml-debugging",
+        "threejs-to-spatial"
       ],
-      "mcpServers": [
-        "pico-dev-knowledge",
-        "pico-spatial-editor"
-      ]
+      "mcpServers": []
     },
     {
       "id": "pico-unity-agentic-tools",
-      "version": "1.0.0",
+      "version": "0.2.0",
       "skills": [
         "pico-unity-buildingblocks",
         "pico-unity-init",
@@ -56,11 +69,10 @@
         "spatialadapter-scene-setup",
         "spatialadapter-spatial-camera-focus",
         "spatialml",
-        "spatialml-debugging"
+        "spatialml-debugging",
+        "update-pico-unity-sdk"
       ],
-      "mcpServers": [
-        "pico-dev-knowledge"
-      ]
+      "mcpServers": []
     }
   ]
 }

@@ -55,7 +55,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PlaneSample() {
     val context = LocalContext.current
-    var text by remember { mutableStateOf("初始文字内容") }
+    var text by remember { mutableStateOf("Initial text content") }
     DisposableEffect(key1 = Unit) {
         PlaneSampleHelper.entity = Entity()
         PlaneSampleHelper.entity?.setName("PlaneSampleEntity")
@@ -94,21 +94,21 @@ fun PlaneSample() {
                 onClick = { PlaneTrackingManager.start() },
                 modifier = Modifier.padding(bottom = 30.dp).width(800.dp),
             ) {
-                Text("PlaneAnchor开启更新", fontSize = 30.sp)
+                Text("Enable PlaneAnchor updates", fontSize = 30.sp)
             }
             Spacer(modifier = Modifier.size(20.dp))
             Button(
                 onClick = { PlaneTrackingManager.stop() },
                 modifier = Modifier.padding(bottom = 30.dp).width(800.dp),
             ) {
-                Text("PlaneAnchor停止更新", fontSize = 30.sp)
+                Text("Stop PlaneAnchor updates", fontSize = 30.sp)
             }
             Spacer(modifier = Modifier.size(20.dp))
             Button(
                 onClick = { subscribePlaneAnchorUpdate() },
                 modifier = Modifier.padding(bottom = 30.dp).width(800.dp),
             ) {
-                Text("订阅PlaneAnchor更新", fontSize = 30.sp)
+                Text("Subscribe to PlaneAnchor updates", fontSize = 30.sp)
             }
             Spacer(modifier = Modifier.size(20.dp))
             Button(

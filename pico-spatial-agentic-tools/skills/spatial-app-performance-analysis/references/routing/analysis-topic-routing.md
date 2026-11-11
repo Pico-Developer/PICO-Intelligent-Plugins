@@ -75,13 +75,20 @@ Execution is iterative and must not be reduced to a one-time routing decision or
 
 A subprotocol must not decide that another subprotocol is “not needed” merely because its own topic appears more time-consuming or more likely to be the root cause. It returns structured cross-topic evidence; only the Main protocol applies the Activation Gate and updates the queue.
 
-```yaml
-controller_handoff:
-  signal: "App frame-driving thread waits for a remote transaction"
-  time_window: "overlaps Late Frame window"
-  dependency_relation: dependency
-  evidence_refs: [app:e12]
-  question_for_controller: "Assess whether another registered topic should inspect the dependency"
+```json
+{
+  "topic_state": {
+    "controller_handoff": [
+      {
+        "signal": "App frame-driving thread waits for a remote transaction",
+        "time_window": "overlaps Late Frame window",
+        "dependency_relation": "dependency",
+        "evidence_refs": ["app:e12"],
+        "question_for_controller": "Assess whether another registered topic should inspect the dependency"
+      }
+    ]
+  }
+}
 ```
 
 ## Subprotocol Execution Contract
@@ -131,7 +138,7 @@ The map does not impose a priority or limit the expansion depth. The following s
 
 ## Finalization Rules
 
-Before producing `final-summary.md`:
+Before producing `final-summary.md` + `final-summary.meta.json`:
 
 - every activated subprotocol has an executed subprotocol output, including partial outputs;
 - every evidence-backed pending lead that passed the gate was executed or is recorded as blocked with a specific missing evidence item;
