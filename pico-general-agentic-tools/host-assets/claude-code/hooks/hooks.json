@@ -11,9 +11,21 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "^(?:Bash|exec_command|shell_command|run_terminal_command|(?:mcp__(?:pico-spatial-editor|pico_spatial_editor)__)?(?:start_editor_workflow|start_3d_generation_workflow))$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/host-assets/claude-code/hooks/capture-context.mjs\" claude-code",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
-        "matcher": "^(Skill|Read|mcp__pico-(?:dev-knowledge|spatial-editor)__)",
+        "matcher": "^(?:Bash|Skill|Read|mcp__(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__[a-z0-9_]+)$",
         "hooks": [
           {
             "type": "command",
@@ -25,7 +37,7 @@
     ],
     "PostToolUseFailure": [
       {
-        "matcher": "^mcp__pico-(?:dev-knowledge|spatial-editor)__",
+        "matcher": "^(?:Bash|Skill|Read|mcp__(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__[a-z0-9_]+)$",
         "hooks": [
           {
             "type": "command",

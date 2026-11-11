@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180">
+  <title>A quiet mountain lake</title>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1">
+      <stop stop-color="#355768"/>
+      <stop offset="1" stop-color="#9fb6b7"/>
+    </linearGradient>
+    <linearGradient id="water" x2="0" y2="1">
+      <stop stop-color="#7ca6ad"/>
+      <stop offset="1" stop-color="#416e80"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h480v180H0z"/>
+  <circle cx="368" cy="36" r="19" fill="#ebd8ad"/>
+  <path fill="#829b9f" d="m120 112 82-83 54 59 51-42 94 80z"/>
+  <path fill="#d5dedd" d="m202 29-22 23 22-8 18 12z"/>
+  <path fill="#5c7c84" d="m0 101 73-57 91 68 92-30 82 42H0z"/>
+  <path fill="#41636e" d="m480 57-65 23-64 42h129zM0 80l64 34 57 13H0z"/>
+  <path fill="url(#water)" d="M0 119q121-14 240 1t240-3v63H0z"/>
+  <g fill="none" stroke="#d3ded6" stroke-linecap="round" opacity=".45">
+    <path d="M304 130h66m-47 8h32m-184 13h57m49 16h83"/>
+    <path d="M91 137h38m244 13h43m-382 19h71" opacity=".6"/>
+  </g>
+  <path fill="#294d59" d="M0 159q46-19 104 5l44 16H0zm480-23q-36 13-80 44h80z"/>
+  <g fill="#203f4b">
+    <path d="m450 93-12 23h7l-15 26h14v27h9v-27h14l-15-26h7z"/>
+    <path d="m29 116-10 19h6l-13 23h12v20h8v-20h12l-13-23h6z"/>
+  </g>
+</svg>

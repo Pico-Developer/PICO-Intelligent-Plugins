@@ -1,0 +1,105 @@
+<!-- @dsCard group="Overlay" height=620 subtitle="Contextual guidance" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coachmark · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .examples{max-width:960px;margin:auto;padding:0 28px 24px}
+    .scenario{padding:24px 0;border-top:1px solid #cbd2db}
+    .scenario-heading{display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .scenario h2{margin:0;font-size:18px;letter-spacing:-.2px}
+    .scenario h2 span{margin-left:10px;color:#687483;font-size:13px;font-weight:400;letter-spacing:0}
+    .scenario p{margin:6px 0 0;color:#596470;font-size:13px}
+    .replay{flex:none;border:0;padding:8px 0;background:none;color:#245caa;font:500 13px/20px system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+    .scene{position:relative;display:flex;align-items:center;min-height:80px;padding:16px 48px}
+    .scenario.is-active .scene{min-height:180px;align-items:flex-end}
+    .scenario.is-active[data-example=rich] .scene{min-height:330px;align-items:flex-start;padding-top:16px}
+    .scenario.is-active[data-example=image] .scene{min-height:340px;align-items:center}
+    .hint-line,.hint-title{display:flex;align-items:center;gap:12px}
+    .hint-line sui-icon,.hint-title sui-icon{flex:none}
+    .hint-title{font-weight:700}
+    .corner-fragment{position:absolute;left:30px;top:calc(50% - 24px);width:90px;height:36px;border-right:2px solid #9ba9b8;border-bottom:2px solid #9ba9b8;border-bottom-right-radius:12px;pointer-events:none}
+    #target-image{margin-left:52px}
+    .status{margin:12px 0 0;font-size:13px;color:#596470;min-height:20px}
+    @media(max-width:600px){.examples{padding:0 16px 24px}.scenario-heading{gap:12px}.scenario h2 span{display:block;margin:4px 0 0}.scene{padding-left:24px}.corner-fragment{left:6px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Coachmark</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Coachmark</h1><p>First-use guidance · one target, one hint, one dismissal action</p></header>
+  <main class="examples">
+    <section class="scenario" data-example="simple" aria-labelledby="simple-heading">
+      <div class="scenario-heading">
+        <div><h2 id="simple-heading">Simple<span>Discover a feature</span></h2><p>Introduce the pin control the first time it appears.</p></div>
+        <button class="replay" type="button" data-show="simple">Replay hint</button>
+      </div>
+      <div class="scene">
+        <sui-icon-button id="target-simple" icon="ic_pin" size="small" semantic-label="Show pin guidance"></sui-icon-button>
+      </div>
+    </section>
+    <section class="scenario" data-example="rich" aria-labelledby="rich-heading">
+      <div class="scenario-heading">
+        <div><h2 id="rich-heading">Rich<span>Explain an operation</span></h2><p>Explain two-hand resizing when the user first encounters the resize control.</p></div>
+        <button class="replay" type="button" data-show="rich">Replay hint</button>
+      </div>
+      <div class="scene">
+        <sui-icon-button id="target-rich" icon="ic_expand" size="small" semantic-label="Show two-hand resize guidance"></sui-icon-button>
+      </div>
+    </section>
+    <section class="scenario" data-example="image" aria-labelledby="image-heading">
+      <div class="scenario-heading">
+        <div><h2 id="image-heading">Image<span>Demonstrate a gesture</span></h2><p>Show how to pinch and pull a window corner. Only the corner is needed for context.</p></div>
+        <button class="replay" type="button" data-show="image">Replay hint</button>
+      </div>
+      <div class="scene">
+        <div class="corner-fragment" aria-hidden="true"></div>
+        <sui-icon-button id="target-image" icon="ic_expand" size="min" semantic-label="Show window-corner gesture"></sui-icon-button>
+      </div>
+    </section>
+    <p class="status" id="demo-status" role="status">One hint is shown at a time. Click a target or Replay hint to explore another example.</p>
+  </main>
+  <sui-simple-coachmark id="hint-simple" for="target-simple" direction="above" hidden>
+    <span class="hint-line"><sui-icon name="ic_pin" size="24" tint="#ffffff"></sui-icon><span>Keep this window in place.</span></span>
+    <sui-button slot="button" size="min" text="Got it" container-color="var(--fill-semilight-alpha)" content-color="var(--label-primary-light)" data-closes></sui-button>
+  </sui-simple-coachmark>
+  <sui-rich-coachmark id="hint-rich" for="target-rich" direction="below" button-text="Got it" hidden>
+    <span slot="title" class="hint-title"><sui-icon name="ic_expand" size="24" tint="#ffffff"></sui-icon><span>Two-hand resize</span></span>
+    <span>Pinch opposite corners with both hands. Move your hands apart to enlarge the window, or together to make it smaller.</span>
+  </sui-rich-coachmark>
+  <sui-image-coachmark id="hint-image" for="target-image" direction="to-end" hidden>
+    <img slot="image" src="../../assets/illustrations/window-resize.svg" alt="Pinch opposite window corners with both hands, then move your hands apart to enlarge the window.">
+    <sui-icon-button slot="button" icon="ic_cross" size="min" semantic-label="Close gesture illustration" container-color="#FFFFFF66" content-color="var(--label-primary-light)" data-closes></sui-icon-button>
+  </sui-image-coachmark>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const variants = ['simple', 'rich', 'image'];
+      const status = document.getElementById('demo-status');
+      const hints = variants.map(v => document.getElementById('hint-' + v));
+      const scenes = variants.map(v => document.querySelector('[data-example=' + v + ']'));
+      const show = variant => {
+        hints.forEach(hint => { hint.hidden = true; });
+        scenes.forEach(scene => scene.classList.toggle('is-active', scene.dataset.example === variant));
+        document.getElementById('hint-' + variant).hidden = false;
+        status.textContent = variant[0].toUpperCase() + variant.slice(1) + ' hint shown. Other hints are closed.';
+      };
+      document.querySelectorAll('[data-show]').forEach(button => button.addEventListener('click', () => show(button.dataset.show)));
+      variants.forEach(variant => document.getElementById('target-' + variant).addEventListener('click-action', () => show(variant)));
+      hints.forEach(hint => {
+        const complete = () => {
+          hint.hidden = true;
+          // Keep the scene height stable so completion does not move the remaining targets.
+          status.textContent = 'Hint closed. Click a target or Replay hint to show it again.';
+        };
+        hint.addEventListener('select', event => { if (event.detail.action === 'button') complete(); });
+        hint.addEventListener('click', event => { if (event.target.closest('[data-closes]')) complete(); });
+      });
+      show('simple');
+    });
+  </script>
+</body>
+</html>

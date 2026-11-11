@@ -23,13 +23,25 @@ asked to upgrade, at most mention it as an optional aside and continue with the
 current version. Environment health and CLI/plugin/PICO development knowledge version
 checks belong to `pico-env-doctor`, not here.
 
+## When to Use
+
+- Upgrading an existing project to a newer PICO Spatial SDK version
+- Migrating deprecated Spatial API calls after an SDK bump
+- Resolving SDK version compatibility issues
+
+## When NOT to Use
+
+- Creating a new project — use `spatial-app-onboarding`
+- Porting a 2D Android app to Spatial — use `porting-android-app`
+- Day-to-day feature work — use `spatial-app-dev-workflow`
+
 ## Required Environment and Emulator Handoffs
 
 Apply this gate only before environment-dependent execution; purely static code reading, planning, and edits do not require it.
 
-1. Reuse the latest successful `pico-env-doctor` result only within the same Host session when the workspace, target Host, and tooling are unchanged, no setup/update/install/start command has run since, no new failure signal exists, and the user has not requested re-verification.
+1. Reuse the latest successful `pico-env-doctor` result within the same Host session when the workspace, target Host, and tooling are unchanged, no environment setup, CLI/plugin/toolchain update, or Host-integration install has run since, no new failure signal exists, and the user has not requested re-verification. Emulator/device/app lifecycle operations such as emulator create/start and APK install/launch do not by themselves invalidate that complete report; on a later turn, refresh only the affected target-specific state.
 2. Otherwise activate `pico-env-doctor` before running any `pico-cli` command or querying `pico-dev-knowledge` MCP. Continue only after a healthy result; if it reports a blocker, stop the dependent execution and report that blocker.
-3. After the gate passes, keep SDK selection and migration in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `spatial-emulator-usage`, then resume here with its evidence or blocker.
+3. After the gate passes, keep SDK selection and migration in this skill. Hand every device/emulator operation—including target discovery, emulator install/start/stop, APK install/launch, file transfer, screenshots/recordings, and device logs—to `pico-emulator-usage`, then resume here with its evidence or blocker.
 
 ## Macro Upgrade Flow
 
@@ -75,31 +87,25 @@ Goal: establish the target Spatial SDK line before changing project files, then 
 - **[Must] Sync the matching PICO development knowledge after the target line is known**:
   - Run:
     ```bash
-    pico-cli knowledge pull <major.minor> --platform spatial --projectRoot <projectRoot>
+    pico-cli knowledge pull <major.minor>
+    pico-cli knowledge use <major.minor> --project <resourceRoot>
     ```
   - Example:
     ```bash
-    pico-cli knowledge pull 0.13 --platform spatial --projectRoot /path/to/project
+    pico-cli knowledge pull 0.13
+    pico-cli knowledge use 0.13 --project /path/to/project
     ```
-  - Omit `--project` only when the current working directory is the intended project root. The command defaults to the current directory and writes `<projectRoot>/.pico-env.json`.
-  - This command installs or refreshes the PICO development knowledge and updates only the knowledge-related keys in `.pico-env.json` (`version`, `platform`, `agentVaultWorkspace`), preserving unrelated project-local keys.
+  - Resolve the selection owner with `pico-cli project detect --project <target-dir> --format json`, preserving `--workspace-root <session-root>` when distinct. Pass the directory containing its `knowledge.filePath` as `<resourceRoot>` to `knowledge use --project`. The project must already be configured by `pico-cli project configure`; otherwise the use command fails before writing and names that command. Without `--project`, the use command targets the configured project that contains the current directory, or the user level outside one.
+  - The pull command downloads or refreshes the knowledge data without changing environment selection. The use command reads the existing `.pico-env.json` `platform`, selects that platform's installed workspace, and updates only `version` plus `agentVaultWorkspace`. It preserves `platform` and unrelated keys and pins the version, so later setup, project configure, and `doctor --fix` runs keep it. A failed selection preserves the previous record.
   - Use `--source auto` by default. Pass `--source global` or `--source cn` only when the user or environment explicitly requires one of those sources.
-- **[Must] Switch the live MCP knowledge graph to the installed workspace**:
-  - Read the just-written `<projectRoot>/.pico-env.json` and extract `agentVaultWorkspace`.
-  - Build the workspace directory as:
-    ```text
-    <PICO_HOME>/<agentVaultWorkspace>
-    ```
-    This workspace directory must contain `graphify-out/graph.json`.
-  - Call the PICO development knowledge MCP `switch_workspace` tool with that workspace directory.
-    ```text
-    switch_workspace(workspace=<PICO_HOME>/<agentVaultWorkspace>)
-    ```
-  - Immediately call the same MCP server's `graph_stats` tool:
-    ```text
-    graph_stats()
-    ```
-    Treat successful stats output as confirmation that the new graph is loaded. If switching fails, keep the file changes but report that live MCP knowledge remained on the previous workspace.
+- **[Must] Query the selected version through the shared live MCP protocol**:
+  - Use the general plugin's `knowledge-query` Skill for each migration lookup. Pass the engineering
+    `--project <target-dir>` and distinct resource `--workspace-root <session-root>`, along with the
+    selected target SDK version and the API question.
+  - Follow its usable-baseline, live activation, query, and restore protocol. After `knowledge use`,
+    the new disk selection is the restore baseline; a successful CLI selection does not switch an
+    already-connected MCP. Do not maintain a separate switch/stats sequence here or treat
+    `graph_stats` as proof of the live workspace. Use the shared fallback if activation is unavailable.
 
 ## Phase 1: Build & Config
 
@@ -131,7 +137,7 @@ Goal: Eliminate all `unresolved reference` and `Deprecated` errors encountered a
   - **UI and Spatial Container Migration**: In spatial apps, developers are used to older interfaces for container control. In the new version, prioritize migrating to declarative Compose components and unified engine entry points like `SpatialApp`.
   - **Gesture and Control Refactoring**: Methods within click logic (e.g., `TapGestureDetector`) have `@Deprecated` markers. You must search for `pointerInput` and corresponding replacement methods to handle user taps or drags.
 - **[Must] Reverse Engineer Replacements from Errors**:
-  - If "class not found" or "unresolved reference" errors occur, follow the Investigation Order defined in `spatial-sdk-guideline`: check project evidence and deprecation messages first, then query `pico-dev-knowledge` for the replacement API, then inspect bundled references and examples.
+  - If "class not found" or "unresolved reference" errors occur, follow the Investigation Order defined in `spatial-sdk-guideline`: check project evidence and deprecation messages first, then use the general `knowledge-query` Skill for the replacement API, then inspect bundled references and examples.
   - Only fall back to `source.jar` or dependency-cache `grep` when the preceding steps cannot resolve the replacement. Do not start with `source.jar` when knowledge graph context, skill references, and project evidence are available.
 - **[Must] Remove Internally Restricted APIs (@RestrictTo)**:
   - Interfaces marked with `@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP_PREFIX)` are **strictly forbidden from being used by the application side**. If legacy code accesses interfaces that are now restricted, those calls must be decisively removed or replaced with alternative official public APIs.
@@ -158,12 +164,12 @@ Goal: ensure the matching Spatial Editor and PICO Emulator are available after t
     ```bash
     pico-cli editor install --editor-version <major.minor> --yes
     ```
-  - Activate `spatial-emulator-usage` with the selected SDK `major.minor` line and any user-required source. The handoff must require `pico-cli emulator install <major.minor>` and pass `--bundle-version <major.minor>` to every create/start command. It owns emulator doctor/install and returns the usable bundle/AVD/version or the exact host/artifact blocker. Do not duplicate those commands here.
-  - Use explicit sources such as global or CN only when the user or environment requires them, and pass that requirement into the handoff.
+  - Activate `pico-emulator-usage` with the selected SDK `major.minor` line. The handoff must require `pico-cli emulator install --version <major.minor>` and pass `--version <major.minor>` to every create/start command. It owns emulator doctor/install and returns the usable bundle/AVD/version or the exact host/artifact blocker. Do not duplicate those commands here.
+  - Emulator source selection is automatic. Do not request or pass a source override in the handoff.
   - If a tool install fails because no artifact matches the current host, report the returned fallback state. Do not claim runtime validation is fully covered unless a usable matching Editor/Emulator is actually available.
   - If a tool install or doctor command is unavailable in the user's installed pico-cli, report that exact blocker before claiming runtime validation is possible.
 - **[Must] Start a matching emulator when runtime validation needs one**:
-  - Continue the `spatial-emulator-usage` handoff to inspect online targets. When it needs an AVD, require it to select from `pico-cli emulator list --managed-only --format json`; never use `emulator doctor` as the AVD selector. Before resuming migration, require the handoff result to normalize the returned `bundleVersion` and selected SDK to `major.minor`, confirm those version lines match, and identify the managed AVD it created or started.
+  - Continue the `pico-emulator-usage` handoff to inspect online targets. When it needs an AVD, require it to select from `pico-cli emulator list --managed-only --format json`; never use `emulator doctor` as the AVD selector. Before resuming migration, require the handoff result to normalize the returned `bundleVersion` and selected SDK to `major.minor`, confirm those version lines match, and identify the managed AVD it created or started.
   - Start the returned matching AVD when needed instead of stopping merely because no emulator is currently running.
   - That skill also owns APK install/launch, captures, and device/crash logs. Resume SDK migration here with its runtime evidence or concrete blocker.
   - Report runtime validation as skipped only when the handoff cannot provide a matching online emulator/device.
@@ -179,24 +185,26 @@ Goal: Ensure the application runs smoothly and meets store listing standards.
   - Before upgrading the SDK, confirm the target ROM coverage; if lower ROMs must be supported, do not upgrade the SDK beyond that ROM's `major.minor`.
 
 - **[Must] Experimental API Compliance Warnings**:
-  - Only APIs marked with annotations like `@ExperimentalSpatialApi` belong to the experimental category.
+  - Read
+    [`../spatial-sdk-guideline/reference/experimental-apis.md`](../spatial-sdk-guideline/reference/experimental-apis.md)
+    before migrating to an API marked with an experimental opt-in annotation
+    declared by the selected PICO Spatial SDK version.
   - Experimental APIs will **prevent the app from being published on the PICO Store**.
-  - A warning comment must be added before using or substituting such an API. The warning must clearly state:
-    - This usage may block publishing on the PICO Store.
-    - To enable experimental APIs, you must add the following `<meta-data>` under the `<application>` tag in `AndroidManifest.xml`:
-      ```xml
-      <meta-data
-          android:name="pico.spatial.use_experimental_api"
-          android:value="1" />
-      ```
-      Without explicit permission from the user, calls to these APIs should be commented out by default to prevent accidental compliance violations.
+  - Without explicit user acceptance of that risk, do not leave the
+    experimental path active. Prefer a stable API or keep the proposed call
+    inactive.
+  - Once accepted, apply the narrow Kotlin opt-in and the application-level
+    `pico.spatial.use_experimental_api=1` Manifest entry atomically. Run the
+    bundled experimental API checker before the build; a missing, disabled,
+    duplicate, conflicting, malformed, or ambiguously targeted entry blocks
+    delivery.
 
 ## Communication and Reporting
 
 - After extensive build configuration changes (Phase 1) or package replacements (Phase 2), it is best to independently verify success by running `./gradlew build` before proceeding.
 - Do not report the upgrade as complete after Gradle build success alone. Before finalizing, verify or explicitly report the state of:
   - Project SDK/BOM version.
-  - PICO development knowledge pull result.
+  - PICO development knowledge pull and use results.
   - Project `.pico-env.json` `version`, `platform`, and `agentVaultWorkspace`.
   - Live knowledge MCP workspace switch and `graph_stats` result, or the exact blocker if MCP is unavailable.
   - Spatial Editor doctor/install state for the target line.

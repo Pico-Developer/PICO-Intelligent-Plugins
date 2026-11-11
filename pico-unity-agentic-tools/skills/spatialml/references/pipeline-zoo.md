@@ -9,8 +9,8 @@ registered `spatialml` skill, whether the package is the whole request or one st
 1. Confirm the current directory is the intended Unity project and that `Packages/manifest.json`
    declares `com.bytedance.pico.xr`.
 
-   If the PICO Unity SDK is missing, tell the developer to invoke `/pico-unity-init` explicitly. Never
-   run that manual-only workflow automatically.
+   If the PICO Unity SDK is missing and the project has not completed initialization, continue with
+   the `pico-unity-init` Skill, then return to this step.
 
 2. After the SDK is present, configure SpatialML:
 
@@ -97,7 +97,7 @@ registered `spatialml` skill, whether the package is the whole request or one st
 
    Verification delegates to pySpatialML. If it returns `PSM_TOOL_UNAVAILABLE` with exit code `3`,
    retain the working copy, install or update pySpatialML with
-   `uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`, and retry. Do not substitute Docker, QNN
+   `uv tool install --upgrade --python 3.13 --system-certs 'pyspatialml-pico>=0.5.3'`, and retry. Do not substitute Docker, QNN
    context binaries, or standalone JSON pipelines, and do not claim a derived package is valid merely
    because its base package passed.
 

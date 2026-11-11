@@ -4,14 +4,30 @@ Read this reference whenever a SpatialML request involves discovering, selecting
 adapting, importing, loading, or verifying a Pipeline Zoo package. This is a sub-workflow of the
 registered `spatialml` skill, whether the package is the whole request or one step in app creation.
 
-## Workflow
+## Native OpenXR package requests
+
+Preserve the existing Native project. Check `pico-cli spatialml onboard --help`,
+`setup --help` and `pipeline install --help`, then use the installed CLI's project
+detection and readiness results for that target. The CLI has a Native adapter for package
+placement; Kotlin examples below do not prove that Native installation is unsupported.
+Missing project files, a package source or delegated tooling are separate prerequisites.
+Help output alone does not prove that an install or SDK loader succeeded.
+
+Use `pico-cli spatialml pipeline install <package-id> --project <native-project> --overwrite fail`
+for a supported catalog package. Follow its SDK-specific destination and result; do not select a
+Kotlin destination or replace the Native project. Verify the existing app's SecureMR/OpenXR
+integration and loader against its SDK. Setup may return application-specific source actions
+instead of rewriting the OpenXR lifecycle. If those facts cannot be verified, return the missing
+evidence or blocker without declaring the Native capability absent.
+
+## Kotlin workflow
 
 1. Confirm the current directory is the intended Kotlin Spatial SDK project and complete the SDK
    setup first. Unity package work belongs to PICO Unity Agentic Tools' `spatialml` skill.
 
    - Kotlin must already be a generated PICO Spatial SDK project. For a feature-bearing new app,
-     enter through `spatial-design-to-app` and its executable-design gate; onboarding is only its
-     scaffold substep. Direct onboarding is reserved for an explicitly featureless parent scaffold.
+     use `spatial-app-dev-workflow` for delivery and `spatial-app-onboarding` for a missing
+     scaffold. Return here for the package task; a package-only request does not start an app workflow.
 
 2. Run explicit SpatialML setup:
 
@@ -121,7 +137,7 @@ registered `spatialml` skill, whether the package is the whole request or one st
    Use authoritative model metadata or `spatialml model inspect`. These commands delegate to
    pySpatialML. If the tensor contract cannot be established, stop before replacing the model. If
    verification returns `PSM_TOOL_UNAVAILABLE` with exit code `3`, retain the working copy, install or
-   update pySpatialML with `uv tool install --upgrade --python 3.13 --system-certs pyspatialml-pico`, and retry. Do not
+   update pySpatialML with `uv tool install --upgrade --python 3.13 --system-certs 'pyspatialml-pico>=0.5.3'`, and retry. Do not
    substitute Docker, QNN context binaries, or a standalone JSON-pipeline workflow, and do not claim
    the base package proves a derived package.
 

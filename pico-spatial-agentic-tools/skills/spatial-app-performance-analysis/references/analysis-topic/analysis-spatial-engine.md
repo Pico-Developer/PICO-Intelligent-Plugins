@@ -15,7 +15,7 @@ Before entering Spatial analysis, use `spatial_probe.py` to check whether the tr
 **Invocation Commands:**
 
 ```bash
-# Output compact YAML summary (recommended)
+# Output compact JSON summary (recommended)
 python scripts/spatial_probe.py \
   --trace <path/to/trace.perfetto-trace> \
   --package <package>
@@ -25,7 +25,7 @@ python scripts/spatial_probe.py \
   --trace <path/to/trace.perfetto-trace> \
   --package <package> \
   --detail \
-  --output <path/to/probe-result.yaml>
+  --output <path/to/probe-result.json>
 ```
 
 **Probe Checks:**

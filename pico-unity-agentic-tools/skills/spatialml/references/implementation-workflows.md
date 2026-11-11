@@ -14,7 +14,9 @@ mode restrictions, and cleanup behavior must come from the installed project's c
    Spatial Adapter setting.
 2. Use `spatialml doctor` when live CLI execution is in scope to distinguish Unity XR mode from Unity
    Spatial mode and to separate project readiness from optional pySpatialML capabilities.
-3. Query `pico-dev-knowledge` with `Unity SpatialML`, the detected mode, and the workflow goal. Follow
+3. Use the general plugin's `knowledge-query` Skill, passing the engineering `--project <target-dir>`
+   and distinct resource `--workspace-root <session-root>`. Follow its live activation, query, and
+   restore protocol; disk selection alone does not identify the connected graph. Query with `Unity SpatialML`, the detected mode, and the workflow goal. Follow
    the workflow result with the exact operator/core-API card before writing bindings.
 4. Prefer public APIs and patterns confirmed by the installed project. If the graph is unavailable,
    identify unverified API details rather than guessing from another SDK.

@@ -55,25 +55,17 @@ if ! command -v adb >/dev/null 2>&1; then
     exit 1
 fi
 
-GRADLE_ROOT=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GRADLE_ROOT="$(node "$SCRIPT_DIR/verification-summary.mjs" gradle-root "$DIR")" || exit 2
 INSTALL_TASK=""
 BUILD_FILE=""
 if [ -f "$DIR/gradlew" ]; then
-    GRADLE_ROOT="$DIR"
     INSTALL_TASK=":app:installDebug"
     BUILD_FILE="$DIR/app/build.gradle.kts"
 else
     MODULE_NAME="$(basename "$DIR")"
-    SEARCH="$DIR"
-    while [ "$SEARCH" != "/" ] && [ -n "$SEARCH" ]; do
-        SEARCH="$(dirname "$SEARCH")"
-        if [ -f "$SEARCH/gradlew" ]; then
-            GRADLE_ROOT="$SEARCH"
-            INSTALL_TASK=":${MODULE_NAME}:installDebug"
-            BUILD_FILE="$DIR/build.gradle.kts"
-            break
-        fi
-    done
+    INSTALL_TASK=":${MODULE_NAME}:installDebug"
+    BUILD_FILE="$DIR/build.gradle.kts"
 fi
 
 if [ -z "$GRADLE_ROOT" ]; then

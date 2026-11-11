@@ -1,0 +1,33 @@
+<!-- @dsCard group="Pickers" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WheelPicker · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>WheelPicker</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>WheelPicker</h1><p>Reference examples · original defaults unless explicitly overridden</p></header>
+  <div class="sui-stage stack" style="gap:16px;align-items:flex-start">
+    <h2 id="weight-title" style="margin:0;font-size:20px">Weight</h2>
+    <p class="muted" style="margin:0">40–90 kg, in 1 kg steps. Scroll, drag or use the arrow keys to select.</p>
+    <sui-wheel-picker id="weight-picker" aria-labelledby="weight-title" count="51" start="40" index="22" right-text="kg"></sui-wheel-picker>
+    <p id="weight-result" class="status" role="status" style="margin:0">Selected weight: 62 kg</p>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const picker = document.getElementById('weight-picker');
+      const result = document.getElementById('weight-result');
+      function showWeight(value) {
+        result.textContent = 'Selected weight: ' + value + ' kg';
+      }
+      picker.addEventListener('select', event => showWeight(event.detail.value));
+      showWeight(picker.items[picker.index]);
+    });
+  </script>
+</body>
+</html>

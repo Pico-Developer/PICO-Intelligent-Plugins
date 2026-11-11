@@ -1,0 +1,116 @@
+{
+  "roles": [
+    {
+      "name": "fillPrimary",
+      "token": "fill-darker-alpha",
+      "vibrant": "Darker",
+      "group": "Fills",
+      "usage": "Strong control fill, including the default primary Button. Pair with labelPrimaryLight for its text and icons; it does not mean success, which uses passable."
+    },
+    {
+      "name": "fillSecondary",
+      "token": "fill-semilight-alpha",
+      "vibrant": "SemiLight",
+      "group": "Fills",
+      "usage": "Selected or focused surfaces and secondary emphasis, as defined by the component. Choose foreground for the actual background and preserve the component's pairing. Do not add app-painted blur solely because this role is used over an image."
+    },
+    {
+      "name": "fillTertiary",
+      "token": "fill-neutral-alpha",
+      "vibrant": "Neutral",
+      "group": "Fills",
+      "usage": "Quiet control fill, including peer toggle controls at rest and inactive tracks where documented. Normally pairs with labelPrimary; preserve each component's state behavior."
+    },
+    {
+      "name": "fillLight",
+      "token": "fill-light-alpha",
+      "vibrant": "Light",
+      "group": "Fills",
+      "usage": "Light background for ListItems and local content items or cells. Pages, bodies, columns, list organizers and large sections remain transparent; application-authored backgrounds must not nest."
+    },
+    {
+      "name": "labelPrimaryLight",
+      "token": "label-primary-light",
+      "vibrant": "None",
+      "group": "Labels",
+      "usage": "Primary text and icons on dark control fills, especially fillPrimary. Keep a control's text and icons consistent unless the design explicitly requires a difference."
+    },
+    {
+      "name": "labelPrimary",
+      "token": "label-darkest-alpha",
+      "vibrant": "Darkest",
+      "group": "Labels",
+      "usage": "Primary body information and icons on light/glass surfaces. A title may use this role when explicitly designed; component titles retain their own defaults, including TitleBar's labelSecondary."
+    },
+    {
+      "name": "labelSecondary",
+      "token": "label-ultradark-alpha",
+      "vibrant": "UltraDark",
+      "group": "Labels",
+      "usage": "Secondary text and less prominent information; also the default TitleBar title role. Importance alone does not override a component's established color."
+    },
+    {
+      "name": "labelTertiary",
+      "token": "label-semidark-alpha",
+      "vibrant": "Semidark",
+      "group": "Labels",
+      "usage": "Supporting explanations, supplementary information and quieter text; some components also use it for unselected content."
+    },
+    {
+      "name": "labelQuaternary",
+      "token": "label-dark-alpha",
+      "vibrant": "Dark",
+      "group": "Labels",
+      "usage": "Placeholders and deliberately subdued text. Do not replace a component's built-in disabled treatment with this role; controls may fade as a whole."
+    },
+    {
+      "name": "lightenHover",
+      "token": "fill-semilight-alpha",
+      "vibrant": "SemiLight",
+      "group": "States & lines",
+      "usage": "Theme role for a hover lightening layer where a component uses it. The current Button family does not draw this role: native hover is spatial, and the Web fallback uses the documented 12% overlay. Do not add a second hover layer."
+    },
+    {
+      "name": "lightenPressed",
+      "token": "state-lighten-pressed-alpha",
+      "vibrant": "LightenPressed",
+      "group": "States & lines",
+      "usage": "Pressed-state lightening layer where supported by the component. Preserve existing component behavior; Switch and ListItem do not draw this overlay."
+    },
+    {
+      "name": "dividerLine",
+      "token": "sub-black-12",
+      "vibrant": "None",
+      "group": "States & lines",
+      "usage": "A separator where a divider is needed. Prefer spacing and headings for ordinary content grouping; do not use this role to outline every content container."
+    },
+    {
+      "name": "error",
+      "token": "semantic-error",
+      "vibrant": "Flat",
+      "group": "Semantic",
+      "usage": "Error text, error feedback and component error outlines. This does not authorize decorative borders on ordinary content groups."
+    },
+    {
+      "name": "alert",
+      "token": "semantic-alert",
+      "vibrant": "Flat",
+      "group": "Semantic",
+      "usage": "Warnings, risks and cautionary feedback. Use for the warning meaning rather than a general accent."
+    },
+    {
+      "name": "passable",
+      "token": "semantic-passable",
+      "vibrant": "Flat",
+      "group": "Semantic",
+      "usage": "Success or passed-check feedback. Do not use as the default fill for every positive action."
+    },
+    {
+      "name": "interaction",
+      "token": "semantic-interaction",
+      "vibrant": "Flat",
+      "group": "Semantic",
+      "usage": "Interactive emphasis such as links, interactive text and on-state highlights where documented by the component. Not a general content background."
+    }
+  ]
+}

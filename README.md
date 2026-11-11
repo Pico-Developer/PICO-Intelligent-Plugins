@@ -4,14 +4,14 @@ This repository root is a marketplace container for PICO intelligence plugins.
 
 ## Current Plugins
 
-- [`pico-spatial-agentic-tools`](pico-spatial-agentic-tools/): plugin manifests, reusable skills, and MCP configuration for PICO OS spatial app development.
-- [`pico-unity-agentic-tools`](pico-unity-agentic-tools/): plugin manifests, reusable skills, and MCP configuration for PICO Unity development.
-- [`pico-general-agentic-tools`](pico-general-agentic-tools/): shared skills installed alongside either platform plugin.
+- [`pico-spatial-agentic-tools`](pico-spatial-agentic-tools/): project guidance and reusable skills for PICO OS spatial app development.
+- [`pico-unity-agentic-tools`](pico-unity-agentic-tools/): project guidance and reusable skills for PICO Unity development.
+- [`pico-general-agentic-tools`](pico-general-agentic-tools/): the entry plugin installed once per user; its `pico-project-setup` Skill configures the matching platform plugin into each project. It owns the user-level `pico-dev-knowledge`, `pico-spatial-editor`, and `unity-mcp` servers.
 
-Host marketplace manifests at the root expose all three plugin payloads to each supported agent platform. Select the platform that matches the project:
+Host marketplace manifests at the root expose all three plugin payloads. Run `pico-cli setup` once for the user-level general plugin, then configure the platform that matches each project:
 
-- `spatial` installs `pico-spatial-agentic-tools` and `pico-general-agentic-tools`.
-- `unity` installs `pico-unity-agentic-tools` and `pico-general-agentic-tools`.
+- `pico-cli project configure --platform spatial` installs project resources from `pico-spatial-agentic-tools`.
+- `pico-cli project configure --platform unity` installs project resources from `pico-unity-agentic-tools`.
 
 ## Recommended Developer Setup
 
@@ -25,9 +25,9 @@ Copy the following instruction into your AI coding agent. The linked guide is wr
 Read and follow the PICO CLI Installation and Setup Guide for AI Agents:
 https://github.com/Pico-Developer/PICO-Intelligent-Plugins/blob/main/docs/pico-cli-installation-guide.md
 
-Inspect this project and my environment first. Confirm the project directory, setup scope,
-development target, supported Agent tool, and complete setup command with me before making
-changes. After setup, run the guide's read-only checks and report the results.
+Inspect my environment first. Confirm the supported Agent tools and the complete setup command
+with me before making changes. After setup, run the guide's read-only checks and report the
+results.
 ```
 
 You can also [read the installation guide in this repository](docs/pico-cli-installation-guide.md).
@@ -61,29 +61,25 @@ The recommended path is the interactive setup flow:
 pico-cli setup
 ```
 
-`pico-cli setup` shows a plan, lets you choose supported agent hosts and a resource scope, and configures the hosts that are available on your machine. The scope defaults to `global` in the prompt. Choose `local` to configure one project: setup links the host context, copies the selected plugins' skills, and reconciles that host's project MCP configuration. Missing optional host CLIs are skipped with guidance; install that host later and rerun setup when needed.
+`pico-cli setup` runs once per user. It shows a plan, lets you choose supported agent hosts, and installs the general PICO plugin (knowledge query and project setup) for each host at the user level, together with shared developer tools. It writes nothing into a project. A selected host whose CLI is missing is reported as failed with a retry command, and that run removes no hosts; install the host CLI, then rerun the command.
 
-For non-interactive or host-specific setup, pass explicit options:
+The PICO Spatial and PICO Unity plugins are installed per project. When you start PICO work in a project, the general plugin's `pico-project-setup` Skill detects the platform and runs `pico-cli project configure` for the current host. You can also run it yourself:
 
 ```bash
-# PICO Spatial SDK. Pass any --agent-tool value from the list above.
-pico-cli setup --agent-tool claude-code --region row --platform spatial --scope global --yes
+# User-level setup. Pass any --agent-tool value from the list above.
+pico-cli setup --agent-tool claude-code --region row --yes
 
-# Several hosts at once, or every host available on this machine.
-pico-cli setup --agent-tool codex traecli --region row --platform spatial --scope global --yes
-pico-cli setup --agent-tool all --region row --platform spatial --scope global --yes
+# Several hosts at once. The list is the complete set of hosts for this user.
+pico-cli setup --agent-tool codex traecli --region row --yes
 
-# PICO Unity
-pico-cli setup --agent-tool claude-code --region row --platform unity --scope global --yes
-pico-cli setup --agent-tool all --region row --platform unity --scope global --yes
-
-# Project-local setup
-pico-cli setup --agent-tool claude-code --region row --platform unity --scope local --project /absolute/path/to/project --yes
+# Install the platform plugin into a project for the hosts set up above.
+pico-cli project configure --platform spatial --project /absolute/path/to/project --yes
+pico-cli project configure --platform unity --project /absolute/path/to/project --agent-tool claude-code --yes
 ```
 
 `--region` selects where downloads and services are routed: `cn` for the Chinese mainland, `row` for the rest of the world, or `us` for the United States. Non-interactive setup requires it until a region has been saved by an earlier setup.
 
-`global` installs user-level plugin resources that can be used across projects and is also the default when `--yes` is used without `--scope`. `local` writes project-scoped context, skills, and MCP configuration for the directory passed with `--project`, or for the current directory when `--project` is omitted.
+`--agent-tool` passed to setup is the complete set of hosts for the user; a host configured earlier and omitted from the list is removed. `project configure` defaults to every host that has the general plugin, and `--agent-tool current` selects the host it runs in.
 
 Hosts differ in how setup delivers the plugin:
 
@@ -93,25 +89,29 @@ Hosts differ in how setup delivers the plugin:
 - Trae CLI and CodeBuddy Code: setup adds this repository as a local marketplace and installs or upgrades the plugin from that marketplace.
 - Qoder CLI, Antigravity CLI, and Grok CLI: setup installs or updates the plugin from a prepared local bundle. Grok installs it as a trusted plugin so its Skills and MCP servers activate.
 - OpenCode V2: setup writes Skills and MCP configuration into the OpenCode configuration you already use, rather than installing a host plugin.
-- Trae IDE: there is no dedicated `--agent-tool` value. Run project-local setup with `--agent-tool traecli --scope local`; Trae IDE reads the resulting `.trae/skills` and `.trae/mcp.json`. PICO Hooks are not available in Trae IDE yet. See the [installation guide](docs/pico-cli-installation-guide.md#trae-ide) for the required Trae IDE settings.
+- Trae IDE is not supported: it does not read the Trae CLI marketplace that setup uses. See the [installation guide](docs/pico-cli-installation-guide.md#trae-ide).
 
 ### Manual Codex MCP configuration
 
-The recommended `pico-cli setup` flow converts the plugin's `mcpServers`
-definitions into Codex `[mcp_servers.*]` TOML tables automatically. If you
-bypass setup and configure Codex manually, do not copy the `.mcp.json` wrapper
-verbatim; translate each server entry into the corresponding `mcp_servers`
-table in the Codex configuration.
+The recommended `pico-cli setup` flow installs the user-level general plugin. Its Codex manifest
+loads MCP definitions from the plugin's `.mcp.json`; setup does not require duplicating them in
+`[mcp_servers.*]` TOML tables. If you intentionally configure standalone MCP servers instead of
+using the plugin, translate each server entry into the corresponding `mcp_servers` table in the
+Codex configuration. Do not copy the `.mcp.json` wrapper verbatim or duplicate plugin-owned servers.
 
-### 3. Start a new agent session
+### 3. Load resources and continue
 
-After setup, close and reopen the configured host or start a new agent session from your project directory. The new session should load the marketplace manifests and the skills and MCP servers for the selected plugin.
+After first setup or changes to general's MCP entries, load and approve the general plugin as
+required by the Host. Follow the reported `hostActions` for trust and resource discovery. Project
+configure returns platform guidance and Skill paths that the agent can read to continue the task
+in the same session. Verify the general plugin's required MCP tools separately; reconnect or reload
+only when the Host requires it to make those tools available.
 
 For plugin-specific capabilities and setup notes, see:
 
 - [`pico-spatial-agentic-tools/README.md`](pico-spatial-agentic-tools/README.md)
 - [`pico-unity-agentic-tools/README.md`](pico-unity-agentic-tools/README.md)
-- [`pico-general-agentic-tools/README.md`](pico-general-agentic-tools/README.md) — cross-platform skills, installed automatically alongside whichever platform plugin you choose
+- [`pico-general-agentic-tools/README.md`](pico-general-agentic-tools/README.md) — the user-level entry plugin: project setup, `pico-cli` usage, and PICO knowledge querying
 
 ## License, Security, and Privacy
 

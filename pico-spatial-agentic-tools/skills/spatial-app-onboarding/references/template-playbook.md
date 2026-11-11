@@ -118,6 +118,7 @@ Migration rule: preserve the visible result first, then introduce ECS behavior.
 
 ## 6. Boundary reminder
 
+- For an unconfigured Spatial target, pass `--sdk-type spatial` on `pico-cli project create`; post-create configuration cannot supply the SDK type for creation.
 - Template selection is a deliberate decision; inspect `pico-cli project create --help` first, then pass `--template`.
 - The generated project is the blueprint
 - Keep first-pass changes minimal

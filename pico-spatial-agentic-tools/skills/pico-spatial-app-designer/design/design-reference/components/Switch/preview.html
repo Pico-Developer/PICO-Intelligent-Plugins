@@ -1,0 +1,42 @@
+<!-- @dsCard group="Selection" height=400 subtitle="States and a named setting" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Switch · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .switch-gallery{width:560px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px;display:grid;gap:24px}
+    .section-title{margin:0 0 12px;font-size:14px;line-height:20px;font-weight:600}
+    .state-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+    .state-item{display:flex;align-items:center;gap:8px;min-height:40px;font-size:14px;line-height:20px}
+    .state-item sui-switch{flex:none}
+    .setting-item{width:100%;min-width:0}
+    @media(max-width:600px){.switch-gallery{max-width:calc(100% - 32px);margin:0 16px;padding:16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Switch</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Switch</h1><p>States and a named setting</p></header>
+  <div class="sui-stage switch-gallery">
+    <section aria-labelledby="states-title">
+      <h2 id="states-title" class="section-title">States</h2>
+      <div class="state-grid">
+        <div class="state-item"><sui-switch semantic-label="Off example"></sui-switch><span>Off</span></div>
+        <div class="state-item"><sui-switch checked semantic-label="On example"></sui-switch><span>On</span></div>
+        <div class="state-item"><sui-switch disabled semantic-label="Disabled off example"></sui-switch><span>Disabled · off</span></div>
+        <div class="state-item"><sui-switch checked disabled semantic-label="Disabled on example"></sui-switch><span>Disabled · on</span></div>
+      </div>
+    </section>
+    <section aria-labelledby="setting-title">
+      <h2 id="setting-title" class="section-title">Switch in a ListItem</h2>
+      <sui-list-item class="setting-item" headline="Bluetooth" leading-icon="ic_bluetooth" content-padding="16">
+        <sui-switch id="bluetooth-switch" slot="trailing" checked semantic-label="Bluetooth"></sui-switch>
+      </sui-list-item>
+    </section>
+  </div>
+</body>
+</html>

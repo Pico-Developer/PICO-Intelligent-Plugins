@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270" viewBox="0 0 480 270">
+  <title>Resize a window with two hands</title>
+  <desc>Pinch opposite corners and move both hands apart. The dashed outline shows the larger window.</desc>
+  <defs>
+    <linearGradient id="backdrop" x2="1" y2="1"><stop stop-color="#163a7a"/><stop offset="1" stop-color="#0d2351"/></linearGradient>
+    <linearGradient id="pane" x2="0" y2="1"><stop stop-color="#dceaff"/><stop offset="1" stop-color="#b9d3ff"/></linearGradient>
+  </defs>
+  <rect width="480" height="270" fill="url(#backdrop)"/>
+  <rect x="107" y="43" width="266" height="167" rx="16" fill="none" stroke="#aacfff" stroke-width="2" stroke-dasharray="6 6" opacity=".55"/>
+  <rect x="153" y="72" width="174" height="110" rx="10" fill="url(#pane)"/>
+  <path d="M153 96h174" stroke="#91b4e8"/>
+  <circle cx="167" cy="84" r="2.5" fill="#5485cb"/><circle cx="176" cy="84" r="2.5" fill="#5485cb"/>
+  <rect x="169" y="109" width="44" height="55" rx="5" fill="#93b7ec"/>
+  <path d="M226 115h78m-78 12h62m-62 12h70m-70 12h48" stroke="#7a9fd4" stroke-width="4" stroke-linecap="round"/>
+  <g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m143 117-37 30m0-16v16h16"/><path d="m337 137 37-30m-16 0h16v16"/>
+  </g>
+  <g fill="#80d9ff" stroke="#80d9ff">
+    <circle cx="153" cy="182" r="6"/><circle cx="327" cy="72" r="6"/>
+    <circle cx="153" cy="182" r="12" fill="none" opacity=".35"/><circle cx="327" cy="72" r="12" fill="none" opacity=".35"/>
+  </g>
+  <g fill="#214f8c" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M113 229v-27c0-7 9-8 10-1l2 9v-25c0-7 9-7 9 0v20l7-16c3-6 10-2 8 4l-4 14 9-8c5-4 11 2 7 7l-13 17c-3 4-8 6-14 6z"/>
+    <path d="M367 23v27c0 7-9 8-10 1l-2-9v25c0 7-9 7-9 0V47l-7 16c-3 6-10 2-8-4l4-14-9 8c-5 4-11-2-7-7l13-17c3-4 8-6 14-6z"/>
+  </g>
+  <text x="240" y="246" fill="#e4efff" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Pinch the corners. Move your hands apart.</text>
+</svg>

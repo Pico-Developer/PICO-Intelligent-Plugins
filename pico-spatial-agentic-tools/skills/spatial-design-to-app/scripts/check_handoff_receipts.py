@@ -106,6 +106,13 @@ def validate_intent_brief(scratch_dir: Path, input_mode: str) -> None:
     _print_ok("Intent Brief", brief_path)
 
 
+def _require_current_spec(design: dict[str, Any]) -> None:
+    if design.get("schemaVersion") != "write-spec-draft-1":
+        raise SystemExit(
+            "[receipt-check] Unsupported design schemaVersion; expected write-spec-draft-1"
+        )
+
+
 def validate_design_escalation_receipt(
     scratch_dir: Path,
     input_mode: str,
@@ -124,7 +131,8 @@ def validate_design_escalation_receipt(
                 "[receipt-check] user_package_passed requires input_mode=product_doc or hybrid"
             )
         design_spec_path = scratch_dir / "design-spec.json"
-        _ensure_dict(_load_json(design_spec_path), "User Design Package design-spec.json")
+        design = _ensure_dict(_load_json(design_spec_path), "User Design Package design-spec.json")
+        _require_current_spec(design)
         _print_ok("User Design Package", design_spec_path)
         return
 
@@ -188,35 +196,15 @@ def validate_design_escalation_receipt(
         )
 
     pre_gates = _ensure_dict(receipt["pre_gates"], "Design Escalation Receipt.pre_gates")
-    _require_keys(
-        pre_gates,
-        [
-            "designDocComplete",
-            "designSpecValid",
-            "previewMatchesSpec",
-            "postBuildVerdict",
-        ],
-        "Design Escalation Receipt.pre_gates",
-    )
-    if pre_gates["designDocComplete"] is not True:
-        raise SystemExit(
-            "[receipt-check] Design Escalation Receipt.pre_gates.designDocComplete must be true"
-        )
-    if pre_gates["designSpecValid"] is not True:
-        raise SystemExit(
-            "[receipt-check] Design Escalation Receipt.pre_gates.designSpecValid must be true"
-        )
-    if pre_gates["previewMatchesSpec"] is not True:
-        raise SystemExit(
-            "[receipt-check] Design Escalation Receipt.pre_gates.previewMatchesSpec must be true"
-        )
-    if pre_gates["postBuildVerdict"] != "pass":
-        raise SystemExit(
-            "[receipt-check] Design Escalation Receipt.pre_gates.postBuildVerdict must be 'pass' "
-            f"(got {pre_gates['postBuildVerdict']!r}); the designer's own critique gate must pass "
-            "before app generation starts"
-        )
-
+    design_path = scratch_dir / "design-spec.json"
+    design = _ensure_dict(_load_json(design_path), "Design Spec")
+    _require_current_spec(design)
+    for key in ("designDocComplete", "designSpecValid", "previewMatchesSpec"):
+        if pre_gates.get(key) is not True:
+            raise SystemExit(f"[receipt-check] {key} must be true")
+    for key in ("critiqueVerdict", "consistencyReviewVerdict"):
+        if pre_gates.get(key) != "pass":
+            raise SystemExit(f"[receipt-check] {key} must be pass for Preview-first designs")
     _print_ok("Design Escalation Receipt", receipt_path)
 
 

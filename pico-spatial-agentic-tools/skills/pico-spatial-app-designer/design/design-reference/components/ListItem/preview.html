@@ -1,0 +1,49 @@
+<!-- @dsCard group="Display" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>ListItem · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>ListItem</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>ListItem</h1><p>Reference layout examples · this bundle adds built-in row hover</p></header><div class="sui-stage"><div style="display:grid;gap:8px;width:360px"><sui-list-item headline="Wi-Fi" supporting="Connected to Office" leading-icon="wifi" trailing-icon="arrow_right"></sui-list-item><sui-list-item headline="Bluetooth" supporting="Off" leading-icon="bluetooth"><sui-switch slot="trailing"></sui-switch></sui-list-item><sui-list-item headline="Headline only"></sui-list-item></div></div><script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script><section class="example"><h2>Plan recommendation · explicit 16px insets</h2><p class="example-note">The original rows above keep the reference end padding of 4. These rows explicitly use 16 on every side; their parent supplies the 8px gap.</p><div class="stack" style="max-width:600px">
+<sui-list-item id="plan-wifi" headline="Wi-Fi" supporting="Connected to Office" leading-icon="ic_wifi" trailing-icon="ic_arrow_right" content-padding="16"></sui-list-item>
+<sui-list-item headline="Bluetooth" leading-icon="ic_bluetooth" content-padding="16"><sui-switch id="plan-bt" slot="trailing" checked semantic-label="Bluetooth enabled"></sui-switch></sui-list-item></div><p id="list-status" class="status" role="status">Bluetooth is on.</p></section><script>window.addEventListener("DOMContentLoaded",()=>{document.getElementById('plan-bt').addEventListener('checked-change',e=>document.getElementById('list-status').textContent='Bluetooth is '+(e.detail.checked?'on.':'off.'));document.getElementById('plan-wifi').addEventListener('click-action',()=>document.getElementById('list-status').textContent='Wi-Fi network: Office.');});</script><section class="example" id="hover-example">
+<h2>Plan behavior · built-in row hover and a custom target</h2>
+<p class="example-note">ListItem includes whole-row hover automatically. The custom file region uses spatialHoverEffect; click or use Enter/Space to select it. Neither effect changes layout or adds depth.</p>
+<div class="stack" style="max-width:600px">
+  <sui-list-item id="hover-row" headline="Report.pdf" supporting="Open document details" leading-icon="ic_document_person" trailing-icon="ic_arrow_right"></sui-list-item>
+  <sui-list-item id="hover-disabled-row" headline="Archived report.pdf" supporting="Unavailable" leading-icon="ic_document_person" disabled></sui-list-item>
+  <div id="hover-file" role="button" tabindex="0" aria-pressed="false">
+    <sui-icon name="ic_document_person" size="24"></sui-icon>
+    <span>Project report<span class="file-description">Select this custom file region</span></span>
+  </div>
+</div>
+<p id="hover-status" class="status" role="status">No file selected.</p>
+<style>
+#hover-file{display:flex;align-items:center;gap:var(--gap-medium);padding:var(--padding-regular);border-radius:var(--radius-large);background:var(--fill-light-alpha);color:var(--label-darkest-alpha)}
+#hover-file .file-description{display:block;color:var(--label-semidark-alpha);font-size:14px;line-height:20px}
+#hover-file[aria-pressed="true"]{background:var(--fill-semilight-alpha)}
+#hover-file:focus-visible{outline:2px solid var(--semantic-interaction);outline-offset:2px}
+</style>
+</section>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const status = document.getElementById('hover-status');
+  document.getElementById('hover-row').addEventListener('click-action', () => {
+    status.textContent = 'Report.pdf details opened.';
+  });
+  const file = document.getElementById('hover-file');
+  spatialHoverEffect(file);
+  file.addEventListener('click', () => {
+    if (file.getAttribute('aria-disabled') === 'true') return;
+    file.setAttribute('aria-pressed', 'true');
+    status.textContent = 'Project report selected.';
+  });
+  file.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault(); file.click();
+    }
+  });
+});
+</script></body></html>

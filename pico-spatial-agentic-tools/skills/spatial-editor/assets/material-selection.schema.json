@@ -1,0 +1,251 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Spatial Editor Workflow Material Route Decision",
+  "description": "Selection contract only. Validate evidence references, coverage, build identity and observed targets separately.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "stage", "editorBuild", "evidence", "decisions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "stage": { "enum": ["plan", "binding"] },
+    "editorBuild": { "$ref": "#/definitions/nullableText" },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/evidence" }
+    },
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/decision" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "stage": { "const": "binding" } },
+        "required": ["stage"]
+      },
+      "then": {
+        "properties": {
+          "decisions": {
+            "items": {
+              "properties": { "targetEntityPaths": { "minItems": 1 } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decisions": {
+            "contains": {
+              "properties": { "status": { "const": "ready" } },
+              "required": ["status"]
+            }
+          }
+        },
+        "required": ["decisions"]
+      },
+      "then": {
+        "properties": {
+          "editorBuild": { "$ref": "#/definitions/text" },
+          "evidence": {
+            "contains": {
+              "properties": { "scope": { "const": "current_build" } },
+              "required": ["scope"]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "nullableText": {
+      "anyOf": [{ "$ref": "#/definitions/text" }, { "type": "null" }]
+    },
+    "texts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/text" }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "editorBuild", "checkedAt", "source", "claim"],
+      "properties": {
+        "id": { "$ref": "#/definitions/text" },
+        "scope": { "enum": ["current_build", "historical", "general_model"] },
+        "editorBuild": { "$ref": "#/definitions/nullableText" },
+        "checkedAt": { "type": "string", "format": "date" },
+        "source": { "$ref": "#/definitions/text" },
+        "claim": { "$ref": "#/definitions/text" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "scope": { "const": "current_build" } },
+            "required": ["scope"]
+          },
+          "then": {
+            "properties": { "editorBuild": { "$ref": "#/definitions/text" } }
+          }
+        }
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetEntityPaths",
+        "surfaceModel",
+        "route",
+        "status",
+        "trigger",
+        "requiredFeatures",
+        "optionalFeatures",
+        "pbrGap",
+        "reason",
+        "capabilityEvidenceRefs",
+        "verificationPlan",
+        "limitations"
+      ],
+      "properties": {
+        "id": { "$ref": "#/definitions/text" },
+        "targetEntityPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^/[^\\s*?\\[\\]{}]+$"
+          }
+        },
+        "surfaceModel": { "enum": ["pbr", "unlit", "other", "unknown"] },
+        "route": {
+          "enum": ["preserve", "pbr_parameters", "shader_graph", "blocked"]
+        },
+        "status": { "enum": ["provisional", "ready", "blocked"] },
+        "trigger": {
+          "enum": [
+            "reuse",
+            "default_supported",
+            "user_required_graph",
+            "custom_logic",
+            "pbr_path_gap",
+            "unresolved"
+          ]
+        },
+        "requiredFeatures": { "$ref": "#/definitions/texts" },
+        "optionalFeatures": { "$ref": "#/definitions/texts" },
+        "pbrGap": { "$ref": "#/definitions/nullableText" },
+        "reason": { "$ref": "#/definitions/text" },
+        "capabilityEvidenceRefs": { "$ref": "#/definitions/texts" },
+        "verificationPlan": { "$ref": "#/definitions/texts" },
+        "limitations": { "$ref": "#/definitions/texts" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "route": { "const": "blocked" } },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "status": { "const": "blocked" },
+              "trigger": { "const": "unresolved" }
+            }
+          },
+          "else": {
+            "properties": { "status": { "enum": ["provisional", "ready"] } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "route": { "const": "pbr_parameters" } },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "surfaceModel": { "const": "pbr" },
+              "trigger": { "enum": ["default_supported", "unresolved"] },
+              "pbrGap": { "type": "null" },
+              "verificationPlan": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "route": { "const": "preserve" } },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": { "trigger": { "const": "reuse" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "route": { "const": "shader_graph" } },
+            "required": ["route"]
+          },
+          "then": {
+            "properties": {
+              "trigger": {
+                "enum": ["reuse", "user_required_graph", "custom_logic", "pbr_path_gap"]
+              },
+              "verificationPlan": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "trigger": { "enum": ["custom_logic", "pbr_path_gap"] }
+            },
+            "required": ["trigger"]
+          },
+          "then": {
+            "properties": {
+              "route": { "const": "shader_graph" },
+              "pbrGap": { "$ref": "#/definitions/text" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "provisional" } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": { "verificationPlan": { "minItems": 1 } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "ready" } },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {
+              "trigger": {
+                "enum": [
+                  "reuse",
+                  "default_supported",
+                  "user_required_graph",
+                  "custom_logic",
+                  "pbr_path_gap"
+                ]
+              },
+              "capabilityEvidenceRefs": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

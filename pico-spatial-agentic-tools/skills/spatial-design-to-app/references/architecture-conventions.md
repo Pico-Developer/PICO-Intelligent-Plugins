@@ -33,7 +33,7 @@ com.picoxr.<module>/
     │   ├── <Feature>UiState.kt        # data class + sealed interface Event
     │   ├── <Feature>ViewModel.kt      # androidx.lifecycle.ViewModel
     │   ├── <Feature>ViewModelFactory.kt # Repository-to-ViewModel assembly
-    │   ├── <Feature>Screen.kt         # stateful + stateless 双层
+    │   ├── <Feature>Screen.kt         # stateful + stateless layers
     │   └── components/                # @Composable building blocks; non-empty for non-trivial screens
     ├── theme/                         # Brushes / shapes / palette helpers
     └── navigation/                    # Top-level enums or NavGraph

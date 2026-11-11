@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Standalone artifact: session-output-<timestamp>/root-cause-classification.json",
+    "Standalone final root-cause classification artifact; do not mix it into final-summary.md, report.html, or a topic .meta.json.",
+    "See references/routing/root-cause-classification-contract.md for the contract.",
+    "L1 resource_type: cpu | gpu | memory | undetermined",
+    "L2 bottleneck_category must be valid for its L1 parent. Determine the budget-binding side before selecting the most specific evidence signature.",
+    "evidence_refs point back to underlying topic evidence ids; prefix cross-topic ids for uniqueness, such as spatial-engine:e1."
+  ],
+  "schema_version": 2,
+  "session_dir": "session-output-20260730-223412",
+  "final_summary": "./final-summary.md",
+
+  "root_cause_classification": [
+    {
+      "resource_type": "gpu",
+      "bottleneck_category": "gpu_geometry_complexity",
+      "conclusion_level": "likely",
+      "time_window": "2026-07-30 22:15:08 ~ 2026-07-30 22:15:11",
+      "evidence_refs": ["spatial-engine:e1", "spatial-engine:e3"],
+      "note": "Triangle and Vertex peaks rise during the scene transition, and gpu_frame_end binds on the GPU side."
+    },
+    {
+      "resource_type": "cpu",
+      "bottleneck_category": "cpu_gc_storm",
+      "conclusion_level": "candidate",
+      "evidence_refs": ["memory:e1"],
+      "note": "Concurrent-copying STW overlaps the Late Frame cluster and consumes main-cluster CPU."
+    }
+  ]
+}

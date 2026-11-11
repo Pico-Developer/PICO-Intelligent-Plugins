@@ -1,0 +1,82 @@
+<!-- @dsCard group="Spatial" height=620 subtitle="Transparent by default; explicit glass for panels" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AttachmentPanel · Design reference</title>
+<link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script>
+<style>
+.attachment-demo{margin:28px}.attachment-demo h2{font-size:20px;margin:0 0 8px}.attachment-demo>p{max-width:85ch;color:#4c5663}.scene-scroll{overflow:auto;border-radius:24px;background:#dad6d3}.scene{width:100%;height:100%;padding:56px 40px 32px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:64px}.object-group{position:relative;display:flex;flex-direction:column;align-items:center}.object-group>p{margin:0;color:#4c5663;font-size:14px}.label-anchor{position:absolute;top:0;left:50%;width:0;height:0}.object-label{position:absolute;bottom:12px;left:0;transform:translateX(-50%);white-space:nowrap}.label-anchor::after{content:"";position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:#477a79}.demo-controls{flex-wrap:wrap}.label-copy{display:flex;gap:8px;align-items:center;font-size:16px;font-weight:600}.panel-body{padding:24px;display:flex;flex-direction:column;gap:16px}.panel-heading{display:flex;align-items:center;gap:12px}.panel-heading h3{font-size:20px;margin:0}.facts{margin:0;display:grid;gap:12px}.facts div{display:flex;justify-content:space-between;gap:16px}.facts dt{color:var(--label-semidark-alpha)}.facts dd{margin:0}.task-panel{width:320px}.task-panel sui-button{align-self:stretch}.demo-controls{display:flex;align-items:center;gap:16px;margin:16px 0}.demo-controls>span{font-size:14px;color:#4c5663}.control-scene{flex-direction:column;gap:16px}.control-strip{width:360px}.strip-content{padding:16px;display:flex;gap:16px;align-items:center}.strip-copy{margin-right:auto}.strip-copy strong,.strip-copy small{display:block}.strip-copy small{margin-top:4px;color:var(--label-semidark-alpha)}.example-code{display:block;margin-top:12px;white-space:normal;overflow-wrap:anywhere}.status-copy{margin:0;font-size:14px;color:var(--label-semidark-alpha)}
+
+.object-view { width:260px;height:260px;display:grid;place-items:center;perspective:800px; }
+.demo-cube { --yaw:-25deg;position:relative;width:120px;height:120px;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(var(--yaw));transition:transform .24s ease; }
+.demo-cube span { position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:18px;font-weight:600;backface-visibility:hidden; }
+.demo-cube .front { background:#477a79;transform:translateZ(60px); }
+.demo-cube .back { background:#356361;transform:rotateY(180deg) translateZ(60px); }
+.demo-cube .right { background:#386967;transform:rotateY(90deg) translateZ(60px); }
+.demo-cube .left { background:#558986;transform:rotateY(-90deg) translateZ(60px); }
+.demo-cube .top { background:#80a6a0;transform:rotateX(90deg) translateZ(60px); }
+.demo-cube .bottom { background:#294d4c;transform:rotateX(-90deg) translateZ(60px); }
+@media(prefers-reduced-motion:reduce){.demo-cube{transition:none}}
+
+@media(max-width:600px){.attachment-demo{margin:16px}}
+</style></head><body>
+<nav class="preview-nav"><a href="../../index.html">All components</a><span>AttachmentPanel</span><a href="README.md">Guidelines</a></nav>
+<header class="preview-intro"><h1>AttachmentPanel</h1><p>A 2D attachment in a scene. Transparent by default; explicitly add glass for a backed task panel.</p></header>
+<section class="attachment-demo" aria-labelledby="label-heading"><h2 id="label-heading">1 · Transparent label above an object</h2><p>Move Module A: its top anchor and transparent label move together. The dot marks the anchor. This browser example demonstrates translation; native parenting also inherits rotation and scale.</p>
+<div class="scene-scroll"><sui-volume id="label-volume" width="720" height="400" depth="320"><div class="scene"><div class="object-group" id="module-root">
+<div id="module-label-anchor" class="label-anchor"><sui-attachment-panel id="module-label" class="object-label"><span class="label-copy"><sui-icon name="ic_check" size="20"></sui-icon>Module A · Ready</span></sui-attachment-panel></div>
+<div class="object-view" role="img" aria-label="Simplified equipment module"><div class="demo-cube" id="label-object"><span class="front">A</span><span class="back"></span><span class="right"></span><span class="left"></span><span class="top"></span><span class="bottom"></span></div></div>
+<p>Module A</p></div></div></sui-volume></div>
+<div class="demo-controls"><sui-button id="move-label-left" size="small" text="Move left"></sui-button><sui-button id="move-label-right" size="small" text="Move right"></sui-button><sui-button id="reset-label" size="small" text="Reset"></sui-button><span id="label-position" aria-live="polite">Offset: 0 dp</span></div>
+<code class="example-code">Module A → module-label-anchor → module-label. Move the object parent to move the anchor and label together.</code></section>
+<section class="attachment-demo" aria-labelledby="task-heading"><h2 id="task-heading">2 · Task information with an explicit glass background</h2><p>The inspection panel belongs to the equipment display group. Multiple lines and an action use an explicit Regular glass backing. Mark inspected changes the status. The comparison button is documentation UI, not part of the task.</p>
+<div class="demo-controls"><sui-button id="compare-background" size="small" text="Compare transparent default"></sui-button><span id="background-choice">Explicit choice: Regular glass · radius 32</span></div>
+<div class="scene-scroll"><sui-volume id="task-volume" width="800" height="420" depth="320"><div class="scene"><div class="object-group"><div class="object-view" role="img" aria-label="Simplified equipment module"><div class="demo-cube" id="task-object"><span class="front">A</span><span class="back"></span><span class="right"></span><span class="left"></span><span class="top"></span><span class="bottom"></span></div></div><p>Equipment display group</p></div>
+<sui-attachment-panel id="inspection-panel" class="task-panel" background="material" role="region" aria-label="Module inspection"><div class="panel-body">
+<div class="panel-heading"><sui-icon name="ic_list_check" size="24"></sui-icon><h3>Inspect module</h3></div>
+<dl class="facts"><div><dt>Module</dt><dd>A</dd></div><div><dt>Temperature</dt><dd>24 °C</dd></div><div><dt>Status</dt><dd id="inspection-status" aria-live="polite">Needs inspection</dd></div></dl>
+<sui-button id="inspect-action" text="Mark inspected"><sui-icon slot="leading" name="ic_check" size="20"></sui-icon></sui-button>
+</div></sui-attachment-panel></div></sui-volume></div>
+<code class="example-code">&lt;sui-attachment-panel background="material" style="width:320px"&gt;…&lt;/sui-attachment-panel&gt;</code></section>
+<section class="attachment-demo" aria-labelledby="controls-heading"><h2 id="controls-heading">3 · Scene-bound controls below the subject</h2><p>The control strip belongs to the display group and stays still while the model rotates. It is an AttachmentPanel containing IconButtons, not a window-attached Toolbar. Each icon has a working action.</p>
+<div class="scene-scroll"><sui-volume id="controls-volume" width="720" height="460" depth="320"><div class="scene control-scene"><div class="object-view" role="img" aria-label="Simplified equipment module"><div class="demo-cube" id="controlled-object"><span class="front">A</span><span class="back"></span><span class="right"></span><span class="left"></span><span class="top"></span><span class="bottom"></span></div></div>
+<sui-attachment-panel id="scene-controls" class="control-strip" background="material" role="region" aria-label="Module orientation"><div class="strip-content">
+<div class="strip-copy"><strong>Module A</strong><small id="rotation-value" aria-live="polite">Default orientation</small></div>
+<sui-icon-button id="rotate-module" icon="ic_rotate" size="small" semantic-label="Rotate module by 45 degrees" title="Rotate 45°"></sui-icon-button>
+<sui-button id="reset-module" size="small" text="Reset"></sui-button>
+</div></sui-attachment-panel></div></sui-volume></div>
+<code class="example-code">Attachment: display group. Model: rotates independently. Panel: explicit glass.</code></section>
+<p class="muted" style="margin:28px">These are Web appearance and interaction examples. Actual ECS attachment, physical units, occlusion and viewpoint behavior require native validation. <a href="../Subwindow/preview.html#volume-heading">Compare a Volume window with a Subwindow →</a></p>
+<script type="application/json" id="scene-design-notes">
+{
+ "module-label":{"relationship":"Child of module-label-anchor on Module A in label-volume","followBehavior":"Move with Module A through a shared object parent; this preview exercises translation only","previewLimitations":"CSS scene hierarchy approximates native entity parenting; no viewer-facing constraint"},
+ "inspection-panel":{"relationship":"Beside the equipment in task-volume, owned by the display group","followBehavior":"Stable within the display group"},
+ "scene-controls":{"relationship":"Below the model in controls-volume, owned by the display group","followBehavior":"Stay still when the model rotates independently"}
+}
+</script>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+ let offset=0;
+ const moveLabel=delta=>{
+  offset=Math.max(-120,Math.min(120,offset+delta));
+  document.getElementById('module-root').style.transform=`translateX(${offset}px)`;
+  document.getElementById('label-position').textContent=`Offset: ${offset} dp`;
+ };
+ document.getElementById('move-label-left').addEventListener('click-action',()=>moveLabel(-60));
+ document.getElementById('move-label-right').addEventListener('click-action',()=>moveLabel(60));
+ document.getElementById('reset-label').addEventListener('click-action',()=>{offset=0;moveLabel(0);});
+ const panel=document.getElementById('inspection-panel');
+ document.getElementById('compare-background').addEventListener('click-action',event=>{
+  const material=panel.getAttribute('background')!=='material';panel.setAttribute('background',material?'material':'transparent');
+  event.currentTarget.setAttribute('text',material?'Compare transparent default':'Restore recommended glass');
+  document.getElementById('background-choice').textContent=material?'Explicit choice: Regular glass · radius 32':'Transparent default: no panel backing';
+ });
+ document.getElementById('inspect-action').addEventListener('click-action',event=>{
+  const inspected=document.getElementById('inspection-status').textContent==='Inspected';
+  document.getElementById('inspection-status').textContent=inspected?'Needs inspection':'Inspected';
+  event.currentTarget.setAttribute('text',inspected?'Mark inspected':'Undo inspection');
+ });
+ let angle=-25;
+ const showAngle=()=>{document.getElementById('controlled-object').style.setProperty('--yaw',angle+'deg');document.getElementById('rotation-value').textContent=angle===-25?'Default orientation':'Turned '+((angle+25)%360)+'°';};
+ document.getElementById('rotate-module').addEventListener('click-action',()=>{angle+=45;showAngle();});
+ document.getElementById('reset-module').addEventListener('click-action',()=>{angle=-25;showAngle();});
+});
+</script></body></html>

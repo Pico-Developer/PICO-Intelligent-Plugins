@@ -51,22 +51,14 @@ Path(path).write_text(json.dumps({
 PY
 }
 
-GRADLE_ROOT=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GRADLE_ROOT="$(node "$SCRIPT_DIR/verification-summary.mjs" gradle-root "$DIR")" || exit 2
 MODULE_PATH=""
 if [ -f "$DIR/gradlew" ]; then
-    GRADLE_ROOT="$DIR"
     MODULE_PATH=":app"
 else
     MODULE_NAME="$(basename "$DIR")"
-    SEARCH="$DIR"
-    while [ "$SEARCH" != "/" ] && [ -n "$SEARCH" ]; do
-        SEARCH="$(dirname "$SEARCH")"
-        if [ -f "$SEARCH/gradlew" ]; then
-            GRADLE_ROOT="$SEARCH"
-            MODULE_PATH=":${MODULE_NAME}"
-            break
-        fi
-    done
+    MODULE_PATH=":${MODULE_NAME}"
 fi
 
 if [ -z "$GRADLE_ROOT" ]; then

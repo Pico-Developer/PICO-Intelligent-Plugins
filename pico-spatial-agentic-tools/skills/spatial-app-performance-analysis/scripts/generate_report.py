@@ -2,25 +2,32 @@
 # -*- coding: utf-8 -*-
 """generate_report.py
 
-用法：
+Usage:
   python3 generate_report.py \
-    --yaml ./session-output-<timestamp>/topic-result/analysis_output.yaml \
-    --out ./session-output-<timestamp>/report.html
-
-  python3 generate_report.py \
-    --yaml ./session-output-<timestamp>/final-summary.md \
+    --input ./session-output-<timestamp>/final-summary.meta.json \
     --report-data ./session-output-<timestamp>/performance-data/report-data.json \
     --out ./session-output-<timestamp>/report.html
 
-做什么：
-1) 读取 YAML 输入，或读取带 YAML header 的 `final-summary.md`
-2) 读取 HTML 模板（默认：../templates/pico-perf-report-template.html）
-3) 优先读取 `analysis_topics` 数组并注入模板 `reportData.analysisTopics`；若不存在则兼容读取 `analysis_report`
-4) 当输入是 `final-summary.md` 时，根据 `topic_outputs[*].file` 回读各 topic 输出并自动组装 `analysis_topics`
-5) 如输入中存在 `header`，同时覆盖 reportData.header 的关键字段
-6) 如传入 `--report-data`，则将 query_report_data.py 输出合并注入：
-   - `fps_trend` / `cpu_gpu_trend` -> reportData.quickDiagnosis
-   - 其余字段 -> reportData.details
+  python3 generate_report.py \
+    --input ./session-output-<timestamp>/analysis-output.json \
+    --out ./session-output-<timestamp>/report.html
+
+What it does:
+1) Reads a JSON input: either a `final-summary.meta.json` sidecar (with
+   `topic_outputs[].file`) or a bundled `analysis-output.json`
+   (with a top-level `analysis_topics` array).
+2) Reads the HTML template (default: ../templates/pico-perf-report-template.html).
+3) When topic outputs are listed, reads each topic sidecar + its Markdown body
+   and assembles the `analysisTopics` array; otherwise injects the bundled
+   `analysis_topics` / `analysis_report` directly.
+4) If the input has a `header`, overrides the key `reportData.header` fields.
+5) If `--report-data` is provided, merges the trace-derived metrics into
+   `reportData.quickDiagnosis` / `reportData.details` / `reportData.findings`.
+6) Writes the final HTML atomically to `--out`.
+
+This script no longer supports YAML inputs or Markdown front matter; all
+machine-readable fields come from the JSON sidecar (`.meta.json`) that lives
+next to the Markdown body.
 """
 
 from __future__ import annotations
@@ -51,40 +58,33 @@ DETAILS_KEYS = {
 }
 
 
-def _load_yaml(path: Path) -> dict:
+def _load_json_file(path: Path) -> dict[str, Any]:
+    """Load a JSON file whose top level MUST be an object/map."""
     try:
-        import yaml  # type: ignore
-    except ModuleNotFoundError as e:
-        raise SystemExit("缺少依赖 PyYAML。请先安装：pip install pyyaml") from e
-
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Failed to parse JSON: {path}: {e}") from e
 
     if not isinstance(data, dict):
-        raise SystemExit("YAML 顶层必须是 object/map")
+        raise SystemExit(f"JSON root must be an object/map: {path}")
     return data
 
 
-def _extract_front_matter(text: str) -> tuple[dict[str, Any], str]:
-    try:
-        import yaml  # type: ignore
-    except ModuleNotFoundError as e:
-        raise SystemExit("缺少依赖 PyYAML。请先安装：pip install pyyaml") from e
+def _read_markdown_body(path: Path) -> str:
+    """Read a Markdown body file; reject legacy YAML front matter.
 
-    match = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", text, flags=re.DOTALL)
-    if not match:
-        raise SystemExit("Markdown 输入缺少 YAML header（--- front matter ---）")
-
-    header_text, body = match.groups()
-    header = yaml.safe_load(header_text) or {}
-    if not isinstance(header, dict):
-        raise SystemExit("Markdown front matter 顶层必须是 object/map")
-    return header, body
-
-
-def _load_markdown_with_front_matter(path: Path) -> tuple[dict[str, Any], str]:
+    The new output protocol stores machine-readable fields in a sidecar
+    `.meta.json`. Markdown bodies are plain Markdown; a leading `---` block
+    is treated as a hard error so legacy producers are caught early.
+    """
     text = path.read_text(encoding="utf-8")
-    return _extract_front_matter(text)
+    if text.lstrip().startswith("---"):
+        raise SystemExit(
+            f"Markdown file {path} starts with '---' and appears to retain YAML front matter."
+            " The current contract requires a plain Markdown body; place machine-readable fields in the colocated .meta.json."
+        )
+    return text
 
 
 def _normalize_heading(text: str) -> str:
@@ -142,15 +142,53 @@ def _build_analysis_report_from_summary(
     }
 
 
-def _build_topic_payload(topic_path: Path) -> dict[str, Any]:
-    topic_header, topic_body = _load_markdown_with_front_matter(topic_path)
+def _default_section_titles() -> dict[str, str]:
+    return {
+        "symptom": "① Symptom",
+        "existing_evidence": "② Existing Evidence",
+        "investigation_process": "③ Investigation Process",
+        "root_cause_judgment": "④ Root Cause Judgment",
+        "actions": "⑤ Actions (Optimization/Troubleshooting)",
+        "limitations_and_next_validation": "⑥ Limitations and Next Validation",
+    }
 
-    # Evidence: prefer the structured YAML list and keep only the fields displayed
-    # in the report topic body.
+
+def _section_title(meta: dict[str, Any], key: str) -> str:
+    defaults = _default_section_titles()
+    section_map = meta.get("sections_in_body")
+    if isinstance(section_map, dict):
+        v = section_map.get(key)
+        if isinstance(v, str) and v.strip():
+            return v
+    return defaults[key]
+
+
+def _resolve_topic_body_path(meta: dict[str, Any], topic_meta_path: Path) -> Path:
+    """Resolve the Markdown body path from a topic meta JSON.
+
+    Preference order: meta.sections_file -> sibling file sharing the basename.
+    """
+    sections_file = meta.get("sections_file")
+    if isinstance(sections_file, str) and sections_file.strip():
+        return (topic_meta_path.parent / sections_file).resolve()
+    name = topic_meta_path.name
+    if name.endswith(".meta.json"):
+        md_name = name[: -len(".meta.json")] + ".md"
+        return (topic_meta_path.parent / md_name).resolve()
+    return topic_meta_path.with_suffix(".md").resolve()
+
+
+def _build_topic_payload_from_meta(
+    meta: dict[str, Any], body_text: str, topic_meta_path: Path
+) -> dict[str, Any]:
+    """Build a topic payload from a topic meta JSON + its sibling Markdown body."""
+
+    # Evidence: prefer the structured sidecar list; keep only the fields the
+    # report topic body shows.
     existing_evidence: list[dict[str, Any]] = []
-    header_evidence = topic_header.get("evidence")
-    if isinstance(header_evidence, list):
-        for item in header_evidence:
+    meta_evidence = meta.get("evidence")
+    if isinstance(meta_evidence, list):
+        for item in meta_evidence:
             if not isinstance(item, dict):
                 continue
             existing_evidence.append(
@@ -162,71 +200,113 @@ def _build_topic_payload(topic_path: Path) -> dict[str, Any]:
                 }
             )
 
-    # Actions: prefer the structured YAML next_actions list; each entry may be a
-    # plain string or an object with an "action" field.
+    # Actions: prefer the structured sidecar `next_actions` list; each entry
+    # may be a plain string or an object with an "action" field.
     actions: list[str] = []
-    header_actions = topic_header.get("next_actions")
-    if isinstance(header_actions, list):
-        for item in header_actions:
+    meta_actions = meta.get("next_actions")
+    if isinstance(meta_actions, list):
+        for item in meta_actions:
             if isinstance(item, str):
                 actions.append(item)
             elif isinstance(item, dict) and item.get("action"):
                 actions.append(str(item["action"]))
 
-    one_line = topic_header.get("root_cause", "") or _extract_one_line_root_cause(
-        topic_body
-    )
-    limitations = topic_header.get("limitations")
+    one_line = meta.get("root_cause", "") or _extract_one_line_root_cause(body_text)
+    limitations = meta.get("limitations")
     limitations_text = (
         "\n".join(str(x) for x in limitations)
         if isinstance(limitations, list)
-        else _extract_section(topic_body, "⑥ Limitations and Next Validation")
+        else _extract_section(
+            body_text, _section_title(meta, "limitations_and_next_validation")
+        )
     )
 
     report = {
-        "symptom": str(topic_header.get("symptoms", ""))
-        or _extract_section(topic_body, "① Symptom"),
+        "symptom": str(meta.get("symptoms", ""))
+        or _extract_section(body_text, _section_title(meta, "symptom")),
         "existing_evidence": existing_evidence,
-        "investigation_process": _extract_section(topic_body, "③ Investigation Process"),
+        "investigation_process": _extract_section(
+            body_text, _section_title(meta, "investigation_process")
+        ),
         "root_cause_judgment": {
             "one_line": one_line,
-            "conclusion_level": topic_header.get("conclusion_level", ""),
-            "reasoning": _extract_section(topic_body, "④ Root Cause Judgment"),
+            "conclusion_level": meta.get("conclusion_level", ""),
+            "reasoning": _extract_section(
+                body_text, _section_title(meta, "root_cause_judgment")
+            ),
         },
-        "actions": actions or [_extract_section(topic_body, "⑤ Actions (Optimization/Troubleshooting)")],
+        "actions": actions
+        or [_extract_section(body_text, _section_title(meta, "actions"))],
         "limitations_and_next_validation": limitations_text,
     }
 
+    stem = topic_meta_path.name
+    fallback_topic = (
+        stem[: -len(".meta.json")] if stem.endswith(".meta.json") else topic_meta_path.stem
+    )
     return {
-        "topic": topic_header.get("protocol", topic_path.stem),
-        "conclusion_level": topic_header.get("conclusion_level", ""),
+        "topic": meta.get("protocol", fallback_topic),
+        "conclusion_level": meta.get("conclusion_level", ""),
         "report": report,
     }
 
 
-def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
-    header, body = _load_markdown_with_front_matter(path)
+def _resolve_summary_meta(path: Path) -> dict[str, Any]:
+    """Resolve the summary report data from a `final-summary.meta.json` sidecar.
 
-    topic_outputs = header.get("topic_outputs")
+    The sidecar carries all machine-readable fields that used to live in the
+    `final-summary.md` YAML front matter. The sibling Markdown body (resolved
+    via `meta.sections_file` or the default `final-summary.md`) is only used
+    as a fallback source for narrative text when a specific field is missing.
+    """
+    meta = _load_json_file(path)
+
+    # Locate the summary Markdown body for fallback narrative extraction.
+    sections_file = meta.get("sections_file")
+    if isinstance(sections_file, str) and sections_file.strip():
+        body_path = (path.parent / sections_file).resolve()
+    else:
+        default_name = (
+            path.name[: -len(".meta.json")] + ".md"
+            if path.name.endswith(".meta.json")
+            else path.stem + ".md"
+        )
+        body_path = (path.parent / default_name).resolve()
+    body = _read_markdown_body(body_path) if body_path.exists() else ""
+
+    # Topic outputs are referenced via their `.meta.json` sidecar paths; the
+    # legacy `file: output-*.md` form is no longer accepted.
+    topic_outputs = meta.get("topic_outputs")
     analysis_topics: list[dict[str, Any]] = []
     if isinstance(topic_outputs, list):
         for item in topic_outputs:
             if not isinstance(item, dict):
-                raise SystemExit("topic_outputs 每一项必须是 object/map")
+                raise SystemExit("Each topic_outputs item must be an object/map")
             file_value = item.get("file")
             if not isinstance(file_value, str) or not file_value.strip():
-                raise SystemExit("topic_outputs 每一项必须包含非空 file")
-            topic_path = (path.parent / file_value).resolve()
-            if not topic_path.exists():
-                raise SystemExit(f"topic 输出文件不存在：{topic_path}")
-            analysis_topics.append(_build_topic_payload(topic_path))
+                raise SystemExit("Each topic_outputs item must contain a non-empty file")
+            if not file_value.endswith(".meta.json"):
+                raise SystemExit(
+                    f"topic_outputs.file must point to a .meta.json sidecar (received: {file_value})"
+                )
+            topic_meta_path = (path.parent / file_value).resolve()
+            if not topic_meta_path.exists():
+                raise SystemExit(f"Topic meta file does not exist: {topic_meta_path}")
+            topic_meta = _load_json_file(topic_meta_path)
+            topic_body_path = _resolve_topic_body_path(topic_meta, topic_meta_path)
+            topic_body = (
+                _read_markdown_body(topic_body_path) if topic_body_path.exists() else ""
+            )
+            analysis_topics.append(
+                _build_topic_payload_from_meta(topic_meta, topic_body, topic_meta_path)
+            )
         if not analysis_topics:
-            raise SystemExit("topic_outputs 不能为空；请先生成至少一个 topic 输出")
+            raise SystemExit("topic_outputs cannot be empty; generate at least one topic output first")
 
-    # Pass through a header block if the summary front-matter provides one, so
-    # the report shows the real app package / name / time / trace instead of the
+    # Pass through a header block if the summary meta provides one, so the
+    # report shows the real app package / name / time / trace instead of the
     # template's placeholder defaults. Fall back to empty fields otherwise.
-    fm_header = header.get("header") if isinstance(header.get("header"), dict) else {}
+    fm_header = meta.get("header") if isinstance(meta.get("header"), dict) else {}
     result: dict[str, Any] = {
         "header": {
             "app_package": str(fm_header.get("app_package", "") or ""),
@@ -239,17 +319,16 @@ def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
     if analysis_topics:
         result["analysis_topics"] = analysis_topics
     else:
-        result["analysis_report"] = _build_analysis_report_from_summary(header, body)
+        result["analysis_report"] = _build_analysis_report_from_summary(meta, body)
 
-    # Recommendations: map the summary front-matter's `limitations` and
-    # `next_actions` to the template's recommendations.{limitations,nextSteps}
-    # lists, so the "限制条件 / 下一步建议" panel shows real data instead of the
-    # template's mock placeholders.
-    limitations = header.get("limitations")
+    # Recommendations: map the summary meta's `limitations` and `next_actions`
+    # to the template's recommendations.{limitations,nextSteps} lists, so the
+    # The limitations and next-steps panel shows real data instead of mock placeholders.
+    limitations = meta.get("limitations")
     limitations_list = (
         [str(x) for x in limitations] if isinstance(limitations, list) else []
     )
-    next_actions = header.get("next_actions")
+    next_actions = meta.get("next_actions")
     next_steps_list: list[str] = []
     if isinstance(next_actions, list):
         for item in next_actions:
@@ -263,12 +342,12 @@ def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
             "nextSteps": next_steps_list,
         }
 
-    # Findings: root cause + evidence for the "关键发现" panel, derived from the
-    # summary header and the referenced topics (not from mock template data).
+    # Findings: root cause + evidence for the key-findings panel, derived from
+    # the summary meta and the referenced topics (not from mock template data).
     findings: dict[str, Any] = {}
-    root_cause = header.get("root_cause")
+    root_cause = meta.get("root_cause")
     if isinstance(root_cause, str) and root_cause.strip():
-        conclusion = str(header.get("conclusion_level", "") or "")
+        conclusion = str(meta.get("conclusion_level", "") or "")
         confidence_map = {
             "confirmed": "High",
             "likely": "Medium",
@@ -305,8 +384,8 @@ def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
         result["findings"] = findings
 
     # Header extras: report summary + active protocols for the top banner.
-    # deviceModel/osVersion are blanked unless the summary supplies them, so the
-    # banner never shows the template's mock device string.
+    # deviceModel/osVersion are blanked unless the summary supplies them, so
+    # the banner never shows the template's mock device string.
     header_extras: dict[str, Any] = {
         "deviceModel": str(fm_header.get("device_model", "") or ""),
         "osVersion": str(fm_header.get("os_version", "") or ""),
@@ -314,7 +393,7 @@ def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
     summary_text = fm_header.get("summary")
     if isinstance(summary_text, str) and summary_text.strip():
         header_extras["summary"] = summary_text
-    active = header.get("activated_subprotocols")
+    active = meta.get("activated_subprotocols")
     if isinstance(active, list) and active:
         header_extras["activeProtocols"] = [str(x) for x in active]
     result["header_extras"] = header_extras
@@ -323,18 +402,37 @@ def _resolve_summary_markdown(path: Path) -> dict[str, Any]:
 
 
 def _load_input(path: Path) -> dict[str, Any]:
-    if path.suffix.lower() == ".md":
-        return _resolve_summary_markdown(path)
-    return _load_yaml(path)
+    """Load the top-level analysis input.
 
+    Accepted inputs:
+      - `final-summary.meta.json`  : summary sidecar with topic references.
+      - `analysis-output.json`     : single-topic analysis output.
 
+    Legacy YAML (`.yaml`/`.yml`) and raw Markdown summaries are no longer
+    accepted; the caller is directed to the matching JSON sidecar.
+    """
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        raise SystemExit(
+            f"YAML input is no longer supported (received: {path}); "
+            "use the corresponding JSON (analysis-output.json / final-summary.meta.json)."
+        )
+    if suffix == ".md":
+        raise SystemExit(
+            f"Markdown summary is no longer accepted as --input (received: {path}); "
+            "use the colocated final-summary.meta.json sidecar."
+        )
+    if suffix != ".json":
+        raise SystemExit(
+            f"--input only supports .json (received: {path.suffix or '<no suffix>'})"
+        )
 
-def _load_json(path: Path) -> dict:
-    with path.open("r", encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, dict):
-        raise SystemExit("report-data JSON 顶层必须是 object/map")
-    return data
+    name = path.name
+    # A `*.meta.json` sidecar is treated as a summary sidecar; a plain
+    # `analysis-output.json` (or other single-topic payloads) is loaded as-is.
+    if name.endswith(".meta.json") or name == "final-summary.meta.json":
+        return _resolve_summary_meta(path)
+    return _load_json_file(path)
 
 
 
@@ -355,7 +453,7 @@ def _replace_between_anchors(html: str, field_name: str, next_field_name: str, n
     match = pattern.search(html)
     if not match:
         raise SystemExit(
-            f"未在模板中找到 reportData.{field_name}（或 {next_field_name} 字段锚点）。"
+            f"Could not find reportData.{field_name} or the {next_field_name} field anchor in the template."
         )
 
     return pattern.sub(lambda m: m.group(1) + json_text + m.group(2), html, count=1)
@@ -391,7 +489,7 @@ def _replace_injected_report_data(html: str, injected_report_data: dict) -> str:
     )
     match = pattern.search(html)
     if not match:
-        raise SystemExit("未在模板中找到 injectedReportData 常量（或 statusMap 锚点）。")
+        raise SystemExit("Could not find the injectedReportData constant or statusMap anchor in the template.")
     return pattern.sub(lambda m: m.group(1) + json_text + m.group(2), html, count=1)
 
 
@@ -409,7 +507,7 @@ def _replace_report_data_literal(html: str, report_data: dict[str, Any]) -> str:
     )
     match = pattern.search(html)
     if not match:
-        raise SystemExit("未在模板中找到完整 reportData 数据块。")
+        raise SystemExit("Could not find the complete reportData block in the template.")
     suffix = re.sub(r"^(\n\s*)\}", r"\1", match.group(2), count=1)
     return html[: match.start()] + match.group(1) + json_text + suffix + html[match.end() :]
 
@@ -477,7 +575,9 @@ def _assemble_report_data(
     else:
         analysis_report = data.get("analysis_report")
         if not isinstance(analysis_report, dict):
-            raise SystemExit("YAML 缺少必填字段：analysis_topics 或 analysis_report")
+            raise SystemExit(
+                "Input JSON is missing a required field: analysis_topics or analysis_report"
+            )
         result["analysisReport"] = analysis_report
 
     header = data.get("header")
@@ -488,8 +588,8 @@ def _assemble_report_data(
             "analysis_time": "analysisTime",
             "trace_file": "traceFileName",
         }
-        for yaml_key, js_key in mapping.items():
-            value = header.get(yaml_key)
+        for meta_key, js_key in mapping.items():
+            value = header.get(meta_key)
             if isinstance(value, str):
                 result["header"][js_key] = value
 
@@ -523,26 +623,26 @@ def _validate_generated_html(
     html: str, report_data: dict[str, Any], output_path: Path
 ) -> None:
     if len(html.encode("utf-8")) == 0:
-        raise SystemExit("生成的 HTML 为空")
+        raise SystemExit("Generated HTML is empty")
     for topic in report_data.get("analysisTopics", []):
         topic_name = str(topic.get("topic", "") or "")
         if topic_name and topic_name not in html:
-            raise SystemExit(f"生成的 HTML 缺少 topic：{topic_name}")
+            raise SystemExit(f"Generated HTML is missing topic: {topic_name}")
     if '"topic": "Spatial Engine"' in html and "trace_spatial_gallery_20260730_221508" in html:
-        raise SystemExit("生成的 HTML 包含模板示例 topic 数据")
+        raise SystemExit("Generated HTML contains template example topic data")
     if output_path.suffix.lower() != ".html":
-        raise SystemExit("HTML 输出路径必须以 .html 结尾")
+        raise SystemExit("HTML output path must end with .html")
 
 
 def _validate_embedded_javascript(html: str) -> None:
     node = shutil.which("node")
     if node is None:
-        raise SystemExit("无法校验 HTML 内嵌 JavaScript：未找到 node")
+        raise SystemExit("Cannot validate embedded HTML JavaScript: node was not found")
 
     scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", html, flags=re.DOTALL | re.IGNORECASE)
     inline_scripts = [script for script in scripts if script.strip()]
     if not inline_scripts:
-        raise SystemExit("生成的 HTML 没有内嵌 JavaScript 初始化脚本")
+        raise SystemExit("Generated HTML does not contain an embedded JavaScript initialization script")
 
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".js", delete=False) as handle:
         handle.write("\n".join(inline_scripts))
@@ -558,7 +658,7 @@ def _validate_embedded_javascript(html: str) -> None:
         script_path.unlink(missing_ok=True)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()
-        raise SystemExit(f"生成的 HTML 内嵌 JavaScript 语法无效：{detail}")
+        raise SystemExit(f"Generated HTML contains invalid embedded JavaScript syntax: {detail}")
 
 
 
@@ -571,7 +671,7 @@ def _replace_recommendations(html: str, recommendations: dict) -> str:
     )
     match = pattern.search(html)
     if not match:
-        raise SystemExit("未在模板中找到 reportData.recommendations（或 footer 字段锚点）。")
+        raise SystemExit("Could not find reportData.recommendations or the footer field anchor in the template.")
     return pattern.sub(lambda m: m.group(1) + json_text + m.group(2), html, count=1)
 
 
@@ -772,39 +872,45 @@ def _build_injected_report_data(report_data: dict) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate HTML report from YAML and template")
+    parser = argparse.ArgumentParser(
+        description="Generate HTML report from a JSON meta sidecar and an HTML template"
+    )
     parser.add_argument(
-        "--yaml",
+        "--input",
         required=True,
-        help="YAML input file, or final-summary.md with YAML header",
+        help=(
+            "JSON input: final-summary.meta.json (summary sidecar) or "
+            "analysis-output.json (single-topic analysis output). "
+            "Legacy --yaml / Markdown summaries are no longer accepted."
+        ),
     )
     parser.add_argument(
         "--template",
         default=str(DEFAULT_TEMPLATE_PATH),
         help="HTML template path (default: ../templates/pico-perf-report-template.html)",
     )
-    parser.add_argument("--report-data", help="query_report_data.py 输出的 JSON 文件路径")
+    parser.add_argument("--report-data", help="Path to the JSON file produced by query_report_data.py")
     parser.add_argument("--out", required=True, help="Output HTML path")
     args = parser.parse_args()
 
-    yaml_path = Path(args.yaml).expanduser().resolve()
+    input_path = Path(args.input).expanduser().resolve()
     tpl_path = Path(args.template).expanduser().resolve()
     out_path = Path(args.out).expanduser().resolve()
 
-    if not yaml_path.exists():
-        raise SystemExit(f"YAML 文件不存在：{yaml_path}")
+    if not input_path.exists():
+        raise SystemExit(f"Input JSON does not exist: {input_path}")
     if not tpl_path.exists():
-        raise SystemExit(f"HTML 模板不存在：{tpl_path}")
+        raise SystemExit(f"HTML template does not exist: {tpl_path}")
 
-    data = _load_input(yaml_path)
+    data = _load_input(input_path)
 
     html = tpl_path.read_text(encoding="utf-8")
     report_data: dict[str, Any] | None = None
     if args.report_data:
         report_data_path = Path(args.report_data).expanduser().resolve()
         if not report_data_path.exists():
-            raise SystemExit(f"report-data JSON 不存在：{report_data_path}")
-        report_data = _load_json(report_data_path)
+            raise SystemExit(f"report-data JSON does not exist: {report_data_path}")
+        report_data = _load_json_file(report_data_path)
 
     complete_report_data = _assemble_report_data(data, report_data)
     html = _replace_report_data_literal(html, complete_report_data)

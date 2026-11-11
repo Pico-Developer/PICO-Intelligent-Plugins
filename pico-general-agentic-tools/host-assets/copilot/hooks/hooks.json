@@ -5,7 +5,9 @@
       {
         "type": "command",
         "exec": "node",
-        "args": ["${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"],
+        "args": [
+          "${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"
+        ],
         "timeoutSec": 65
       }
     ],
@@ -13,8 +15,21 @@
       {
         "type": "command",
         "exec": "node",
-        "args": ["${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"],
+        "args": [
+          "${PLUGIN_ROOT}/host-assets/copilot/hooks/ingest.mjs"
+        ],
         "timeoutSec": 65
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": [
+          "${PLUGIN_ROOT}/host-assets/copilot/hooks/capture-context.mjs",
+          "copilot"
+        ],
+        "timeoutSec": 10
       }
     ]
   }

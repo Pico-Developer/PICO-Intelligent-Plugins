@@ -2,7 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "^(Skill|Read|(?:mcp__)?pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__)",
+        "matcher": "^(Skill|Read|(?:mcp__)?(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__)",
         "hooks": [
           {
             "type": "command",
@@ -14,12 +14,24 @@
     ],
     "PostToolUseFailure": [
       {
-        "matcher": "^(?:mcp__)?pico[-_](?:dev[-_]knowledge|spatial[-_]editor)__",
+        "matcher": "^(?:mcp__)?(?:(?:pico[-_](?:dev[-_]knowledge|spatial[-_]editor))|unity[-_]mcp)__",
         "hooks": [
           {
             "type": "command",
             "command": "node \"${GROK_PLUGIN_ROOT}/hooks/ingest.mjs\" pico-general-agentic-tools",
             "timeout": 65
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(?:Bash|exec_command|shell_command|run_terminal_command|(?:mcp__(?:pico-spatial-editor|pico_spatial_editor)__)?(?:start_editor_workflow|start_3d_generation_workflow))$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${GROK_PLUGIN_ROOT}/hooks/capture-context.mjs\" grok",
+            "timeout": 10
           }
         ]
       }

@@ -1,9 +1,13 @@
 ---
 name: pico-unity-init
 description: >-
-  One-time PICO Unity project initialization wizard. Manual trigger only: use
-  it only when the developer explicitly invokes `/pico-unity-init`; do not
-  activate it passively or automatically for setup or development requests. On
+  One-time PICO Unity project initialization wizard. Use it when the developer
+  invokes `/pico-unity-init`, or when pico-project-setup or another PICO Unity
+  Skill continues it because a task needs a working PICO Unity project that has
+  not completed initialization, such as creating a Unity project in an empty
+  directory or developing in a Unity project without the PICO packages. Do not
+  activate it for Unity questions that change no project, or once
+  initialization has completed. On
   invocation, inspect `.pico-cli/config.json`: when
   `pico_unity_init_completed` is `true`, skip initialization and report that it
   has already run; when the field is absent or not `true`, run the initialization
@@ -16,16 +20,33 @@ license: 'Apache-2.0'
 
 # pico-unity-init
 
-PICO Unity project one-time initialization wizard. Run this skill only after the developer explicitly invokes `/pico-unity-init`. Passive or automatic activation is forbidden, even when a request describes project initialization, project creation, or PICO SDK setup. Once invoked, the value of `pico_unity_init_completed` in `.pico-cli/config.json` is the sole completion signal. The existence of the file by itself is not a completion signal. This skill has no reset or post-init repair mode.
+PICO Unity project one-time initialization wizard. It runs in two ways:
+
+- **Direct**: the developer invokes `/pico-unity-init`.
+- **Continued**: `pico-project-setup` has configured the project for Unity, or another PICO Unity Skill such as `spatialml` found the PICO Unity SDK missing, and the current task needs a working PICO Unity project. The developer does not need to type `/pico-unity-init`. When initialization finishes, return to the original task in the same session.
+
+Do not run it for a Unity question that changes no project, such as an API explanation or a knowledge lookup. Once invoked, the value of `pico_unity_init_completed` in `.pico-cli/config.json` is the sole completion signal. The existence of the file by itself is not a completion signal. This skill has no reset or post-init repair mode.
+
+## When to Use
+
+- First-time PICO Unity project initialization and configuration
+- Setting up PICO XR SDK packages and project settings in a new Unity project
+- Configuring Unity build settings for PICO platform
+
+## When NOT to Use
+
+- Adding building blocks after initialization — use `pico-unity-buildingblocks`
+- Package management after setup — use `pico-unity-package-manager`
+- Spatial SDK (Android/Kotlin) projects — use `pico-project-setup` with spatial platform
 
 ## Pre-trigger check (GUARDRAIL)
 
-1. Confirm the current working project path (hereafter `$PROJECT_ROOT`). The project name `project_name` is the directory name (basename) of `$PROJECT_ROOT`; there is no need to ask the developer.
+1. Resolve the absolute engineering project path from the user or calling continuation (hereafter `$PROJECT_ROOT`), not the session cwd. Preserve any distinct resource workspace root in configure and later diagnostics: `pico-cli doctor --project "$PROJECT_ROOT" --workspace-root <session-root>`, including the same pair for an approved `--fix`. Doctor `--project` alone does not infer a resource association from parent directories; do not guess a parent or create a mapping. The project name `project_name` is the basename of `$PROJECT_ROOT`; there is no need to ask the developer.
 2. If `$PROJECT_ROOT/.pico-cli/config.json` exists, parse it before doing anything else. Do not decide from file existence alone:
-   - **`pico_unity_init_completed` is exactly `true`** → stop immediately without asking questions, changing files, installing packages, or opening Unity. Reply exactly: `已使用过/pico-unity-init`. Do not delete `.pico-cli/config.json` for an SDK refresh or repair, and do not tell the developer to delete it. Route post-init package changes to `pico-unity-package-manager`, which uses `pico_xr_package` after the Unity Editor and MCP bridge are running. If the bridge is unavailable, ask the developer to restore the Editor/MCP connection first; do not fall back to rerunning initialization or editing `Packages/manifest.json`. A full project reset is a separate destructive workflow outside this skill and requires explicit authorization plus a backup.
-   - **The field is absent or not `true`** → initialization has not completed under this contract. Because the developer explicitly invoked `/pico-unity-init`, continue with the initialization flow below. Preserve unrelated existing config fields when writing the final config.
+   - **`pico_unity_init_completed` is exactly `true`** → stop immediately without asking questions, changing files, installing packages, or opening Unity. On a direct invocation, reply exactly: `pico-unity-init has already been used`. On a continued run, say nothing about initialization and return to the original task. Do not delete `.pico-cli/config.json` for an SDK refresh or repair, and do not tell the developer to delete it. Route post-init package changes to `pico-unity-package-manager`, which uses `pico_xr_package` after the Unity Editor and MCP bridge are running. If the bridge is unavailable, ask the developer to restore the Editor/MCP connection first; do not fall back to rerunning initialization or editing `Packages/manifest.json`. A full project reset is a separate destructive workflow outside this skill and requires explicit authorization plus a backup.
+   - **The field is absent or not `true`** → initialization has not completed under this contract. Continue with the initialization flow below. Preserve unrelated existing config fields when writing the final config.
    - **The file is malformed JSON** → stop and report the parse error. Do not overwrite it or treat it as an uninitialized project.
-3. If `$PROJECT_ROOT/.pico-cli/config.json` does not exist, continue the explicitly invoked initialization flow below.
+3. If `$PROJECT_ROOT/.pico-cli/config.json` does not exist, continue with the initialization flow below.
 
 > This skill is executed by the **local agent running on the developer's own machine**. All file reads/writes and command execution act directly on the **developer's local project directory**. Always use the local shell (local `bash`) and local file operations directly; no remote sandbox is involved, and there is no need to go through proxy tools such as `mira_local_*`.
 
@@ -94,7 +115,7 @@ A valid existing Unity project does not copy a template, but the config still re
 
 > The values and mapping rules for `devices` and `business_type` are the same as in Stage C.
 
-### B.3 Incrementally install the 3 packages (core logic)
+### B.3 Reconcile bootstrap package dependencies (core logic)
 
 Complete the compatibility preflight without modifying `Packages/manifest.json`. Only after every blocking decision is resolved may you build the full dependency change and commit it once. **Preserve all of the developer's other existing dependencies; only make incremental additions/changes.**
 
@@ -111,13 +132,22 @@ Use the validated dependency snapshot retained by Stage A to determine every pac
 2. **Unity MCP Extensions (`com.bytedance.pico.mcp-extensions`)**:
    - Not present → select the dependency address now: SSH by default; if the developer has not configured a GitHub SSH key, use HTTPS as described in Stage D.4. Plan to add that selected address.
    - Already present and pointing to that repository → plan no change and preserve its existing address and ref.
-3. **PICO Unity SDK (XR)**: when `com.bytedance.pico.xr` is present, try to read its version from the git URL `#ref`, then from `Library/PackageCache/com.bytedance.pico.xr@*/package.json`.
-   - Not present → plan to add the three SDK dependencies listed in B.3.2.
-   - Version ≥ 6.0.0 → plan no change; preserve the existing addresses and refs.
-   - Version < 6.0.0 → ask: "The detected PICO Unity SDK (XR) version `xxx` is below 6.0.0. Upgrade to 6.0.0?"
-     - Choose "No" → exit initialization immediately. If the developer declines any blocking change, exit with the original manifest unchanged; do not write config or alter any other project file.
-     - Choose "Yes" → plan to replace all three SDK dependency keys with the values in B.3.2.
-   - Version cannot be determined → plan no change, preserve the existing SDK address and ref, continue initialization, and report: "PICO SDK XR is present but its version is unknown; upgrade skipped. Initialization completes before any repair handoff. After initialization completes and the Unity Editor/MCP bridge are running, route an explicit refresh request to `pico-unity-package-manager`." Do not tell the developer to change the `#ref`, `Packages/manifest.json`, or `Packages/packages-lock.json` manually.
+3. **Required PICO SDK dependency keys**: evaluate these three keys independently. The state of `com.bytedance.pico.xr` must not suppress either sibling check.
+   - **PICO Unity SDK XR (`com.bytedance.pico.xr`)**: when present, try to read its version from the git URL `#ref`, then from `Library/PackageCache/com.bytedance.pico.xr@*/package.json`.
+     - Not present → plan to add only the XR value listed in B.3.2.
+     - Version ≥ 6.0.0 → plan no XR change; preserve its existing address and ref.
+     - Version < 6.0.0 → ask: "The detected PICO Unity SDK (XR) version `xxx` is below 6.0.0. Upgrade to 6.0.0?"
+       - Choose "No" → exit initialization immediately. If the developer declines any blocking change, exit with the original manifest unchanged; do not write config or alter any other project file.
+       - Choose "Yes" → plan to replace only the XR key with the value in B.3.2.
+     - Version cannot be determined → plan no XR change and report: "PICO SDK XR is present but its version is unknown; upgrade skipped. Missing required sibling dependencies will still be repaired during initialization. After initialization completes and the Unity Editor/MCP bridge are running, route an explicit XR refresh request to `pico-unity-package-manager`." Do not tell the developer to change the `#ref`, `Packages/manifest.json`, or `Packages/packages-lock.json` manually.
+   - **PICO Spatial Adapter (`com.bytedance.pico.spatialadapter`)**:
+     - Not present → plan to add its value from B.3.2.
+     - Present → plan no change; preserve its existing address and ref.
+   - **glTF exporter (`com.plattar.unitygltf`)**:
+     - Not present → plan to add its value from B.3.2.
+     - Present → plan no change; preserve its existing address and ref.
+
+A current or unknown XR version must not suppress checks or repairs for missing Spatial Adapter or glTF dependency keys.
 
 This phase is read-only: do not write AI Assistant or MCP Extensions first and defer the SDK decision.
 
@@ -127,19 +157,20 @@ Build one complete dependency delta in memory from the original validated manife
 
 - Set `com.unity.ai.assistant` to `2.17.0-pre.1` only when the preflight planned an add or upgrade.
 - Add `com.bytedance.pico.mcp-extensions` with the selected SSH or HTTPS address only when it is missing.
-- When the PICO SDK is missing or its confirmed upgrade was accepted, set these three keys together:
+- Apply each required SDK dependency decision independently, using these values only for a key whose preflight action was add or replace:
   ```json
   "com.bytedance.pico.spatialadapter": "https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/SpatialAdapter#main",
   "com.bytedance.pico.xr": "https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/XR#main",
   "com.plattar.unitygltf": "https://github.com/Pico-Developer/gltf-exporter.git?path=package/com.plattar.unitygltf#master"
   ```
+- Never replace a present Spatial Adapter or glTF dependency solely because XR is missing or upgraded. Never skip a missing Spatial Adapter or glTF dependency solely because XR is current or its version is unknown.
 - Leave every package whose preflight action was "no change" untouched, including its existing address or ref.
 
 If the resulting dependency object is identical to the original, skip the manifest write.
 
 #### B.3.3 Commit the manifest once
 
-Apply the resolved delta as one atomic manifest update: preserve the original top-level object, replace only its `dependencies` value with the in-memory result, write valid JSON to a temporary sibling file in `$PROJECT_ROOT/Packages/`, parse that staged file to validate it, then atomically replace the original manifest. If staging or validation fails, remove the temporary file, leave the original manifest unchanged, report the error, and stop. Re-read the committed manifest and verify all planned values before continuing to B.4.
+Apply the resolved delta as one atomic manifest update: preserve the original top-level object, replace only its `dependencies` value with the in-memory result, write valid JSON to a temporary sibling file in `$PROJECT_ROOT/Packages/`, parse that staged file to validate it, then atomically replace the original manifest. If staging or validation fails, remove the temporary file, leave the original manifest unchanged, report the error, and stop. Re-read the committed manifest, verify all planned values, and verify that all three required SDK dependency keys (`com.bytedance.pico.xr`, `com.bytedance.pico.spatialadapter`, and `com.plattar.unitygltf`) are present before continuing to B.4. If any required key is missing, report it and stop without writing the completion marker.
 
 ### B.4 Sync `ProjectVersion.txt` (only when B.1 chose to change the version)
 
@@ -165,7 +196,8 @@ Refer to [references/unity-versions.md](references/unity-versions.md):
   ```
   or directly `.../Unity -projectPath $PROJECT_ROOT -buildTarget Android`.
 - If Unity reports "requested build target is not supported / Android module missing" on startup → go back to B.5 and use `unity install-modules -e <unity_version> -m android` to install Android Build Support, then re-run the `unity open` above.
-- Only after all preceding initialization steps have succeeded and the `unity open` command has accepted the launch, merge `project_name`, `mode`, `unity_version`, `platform` (fixed `android`), `devices`, `business_type`, and `pico_unity_init_completed: true` into `$PROJECT_ROOT/.pico-cli/config.json`. Preserve unrelated existing fields, remove the obsolete `sdk` field if present, and write valid JSON atomically. See [references/config-schema.md](references/config-schema.md). If `.pico-cli/` does not exist, create it first.
+- Immediately before finalizing, re-read `Packages/manifest.json` and verify that all three required SDK dependency keys (`com.bytedance.pico.xr`, `com.bytedance.pico.spatialadapter`, and `com.plattar.unitygltf`) are still present. If any is missing, stop and do not write `pico_unity_init_completed: true`.
+- Only after that dependency verification, all other preceding initialization steps have succeeded, and the `unity open` command has accepted the launch, merge `project_name`, `mode`, `unity_version`, `platform` (fixed `android`), `devices`, `business_type`, and `pico_unity_init_completed: true` into `$PROJECT_ROOT/.pico-cli/config.json`. Preserve unrelated existing fields, remove the obsolete `sdk` field if present, and write valid JSON atomically. See [references/config-schema.md](references/config-schema.md). If `.pico-cli/` does not exist, create it first.
 - Perform that final merge with the bundled `scripts/write_config.py` helper. Resolve the directory containing this `SKILL.md` as `$PICO_INIT_SKILL_DIR`, and pass one `--device` argument for each selected device. For example:
   ```bash
   python3 "$PICO_INIT_SKILL_DIR/scripts/write_config.py" \
@@ -176,7 +208,7 @@ Refer to [references/unity-versions.md](references/unity-versions.md):
     --device "pico swan" \
     --business-type "$business_type"
   ```
-- If any initialization step fails or the developer cancels/exits at an earlier gate, do **not** write `pico_unity_init_completed: true`; a future explicit `/pico-unity-init` invocation may resume the one-time initialization.
+- If any initialization step fails or the developer cancels/exits at an earlier gate, do **not** write `pico_unity_init_completed: true`; a later run, direct or continued, may resume the one-time initialization.
 
 ---
 
@@ -231,7 +263,7 @@ rm -rf "$TMP_TPL"
 ```
 
 - Upstream repo structure: three subfolders under the root, `PICOSpatial/`, `PICOXR/`, and `OpenXR/`, each an **independent, openable Unity project** (containing `Assets/`, `Packages/manifest.json`, `ProjectSettings/`, etc.), with the Unity Editor version unified at `6000.0.73f1`.
-- This clone goes over GitHub HTTPS (443), following the network requirements of [Stage D.4](#d4-install-the-3-packages-ai-assistant--mcp-extensions--pico-sdk-xr); if the clone fails (no network / SSL issue / GitHub authentication blocked), immediately fall back to the **fallback method** below.
+- This clone goes over GitHub HTTPS (443), following the network requirements of [Stage D.4](#d4-install-bootstrap-package-dependencies); if the clone fails (no network / SSL issue / GitHub authentication blocked), immediately fall back to the **fallback method** below.
 
 **Fallback method (used when the clone fails)**: call the `pico-cli` local template generator.
 
@@ -243,13 +275,30 @@ pico-cli project create --sdk-type unity --template <template> --dir "$PROJECT_R
 
 - `mode = picoxr` → `--template PICOXR`
 - `mode = openxr` → `--template OpenXR`
-- `mode = picospatial` → `--template PICOSpatial`
+- `mode = picospatial` → **not supported by the local generator**: the bundled Primer's
+  `project create` accepts only `OpenXR` and `PICOXR` (`PICOSpatial` returns
+  `Error: Invalid value 'PICOSpatial'. Available options: OpenXR, PICOXR`, exit 1).
+  When the upstream clone fails for `picospatial` mode, do **not** rerun the generator with a
+  different template and do not silently switch the mode — that would swap the developer's chosen
+  SDK variant. Instead stop and report: the PICOSpatial template is only distributed via the
+  upstream GitHub sparse clone; ask the developer to restore GitHub network access and retry this
+  stage, or to explicitly re-choose `OpenXR` or `PICOXR` mode in the form before continuing.
 
-The explicit `--sdk-type unity` keeps the fallback independent of the platform recorded by `pico-cli setup`, and `--dir "$PROJECT_ROOT"` targets the intended project from any working directory. The command generates a complete Unity project structure (`Assets/`, `Packages/manifest.json`, `ProjectSettings/`, `UserSettings/`, etc.).
+The explicit `--sdk-type unity` matches the project's configured Unity platform (`project create` rejects a value that conflicts with the configured platform), and `--dir "$PROJECT_ROOT"` targets the intended project from any working directory. The command generates a complete Unity project structure (`Assets/`, `Packages/manifest.json`, `ProjectSettings/`, `UserSettings/`, etc.).
 
 > ⚠️ If the `pico-cli` command is also not found, tell the developer to install/configure `pico-cli` first (outside the scope of this skill); if both methods fail, have the developer confirm network or CLI status and re-run this skill.
 
 > 💡 Whether using the preferred method or the fallback, once the output lands in `$PROJECT_ROOT`, the subsequent D.2 uniformly updates `productName` and `ProjectVersion.txt`, and D.4 uniformly writes the 3 package dependencies — templates from both sources converge to the same state via the later stages.
+
+**Re-align the project configuration**: both template sources ship their own `.gitignore`, which replaces the block that `pico-cli project configure` manages. Right after the template lands, run:
+
+```bash
+pico-cli project configure --platform unity --agent-tool current --yes --project "$PROJECT_ROOT" --format json
+```
+
+Keep `$PROJECT_ROOT` as the explicit engineering target. If setup used a distinct resource workspace root, append the same `--workspace-root <session-root>`; do not write a second Host configuration in the child project. This restores the managed `.gitignore` block and records the Unity platform. On `AGENT_HOST_UNRESOLVED`, retry with the earlier explicit Host id. Report other failures without claiming configuration completion; file initialization may continue.
+
+Read `data.continuation.guidance[]` and the matching `data.continuation.skills[].path`; use `data.continuation.mcpAfterReload[]` only for any retained native entries needing Host loading/approval. For subsequent MCP work, discover the global user-level `unity-mcp` MCP in the Host catalog, accepting hyphen/underscore normalization and `mcp__` prefixes. Call only exact advertised names and verify the required native operation tools are visible before using them. Follow `data.hostActions[]` for trust or resource discovery; installing the platform Skills does not prove relay or Editor readiness.
 
 ### D.2 Template post-processing: fix productName and ProjectVersion
 
@@ -279,7 +328,7 @@ Same as Stage B.5:
 - Not installed → `unity install <unity_version> -m android`.
 - Installed → `unity install-modules -e <unity_version> -m android` to add Android (skip if already installed).
 
-### D.4 Install the 3 packages (AI Assistant / MCP Extensions / PICO SDK XR)
+### D.4 Install bootstrap package dependencies
 
 After the empty-project template is generated, `Packages/manifest.json` already exists. **Write the following 5 keys directly into `dependencies` (merging with the template's existing dependencies; do not overwrite other non-conflicting dependencies in the template)**:
 
@@ -292,6 +341,8 @@ After the empty-project template is generated, `Packages/manifest.json` already 
 "com.bytedance.pico.xr": "https://github.com/Pico-Developer/PICO-Unity-SDK.git?path=/XR#main",
 "com.plattar.unitygltf": "https://github.com/Pico-Developer/gltf-exporter.git?path=package/com.plattar.unitygltf#master"
 ```
+
+Re-read the written manifest and verify that all three required SDK dependency keys (`com.bytedance.pico.xr`, `com.bytedance.pico.spatialadapter`, and `com.plattar.unitygltf`) are present. If any is missing, report it and stop before opening Unity or writing the completion marker.
 
 > **MCP Extensions address note**: SSH by default (`git@github.com:...`); if the developer has not configured a GitHub SSH key, or the local network blocks SSH port 22, switch to HTTPS:
 >
@@ -338,15 +389,27 @@ unity open /path/to/$PROJECT_ROOT --build-target Android
 
 ### D.6 Write the completed config
 
-Only after D.1-D.5 have succeeded and the `unity open` command has accepted the launch, merge `project_name`, `mode` (`picoxr`, `openxr`, or `picospatial`), `unity_version`, `platform` (fixed `android`), `devices`, `business_type`, and `pico_unity_init_completed: true` into `$PROJECT_ROOT/.pico-cli/config.json`. Preserve unrelated existing fields, remove the obsolete `sdk` field if present, and write valid JSON atomically. See [references/config-schema.md](references/config-schema.md). If `.pico-cli/` does not exist, create only the directory needed for `config.json`; do not create `downloads/`.
+Immediately before finalizing, re-read `Packages/manifest.json` and verify that all three required SDK dependency keys (`com.bytedance.pico.xr`, `com.bytedance.pico.spatialadapter`, and `com.plattar.unitygltf`) are still present. If any is missing, stop and do not write `pico_unity_init_completed: true`.
+
+Only after that dependency verification, D.1-D.5 have succeeded, and the `unity open` command has accepted the launch, merge `project_name`, `mode` (`picoxr`, `openxr`, or `picospatial`), `unity_version`, `platform` (fixed `android`), `devices`, `business_type`, and `pico_unity_init_completed: true` into `$PROJECT_ROOT/.pico-cli/config.json`. Preserve unrelated existing fields, remove the obsolete `sdk` field if present, and write valid JSON atomically. See [references/config-schema.md](references/config-schema.md). If `.pico-cli/` does not exist, create only the directory needed for `config.json`; do not create `downloads/`.
 
 Use the bundled `scripts/write_config.py` helper as shown in B.6, passing the empty-project form's selected `mode` and one `--device` argument per selected device.
 
-If any initialization step fails or the developer cancels/exits at an earlier gate, do **not** write `pico_unity_init_completed: true`; a future explicit `/pico-unity-init` invocation may resume the one-time initialization.
+If any initialization step fails or the developer cancels/exits at an earlier gate, do **not** write `pico_unity_init_completed: true`; a later run, direct or continued, may resume the one-time initialization.
 
 ---
 
 ## After completion
+
+For dependent Unity MCP work, a missing relay may expose only `get_unity_relay_status` (discover
+its exact advertised name). This is recovery status, not Unity Editor readiness or an operation tool.
+Follow its hint to finish AI Assistant preparation, open the project, and enable Unity MCP under
+`Edit > Project Settings > AI > Unity MCP`. If the Host supports MCP restart/reconnect, reconnect only `unity-mcp`
+with the necessary approval, then rediscover and verify the required native operation tools are visible
+before resuming the original task. Otherwise report the Host limitation and supported recovery action.
+Do not promise hot recovery on the same transport. Do not require an entire session restart for relay recovery.
+Report status-only discovery or missing operation tools as a blocker, separately from file initialization;
+do not reset the completion marker or rerun initialization to repair a completed project's bridge.
 
 Give the developer a brief report:
 

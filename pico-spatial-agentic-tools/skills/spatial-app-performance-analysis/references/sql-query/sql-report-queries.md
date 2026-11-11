@@ -348,7 +348,7 @@ ORDER BY cnt DESC, avg_dur_ms DESC;
 ### Purpose / Corresponding Report Module
 - **Module**: `Render load counter trend`
 - **Goal**: Query all events for one process-scoped counter, such as Spatial Runtime `3D Mesh Draw Call Count`, and return a time series suitable for report chart rendering.
-- **Report integration**: `query_report_data.py` exposes this as `query_process_counter_series(client, process_name, counter_name)`. The report's multi-counter render-load section is driven by `../render-load-counters.json`; each configured counter calls this same parameterized SQL and is rendered under Data Overview -> Render Load (`渲染负载`) sub-tabs.
+- **Report integration**: `query_report_data.py` exposes this as `query_process_counter_series(client, process_name, counter_name)`. The report's multi-counter render-load section is driven by `../render-load-counters.json`; each configured counter calls this same parameterized SQL and is rendered under Data Overview -> Render Load sub-tabs.
 
 ### Parameters
 - `${process_name}`: process name, e.g. `'com.pico.spatial.runtime'`

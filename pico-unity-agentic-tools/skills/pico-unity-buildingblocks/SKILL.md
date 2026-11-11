@@ -1,29 +1,69 @@
 ---
 name: pico-unity-buildingblocks
 description: >-
-  Orchestrate PICO XR building blocks (XR Origin, VST/Passthrough, Controller
-  models, Locomotion, Spatial Mesh, Hand tracking, Grab & drag, and future
-  blocks) in a Unity Editor via the `pico_xr_*` MCP tools. Handles MCP
-  pre-check, dependency resolution (auto-installing packages, importing
-  samples), domain-reload waits, enable/disable/configure actions, and scene
-  saving.
-
-  Trigger when the user wants to enable / disable / configure / query any
-  PICO XR feature — passthrough, controllers, locomotion, spatial mesh, hand
-  tracking / virtual hands / XR Hands / xr-hands / xrhands, object grab & drag
-  / pick-up / grabbable, etc. — or create an
-  XR Origin / XR rig.
+  Orchestrate PICO XR building blocks through pico_xr_* MCP tools: XR Origin,
+  passthrough/VST, controllers, locomotion, spatial mesh, plane detection, hand
+  tracking/XR Hands, and grab/drag. Handle tool pre-checks, dependencies, reload
+  waits, enable/disable/configure/status, and scene saving.
+  In a Unity PICO project confirmed as mode=picospatial, default to Play-to-PICO
+  when the user wants to run, preview, or inspect the app on a PICO physical device or in PICO Emulator, even
+  without naming Play-to-PICO or this skill. Trigger for PICO physical-device or emulator run/preview or
+  result inspection when that intent is established by the request/context.
+  Use the build workflow only for an explicit application packaging or APK
+  request. Select an existing online ADB device, prepare SpatialAdapterServer,
+  then enter Play Mode through pico_xr_play_to_pico. Do not apply XR
+  loader/Origin prerequisites to SpatialAdapter preview.
 license: 'Apache-2.0'
 ---
 
 # pico-unity-buildingblocks
 
+## When to Use
+
+- Adding PICO XR building blocks (XR Origin, passthrough, hand tracking, controllers) to a Unity project
+- Configuring or troubleshooting building block components via MCP tools
+- Orchestrating building block setup through `pico_xr_*` MCP tools
+
+## When NOT to Use
+
+- Unity project initialization — use `pico-unity-init`
+- Unity Package Manager operations — use `pico-unity-package-manager`
+- Spatial Adapter API questions — use the relevant `spatialadapter-*` skill
+
+## SpatialAdapter preview routing
+
+For confirmed `mode=picospatial`, an intent to run the current Unity app on a
+PICO physical device or in an Emulator, or inspect its effect selects Play-to-PICO by default. The request or
+existing context can establish that intent; the user does not need to say
+Play-to-PICO, play-2-pico, or a skill/tool name. Only an explicit application
+packaging or APK request selects the build workflow. Negated requests such as
+"Do not build an APK; preview it in the emulator" keep the preview default.
+
+Read [Play-to-PICO](references/blocks/play-to-pico.md) before execution. Do not
+ask the user to choose preview versus APK when the default already applies.
+Keep explanation/status-only requests read-only, and clarify conflicting mode
+evidence before switching workflows. Pure Emulator management without app
+preview intent remains an Emulator operation.
+
 ## Prerequisites
 
+**Choose the mode before applying prerequisites.** For SpatialAdapter
+Play-to-PICO, read [Play-to-PICO](references/blocks/play-to-pico.md) and use its
+tool pre-check and workflow. Do not run XR Origin dependency resolution, require
+a PICO/OpenXR loader, disable cameras, or switch modes for this branch. The XR
+provider requirements below apply only to the XR building blocks.
+
 - Unity Editor running with PICO MCP Extensions installed.
-- The 9 `pico_xr_*` tools (`pico_xr_vst`, `pico_xr_controller`,
-  `pico_xr_locomotion`, `pico_xr_spatial_mesh`, `pico_xr_plane`, `pico_xr_hand`,
-  `pico_xr_grab`, `pico_xr_package`, `pico_xr_status`) are enabled in `Edit > Project Settings > AI > Unity MCP`.
+- The complete 10-tool `pico_xr_*` registry consists of `pico_xr_vst`,
+  `pico_xr_controller`, `pico_xr_locomotion`, `pico_xr_spatial_mesh`,
+  `pico_xr_plane`, `pico_xr_hand`, `pico_xr_grab`, `pico_xr_package`,
+  `pico_xr_status`, and `pico_xr_play_to_pico`. This inventory is not an
+  all-tools readiness gate: an ordinary operation does not require all 10
+  tools. Step 0 computes the exact
+  direct and transitive subset for the requested call chain; every member of
+  that subset must be enabled in `Edit > Project Settings > AI > Unity MCP`.
+  Validate the complete registry only for an explicit whole-extension
+  diagnostic. An unrelated missing tool must not block a narrower operation.
 - The AI client is connected to the Unity MCP bridge.
 - **An XR runtime provider is enabled in `Project Settings > XR Plug-in
 Management` (Android tab).** These blocks run on EITHER PICO runtime —
@@ -52,9 +92,12 @@ Eight PICO XR feature blocks exposed as MCP tools:
 | Grab         | `pico_xr_grab`         | `enable` / `disable` / `status` / `make_grabbable` |
 | Aggregate    | `pico_xr_status`       | (no params) snapshot of all seven blocks           |
 
-All blocks share the same XR Origin in the scene. This skill ensures the
-**XR Origin and its package/sample dependencies are in place** before any
-block-level action runs, then performs the action, then reports back.
+All blocks share the same XR Origin in the scene. For `enable` / `configure`
+only, this skill ensures the **XR Origin and its required package/sample
+dependencies are in place** before running the block action. `status` / `disable`
+skip dependency resolution: they never install packages, import samples, or
+create an XR Origin or other scene objects; they perform only the requested
+query or disable action.
 
 > **Single-active-camera invariant.** The agent XR Origin ships its own Main
 > Camera. To avoid a multi-camera render conflict (which notably breaks VST
@@ -69,15 +112,25 @@ block-level action runs, then performs the action, then reports back.
 
 ## 2. Step 0 — MCP connection pre-check (MANDATORY)
 
+For SpatialAdapter Play-to-PICO, `required_tools = {pico_xr_play_to_pico}`.
+Compute `missing_tools` before the first mutation and stop on every missing
+tool. Use `pico_xr_play_to_pico(action=status)` as the initial read-only gate;
+do not call the XR aggregate status or resolve XR dependencies for this branch.
+Follow [Play-to-PICO](references/blocks/play-to-pico.md) for pending operations.
+
+The following pre-check applies to XR block requests.
+
 Before ANY `pico_xr_*` call, verify that the AI IDE/CLI sees every tool needed
-by the current workflow. Do not treat one visible `pico_xr_*` tool as proof
-that the registry is complete.
+by the requested MCP operation and its direct and transitive call chain. Do not
+treat one visible `pico_xr_*` tool as proof that the required subset is
+complete, and do not block the operation because an unrelated registry tool is
+missing.
 
 ```
 1. Resolve the requested action and every feature block it directly names.
 2. Initial read-only gate:
      required_tools = {pico_xr_status} + every directly called feature tool
-   For a composite grab workflow, this includes pico_xr_grab plus the requested
+   For a composite grab call chain, this includes pico_xr_grab plus the requested
    pico_xr_controller or pico_xr_hand input tool.
 3. Compute missing_tools = required_tools - visible_tools.
    If missing_tools is not empty, STOP and use the warning below. Do not call
@@ -87,9 +140,9 @@ that the registry is complete.
      - add pico_xr_package when the snapshot shows that XR Origin package/sample
        dependency work is required;
      - add pico_xr_vst when Spatial Mesh / Plane must enable VST first;
-     - retain every feature tool used by a composite workflow.
+     - retain every feature tool used by a composite call chain.
 5. Recompute missing_tools. If it is not empty, STOP before mutation and use
-   the warning below. Never execute the available prefix of a partial workflow.
+   the warning below. Never execute the available prefix of a partial call chain.
 ```
 
 `status` / `disable` skip dependency resolution, so they require only
@@ -111,14 +164,12 @@ delegates dependency work.
 > 1. Confirm the **Unity Editor** is running and the project is open.
 > 2. Open **Edit > Project Settings > AI > Unity MCP** and confirm the
 >    bridge status is **Running**.
-> 3. In the **Tools** list, confirm the 9 `pico_xr_*` tools are listed and
->    enabled.
-> 4. **Restart this AI client** so it re-discovers the MCP tools.
+> 3. In the **Tools** list, enable the exact tools reported in `<missing_tools>`
+>    for the current operation. Unrelated tools do not need to be enabled.
+> 4. Refresh tool discovery. Restart the AI client only if its Host requires a
+>    restart for the restored tools to become visible.
 >
-> Once you've done that, ask me again.
-
-> NOTE: Some MCP clients refresh their tool registry only on session restart.
-> Asking the user to restart the IDE/CLI is part of the fix, not just Unity.
+> After discovery succeeds, resume the original request with the restored tool set.
 
 ## 3. Dependency matrix
 
@@ -186,6 +237,9 @@ What is automatic vs. what the user must do:
 
 ## 4. The block-action orchestration loop (summary)
 
+For SpatialAdapter preview, follow the dedicated Play-to-PICO reference. The
+loop below applies to XR block actions only.
+
 For ANY request "enable / configure / disable / query block B":
 
 ```
@@ -209,7 +263,9 @@ requested action mutates state:
 
 | Result                                                                                                                                          | Settle before the next MCP call?                    |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `pico_xr_package` `add` / `remove` / `update` / `import_sample` returns `status=ok`                                                             | **Yes**                                             |
+| Package `add` / `update` / `import_sample` succeeds                                                                                             | **Yes**                                             |
+| Package `remove` succeeds with `data.changed=true`                                                                                              | **Yes**                                             |
+| Package `remove` succeeds with `data.changed=false`                                                                                             | **No** — it was not installed; no change was made   |
 | Spatial Mesh / Plane / Hand `enable` returns `status=skipped`, `data.recompiling=true`, and names one of the four documented import transitions | **Yes**, once per distinct transition               |
 | The same first-enable transition repeats after its one settle/retry                                                                             | **No** — stop and report no progress                |
 | VST / Controller / Locomotion / Grab `enable` / `configure` / `disable`                                                                         | **No**                                              |
@@ -221,26 +277,41 @@ The four allowed first-enable transitions are
 `hand:HandVisualizer`, and `hand:Hands Interaction Demo`. Do not insert a
 settle delay after every feature mutation: scene edits can be verified
 immediately unless the result explicitly reports one of these reloads.
+For package removal, `data.changed` is the mutation signal carried through the
+Unity MCP transport. The Host-visible response may expose `success`, `message`,
+and `data` without the internal `status` field. Do not infer a reload from the
+verb, `success=true`, or internal `status=ok` alone.
 
 ## On-demand references
 
-| File                                | When to read                                                                |
-| ----------------------------------- | --------------------------------------------------------------------------- |
-| `references/orchestration.md`       | Before performing any block action; when a domain reload occurs             |
-| `references/blocks/xr-origin.md`    | When creating / setting up XR Origin                                        |
-| `references/blocks/vst.md`          | When enabling / disabling VST / passthrough                                 |
-| `references/blocks/controller.md`   | When adding / removing controller models                                    |
-| `references/blocks/locomotion.md`   | When enabling / configuring / disabling locomotion                          |
-| `references/blocks/spatial-mesh.md` | When enabling / disabling spatial mesh                                      |
-| `references/blocks/plane.md`        | When enabling / disabling plane detection                                   |
-| `references/blocks/hand.md`         | When enabling / disabling hand tracking / virtual hands                     |
-| `references/blocks/grab.md`         | When enabling / disabling object grab & drag, or making an object grabbable |
+| File                                | When to read                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------- |
+| `references/blocks/play-to-pico.md` | SpatialAdapter preview, PICO Emulator, Server installation, wired/wireless, Play Mode |
+| `references/orchestration.md`       | Before performing any block action; when a domain reload occurs                       |
+| `references/blocks/xr-origin.md`    | When creating / setting up XR Origin                                                  |
+| `references/blocks/vst.md`          | When enabling / disabling VST / passthrough                                           |
+| `references/blocks/controller.md`   | When adding / removing controller models                                              |
+| `references/blocks/locomotion.md`   | When enabling / configuring / disabling locomotion                                    |
+| `references/blocks/spatial-mesh.md` | When enabling / disabling spatial mesh                                                |
+| `references/blocks/plane.md`        | When enabling / disabling plane detection                                             |
+| `references/blocks/hand.md`         | When enabling / disabling hand tracking / virtual hands                               |
+| `references/blocks/grab.md`         | When enabling / disabling object grab & drag, or making an object grabbable           |
 
 ## 8. Reply style
 
+For Play-to-PICO, report the current Server/transport preparation stage and
+target device. Report `no_adb_device` directly. For
+`device_selection_required`, use a user-question selection UI when available;
+otherwise ask once with a numbered device list, wait for the answer, and retry
+with the selected `deviceSerial`. A `pending` result means accepted and
+continuing, not completed. Finish only when `stage=running`,
+`connectionEstablished=true`, and
+`editorPlaying=true`, or report a terminal error. Scene saving is required only
+if an authorized scene edit actually occurred.
+
 - Open with one line stating what you are about to do.
-- Stream intermediate progress as a checklist (✓ / … / ✗) so the user can
-  see auto-installs happening.
+- Stream intermediate progress as a checklist (✓ / … / ✗) so device, Server,
+  transport, and Play Mode preparation are visible.
 - **Close with the checklist only.** Do NOT echo a post-action status
   table — the user doesn't need to see the full block matrix on every
   action; they only asked for the one thing they asked for.
@@ -278,7 +349,7 @@ immediately unless the result explicitly reports one of these reloads.
 
 - DO NOT skip Step 0 (MCP pre-check). It costs nothing and saves the user
   a confusing failure trace.
-- DO NOT start a partial workflow when Step 0 reports any `missing_tools`.
+- DO NOT start a partial call chain when Step 0 reports any `missing_tools`.
   Stop before mutation and report the exact missing tool names.
 - DO NOT chain a mutating `pico_xr_package` call directly with another
   `pico_xr_*` call without the settle loop. The Editor will be reloading.

@@ -44,7 +44,7 @@ The two methods are independent try/except; one failure does not affect the othe
 
 If the target process, frame driving thread, `OpenXRClientSpatialFrames`, or critical Spatial Slices are not visible, do not directly draw a root cause conclusion; first supplement the trace collection or confirm the package name, time window, and trace configuration.
 
-**Frame Driving Thread Localization Convention**: The frame driving thread name of a spatial app is not `main`, but the last segment of the package name (e.g., `xample.galaxian`). **The real `utid` must be read from the `identities.app_frame_driving_threads.candidates[0].utid` in the probe output (`trace-probe-detail.yaml`); hardcoding the thread name `main` is prohibited.**
+**Frame Driving Thread Localization Convention**: The frame driving thread name of a spatial app is not `main`, but the last segment of the package name (e.g., `xample.galaxian`). **The real `utid` must be read from the `identities.app_frame_driving_threads.candidates[0].utid` in the probe output (`trace-probe-detail.json`); hardcoding the thread name `main` is prohibited.**
 
 Example command call:
 
@@ -66,7 +66,7 @@ Main thread jank analysis follows the classic drill-down logic of Android jank a
 
 ### 1. Locating Over-budget Frames
 
-In a 90fps scenario, the single-frame budget is 11.11ms. So first locate all over-budget frames(janks) on the target App frame-driving thread. SQL can refer to[query-10-frame-thread-overbudget-doframe](../sql-query/sql-kotlin-spatial-app-jank.md#query-10-frame-thread-overbudget-doframe).
+In a 90fps scenario, the single-frame budget is 11.11ms. So first locate all over-budget frames(janks) on the target App frame-driving thread. SQL can refer to[query-10-frame-thread-overbudget-doframe](../sql-query/sql-kotlin-spatial-app-jank.md#query-10-frame-thread-overbudget-doframesql-find-over-budget-janky-frames-by-frame-driving-thread).
 
 ### 2. Drill-down: Why is the frame over budget
 

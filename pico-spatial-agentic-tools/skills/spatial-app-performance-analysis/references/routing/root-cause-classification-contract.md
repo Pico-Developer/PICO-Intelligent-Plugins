@@ -11,19 +11,19 @@ Both are emitted; neither replaces the other.
 
 ## 1. Position In The Pipeline (A Standalone Artifact, Produced Last)
 
-This classification is a **downstream distillation** of the per-topic analysis, and it is written to its **own dedicated YAML file**. It is NOT a field of any topic output, NOT part of `final-summary.md`, and NOT part of the report template. It is produced as a separate, final step:
+This classification is a **downstream distillation** of the per-topic analysis, and it is written to its **own dedicated JSON file**. It is NOT a field of any topic sidecar JSON, NOT part of `final-summary.md` / `final-summary.meta.json`, and NOT part of the report template. It is produced as a separate, final step:
 
-1. First, each executed topic emits its own output per the [Output Contract](output-contract.md) (YAML header + 6 body sections). That contract stays unchanged and does NOT carry any classification field.
-2. Then `final-summary.md` aggregates the topics per the [Final Summary Contract](final-summary-contract.md). That file also does NOT carry the classification.
+1. First, each executed topic emits its own output per the [Output Contract](output-contract.md) (sidecar `.meta.json` + 6-section body `.md`). That contract stays unchanged and does NOT carry any classification field.
+2. Then `final-summary.md` + `final-summary.meta.json` aggregate the topics per the [Final Summary Contract](final-summary-contract.md). Those files also do NOT carry the classification.
 3. Finally, distill the topic outputs into this closed taxonomy and write it to a standalone file:
 
    ```text
-   session-output-<timestamp>/root-cause-classification.yaml
+   session-output-<timestamp>/root-cause-classification.json
    ```
 
    This is the canonical, isolated artifact used for baseline and evaluation. Keeping it in its own file (not mixed into other products) means baseline/eval tooling can consume it directly without parsing unrelated content.
 
-Do not add `root_cause_classification` to a per-topic header or to `final-summary.md`. Keep the per-topic `evidence[*].id`s stable so this file's `evidence_refs` can point back into the underlying topic evidence.
+Do not add `root_cause_classification` to a per-topic sidecar or to `final-summary.meta.json`. Keep the per-topic `evidence[*].id`s stable so this file's `evidence_refs` can point back into the underlying topic evidence.
 
 ## 2. Output Is a List, Not A-or-B
 
@@ -35,12 +35,12 @@ A single trace often breaks the frame budget for more than one reason (e.g. a GP
 
 ## 3. Level 1 — `resource_type` (closed enum)
 
-| `resource_type` | 中文 | Meaning |
+| `resource_type` | Label | Meaning |
 |---|---|---|
 | `cpu` | CPU | CPU-side work/scheduling breaks the frame budget |
 | `gpu` | GPU | GPU-side rendering work breaks the frame budget |
-| `memory` | 内存 | Memory pressure (reclaim / exhaustion / kill) is the bottleneck |
-| `undetermined` | 未定 | Evidence insufficient to classify (see §6) |
+| `memory` | Memory | Memory pressure (reclaim / exhaustion / kill) is the bottleneck |
+| `undetermined` | Undetermined | Evidence insufficient to classify (see §6) |
 
 ## 4. Level 2 — `bottleneck_category` (closed enum, scoped by Level 1)
 
@@ -63,31 +63,31 @@ If the chain cannot be completed, do not guess. Use the conservative app-side ca
 
 ### 4.1 `resource_type: cpu`
 
-| `bottleneck_category` | 中文 | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
+| `bottleneck_category` | Label | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
 |---|---|---|---|---|
-| `cpu_app_main_thread_busy_or_blocked` | APP 主线程繁忙或阻塞 | — | App `main` / frame-driving thread: `Choreographer#doFrame` / `ViewRootImpl` / `deliverInputEvent` / Compose·View traversal over single-frame budget, or a wait whose remote cause is not proven | `analysis-kotlin-spatial-app-jank.md` |
-| `cpu_app_service_call_amplification` | APP 服务调用放大 | call count / per-frame call frequency ↑ | App frame-driving thread repeatedly creates, starts, configures, or synchronously updates service-backed resources; the trace shows the call pattern but does not prove server contention | `analysis-binder.md` / topic-specific subprotocol |
-| `cpu_ec_submit_busy` | EC 提交繁忙 | `transformComponentCount` / `modelComponentCount` ↑ | `System_Update`, `System_Update: {name}`, `3d_ec`, `Choreographer#beginSpatialFrame` / `endSpatialFrame` **duration grows on the app critical path and independently exceeds the frame budget** in the abnormal window (APP Produce) | `analysis-spatial-engine.md` |
-| `cpu_drawcall_overload` | DrawCall 绘制任务过多 | `Draw Call Count` / `3D Mesh Draw Call Count` / `Particle Draw Call Count` / `Shadow Draw Call Count` ↑ | `Eng-Render` **CPU submit** segment grows (submit/batch cost); CPU time high while `gpu_frame_end` is NOT the binding side | `analysis-spatial-engine.md` |
-| `cpu_physics_overload` | 物理模拟过重 | `collisionComponentCount` / `rigidBodyComponentCount` ↑ | App-side physics `*System` / physics step slices grow | `analysis-spatial-engine.md` |
-| `cpu_gc_storm` | GC 风暴导致 CPU 资源被占用 | Memory-class metrics move; high GC frequency | `SuspendAll` / `concurrent copying` / STW overlap the abnormal window AND GC/Heap threads consume CPU on the critical path | `analysis-memory.md` |
-| `cpu_animation_overload` | 动画过重 | `animationResourceCount` / `Skeletal Animation Count` ↑ | Animation `*System` slices grow | `analysis-spatial-engine.md` |
-| `cpu_system_service_contention` | 其他系统服务争用导致响应变慢 | — | Critical-path Binder wait **plus** server-side lock/queue contention, server runnable starvation (runnable > 3ms without running), or service work that itself exceeds the relevant service budget; a callee name or Binder duration alone is insufficient | `analysis-binder.md` / `analysis-cpu-scheduling.md` |
+| `cpu_app_main_thread_busy_or_blocked` | App main thread busy or blocked | — | App `main` / frame-driving thread: `Choreographer#doFrame` / `ViewRootImpl` / `deliverInputEvent` / Compose·View traversal over single-frame budget, or a wait whose remote cause is not proven | `analysis-kotlin-spatial-app-jank.md` |
+| `cpu_app_service_call_amplification` | App service-call amplification | call count / per-frame call frequency ↑ | App frame-driving thread repeatedly creates, starts, configures, or synchronously updates service-backed resources; the trace shows the call pattern but does not prove server contention | `analysis-binder.md` / topic-specific subprotocol |
+| `cpu_ec_submit_busy` | EC submission busy | `transformComponentCount` / `modelComponentCount` ↑ | `System_Update`, `System_Update: {name}`, `3d_ec`, `Choreographer#beginSpatialFrame` / `endSpatialFrame` **duration grows on the app critical path and independently exceeds the frame budget** in the abnormal window (APP Produce) | `analysis-spatial-engine.md` |
+| `cpu_drawcall_overload` | Excessive DrawCall submission | `Draw Call Count` / `3D Mesh Draw Call Count` / `Particle Draw Call Count` / `Shadow Draw Call Count` ↑ | `Eng-Render` **CPU submit** segment grows (submit/batch cost); CPU time high while `gpu_frame_end` is NOT the binding side | `analysis-spatial-engine.md` |
+| `cpu_physics_overload` | Physics overload | `collisionComponentCount` / `rigidBodyComponentCount` ↑ | App-side physics `*System` / physics step slices grow | `analysis-spatial-engine.md` |
+| `cpu_gc_storm` | GC storm consuming CPU | Memory-class metrics move; high GC frequency | `SuspendAll` / `concurrent copying` / STW overlap the abnormal window AND GC/Heap threads consume CPU on the critical path | `analysis-memory.md` |
+| `cpu_animation_overload` | Animation overload | `animationResourceCount` / `Skeletal Animation Count` ↑ | Animation `*System` slices grow | `analysis-spatial-engine.md` |
+| `cpu_system_service_contention` | System-service contention | — | Critical-path Binder wait **plus** server-side lock/queue contention, server runnable starvation (runnable > 3ms without running), or service work that itself exceeds the relevant service budget; a callee name or Binder duration alone is insufficient | `analysis-binder.md` / `analysis-cpu-scheduling.md` |
 
-> **DrawCall attribution rule (decided):** "DrawCall 绘制任务过多" is classified under **CPU** as `cpu_drawcall_overload` because it measures the CPU submit / batching cost. If the raised `Draw Call Count` instead binds on the GPU side (`gpu_frame_end` grows, CPU submit is fine), classify it as `gpu_geometry_complexity`.
+> **DrawCall attribution rule (decided):** "Excessive DrawCall submission" is classified under **CPU** as `cpu_drawcall_overload` because it measures the CPU submit / batching cost. If the raised `Draw Call Count` instead binds on the GPU side (`gpu_frame_end` grows, CPU submit is fine), classify it as `gpu_geometry_complexity`.
 
 ### 4.2 `resource_type: gpu`
 
-| `bottleneck_category` | 中文 | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
+| `bottleneck_category` | Label | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
 |---|---|---|---|---|
-| `gpu_app_self_rendering_overload` | 应用自渲染过重 | `GPU Utilization` (App) / `CPU Utilization` (App 2D) / `viewAttachmentCount` ↑ | App `RenderThread` grows; Overdrawing, video playback, Compose recomposition storm, frequent invalidations | `analysis-kotlin-spatial-app-jank.md` + `analysis-spatial-engine.md` |
-| `gpu_geometry_complexity` | 几何复杂度过高 | `Triangle Count` / `Vertex Count` / `3D Mesh *` / `Particle *` ↑ + GPU time ↑ | `gpu_frame_end` or equivalent GPU execution stage is high in the same abnormal frames; judged via Spatial Runtime process (`3D Mesh`, `Particle`) | `analysis-spatial-engine.md` |
-| `gpu_scene_complexity` | 场景复杂度过高 | `Visible Lights` / `Visible Spot Lights` / `Shadow Draw Call/Triangle/Vertex Count` ↑ + GPU time ↑ | `gpu_frame_end` or equivalent GPU execution stage is high in the same abnormal frames; judged via Spatial Runtime process (`Spot Lights`, `Shadow`) | `analysis-spatial-engine.md` |
-| `gpu_2d_effect_overload` | 2D 渲染特效过重 | `Effect_3DClipCount` / `Effect_3DTRSCount` / `Effect_GlassEffectCount` / `Effect_TotalEffectsCount` ↑ + GPU time ↑ | 2D Render GPU pressure is shown in the same abnormal frames; judged via Spatial Runtime process | `analysis-spatial-engine.md` |
+| `gpu_app_self_rendering_overload` | App self-rendering overload | `GPU Utilization` (App) / `CPU Utilization` (App 2D) / `viewAttachmentCount` ↑ | App `RenderThread` grows; Overdrawing, video playback, Compose recomposition storm, frequent invalidations | `analysis-kotlin-spatial-app-jank.md` + `analysis-spatial-engine.md` |
+| `gpu_geometry_complexity` | Excessive geometry complexity | `Triangle Count` / `Vertex Count` / `3D Mesh *` / `Particle *` ↑ + GPU time ↑ | `gpu_frame_end` or equivalent GPU execution stage is high in the same abnormal frames; judged via Spatial Runtime process (`3D Mesh`, `Particle`) | `analysis-spatial-engine.md` |
+| `gpu_scene_complexity` | Excessive scene complexity | `Visible Lights` / `Visible Spot Lights` / `Shadow Draw Call/Triangle/Vertex Count` ↑ + GPU time ↑ | `gpu_frame_end` or equivalent GPU execution stage is high in the same abnormal frames; judged via Spatial Runtime process (`Spot Lights`, `Shadow`) | `analysis-spatial-engine.md` |
+| `gpu_2d_effect_overload` | 2D effect overload | `Effect_3DClipCount` / `Effect_3DTRSCount` / `Effect_GlassEffectCount` / `Effect_TotalEffectsCount` ↑ + GPU time ↑ | 2D Render GPU pressure is shown in the same abnormal frames; judged via Spatial Runtime process | `analysis-spatial-engine.md` |
 
 ### 4.3 `resource_type: memory`
 
-| `bottleneck_category` | 中文 | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
+| `bottleneck_category` | Label | Evidence signature (metric) | Evidence signature (slice / track / table) | Owning topic |
 |---|---|---|---|---|
 | `memory_gc` | GC | GC frequency / duration ↑; heap / PSS / RSS growth | GC event timeline, `concurrent copying`, allocation peaks | `analysis-memory.md` |
 | `memory_oom` | OOM | Heap approaching limit; allocation failures | OOM event / tombstone, allocation-failure logs | `analysis-memory.md` |
@@ -97,26 +97,37 @@ If the chain cannot be completed, do not guess. Use the conservative app-side ca
 
 ## 5. Output Schema (Standalone File)
 
-The whole file is `session-output-<timestamp>/root-cause-classification.yaml`. It is self-describing: a small header identifies the run, followed by the classification list.
+The whole file is `session-output-<timestamp>/root-cause-classification.json`. It is self-describing: a small header identifies the run, followed by the classification list.
 
-```yaml
-# session-output-<timestamp>/root-cause-classification.yaml
-schema_version: 2                      # bump on enum changes (§7)
-session_dir: "session-output-20260731-140312"
-final_summary: "./final-summary.md"    # provenance link; the summary itself does NOT embed this classification
-root_cause_classification:
-  - resource_type: gpu                 # L1 enum (§3), required
-    bottleneck_category: gpu_geometry_complexity   # L2 enum (§4), required, must be valid for resource_type
-    conclusion_level: likely           # confirmed | likely | candidate | insufficient_evidence (same enum as Output Contract)
-    time_window: "2026-07-31 14:03:12 ~ 2026-07-31 14:03:25"   # optional; abnormal window for this classification
-    evidence_refs: ["spatial-engine:e1", "spatial-engine:e3"]  # required; refs into underlying topic evidence ids
-    note: "Triangle/Vertex counts spike during scene switch; gpu_frame_end binds." # optional, one line
-  - resource_type: cpu
-    bottleneck_category: cpu_gc_storm
-    conclusion_level: candidate
-    evidence_refs: ["memory:e2"]
-    note: "Concurrent-copying STW overlaps late-frame cluster on the main cluster."
+```json
+{
+  "schema_version": 2,
+  "session_dir": "session-output-20260731-140312",
+  "final_summary": "./final-summary.md",
+  "root_cause_classification": [
+    {
+      "resource_type": "gpu",
+      "bottleneck_category": "gpu_geometry_complexity",
+      "conclusion_level": "likely",
+      "time_window": "2026-07-31 14:03:12 ~ 2026-07-31 14:03:25",
+      "evidence_refs": ["spatial-engine:e1", "spatial-engine:e3"],
+      "note": "Triangle/Vertex counts spike during scene switch; gpu_frame_end binds."
+    },
+    {
+      "resource_type": "cpu",
+      "bottleneck_category": "cpu_gc_storm",
+      "conclusion_level": "candidate",
+      "evidence_refs": ["memory:e2"],
+      "note": "Concurrent-copying STW overlaps late-frame cluster on the main cluster."
+    }
+  ]
+}
 ```
+
+Notes:
+- `schema_version` is bumped on enum changes (§7).
+- `session_dir` identifies the run, `final_summary` is a provenance link; the summary itself does NOT embed this classification.
+- Each item in `root_cause_classification` is a classification entry with the field rules below.
 
 Field rules:
 
@@ -140,17 +151,21 @@ The `note` must explain the completed chain in one sentence: `window + owner + m
 
 When evidence cannot support any classification, the file still exists and carries exactly one entry:
 
-```yaml
-# session-output-<timestamp>/root-cause-classification.yaml
-schema_version: 2
-session_dir: "session-output-20260731-140312"
-final_summary: "./final-summary.md"
-root_cause_classification:
-  - resource_type: undetermined
-    bottleneck_category: undetermined
-    conclusion_level: insufficient_evidence
-    evidence_refs: []
-    note: "No trace / abnormal window not localizable; see limitations."
+```json
+{
+  "schema_version": 2,
+  "session_dir": "session-output-20260731-140312",
+  "final_summary": "./final-summary.md",
+  "root_cause_classification": [
+    {
+      "resource_type": "undetermined",
+      "bottleneck_category": "undetermined",
+      "conclusion_level": "insufficient_evidence",
+      "evidence_refs": [],
+      "note": "No trace / abnormal window not localizable; see limitations."
+    }
+  ]
+}
 ```
 
 Consistency rule: `resource_type: undetermined` MUST pair with `bottleneck_category: undetermined` and `conclusion_level: insufficient_evidence`, and vice versa. This keeps insufficient-evidence samples out of the accuracy denominator during scoring.

@@ -1,0 +1,73 @@
+{
+  "_comment": [
+    "Example of a topic sidecar: session-output-<timestamp>/topic-result/output-<topic>.meta.json.",
+    "This is the machine-readable sidecar for output-<topic>.md.",
+    "Contract: references/routing/output-contract.md"
+  ],
+
+  "schema_version": "1.0",
+  "topic": "spatial-engine",
+  "protocol": "spatial-engine",
+  "issue_type_key": ["spatial_frame_abnormal"],
+  "activated_subprotocols": ["spatial-engine"],
+  "topic_state": {
+    "activation": "activated",
+    "execution": "completed",
+    "closure_level": "server_cause",
+    "causal_role": "primary_cause",
+    "controller_handoff": []
+  },
+  "conclusion_level": "likely",
+
+  "time_window": "2026-07-31 14:03:12 ~ 2026-07-31 14:03:25",
+  "symptoms": "Obvious frame drops while dragging the model, with visual stutter and delayed head-tracking follow.",
+
+  "target": {
+    "package": "com.example.spatial.app",
+    "process": "com.example.spatial.app",
+    "threads": ["Spatial_Main", "Eng-Render", "RenderThread"]
+  },
+
+  "evidence": [
+    {
+      "id": "e1",
+      "type": "perfetto_trace",
+      "location": "trace-perf.perfetto-trace",
+      "one_line_finding": "Clustered Late Frames within the issue window on the frame-driving thread."
+    },
+    {
+      "id": "e2",
+      "type": "fast_perf",
+      "location": "fast-perf.json",
+      "one_line_finding": "Triangle/Vertex counters spike at scene switch."
+    }
+  ],
+
+  "root_cause": "Resource rebuild on scene switch produces a GPU-bound workload spike that collapses the frame budget.",
+
+  "next_actions": [
+    { "action": "Amortize scene-switch resource rebuild across multiple frames", "priority": "P0" },
+    { "action": "Reduce per-frame draw-call count on the drag path", "priority": "P1" }
+  ],
+
+  "limitations": [
+    "GPU counters are not available; cannot fully rule out concurrent GPU saturation."
+  ],
+
+  "extensions": {
+    "spatial": {
+      "frame_driving_thread_utid": 123,
+      "triangle_peak_delta_pct": 42.5
+    }
+  },
+
+  "sections_file": "output-spatial-engine.md",
+  "sections_in_body": {
+    "symptom": "① Symptom",
+    "existing_evidence": "② Existing Evidence",
+    "investigation_process": "③ Investigation Process",
+    "root_cause_judgment": "④ Root Cause Judgment",
+    "actions": "⑤ Actions (Optimization/Troubleshooting)",
+    "limitations_and_next_validation": "⑥ Limitations and Next Validation"
+  }
+}

@@ -1,4 +1,4 @@
-# Performance Knowledge Base (pico-spatial-knowledge) Usage Constraints
+# Performance Knowledge Base (`pico-dev-knowledge`) Usage Constraints
 
 This Skill is trace / evidence-driven. PerformanceKB is read-only, assistive
 input for candidate hypotheses, disambiguation rules, and evidence checklists;
@@ -6,25 +6,26 @@ it cannot prove the current root cause or replace current-trace evidence.
 
 ## 1. Mandatory Gate Contract
 
-This is the normative gate for PICO Spatial performance diagnosis when the
-`pico-spatial-knowledge` MCP or another configured PerformanceKB backend is
-exposed. Use the available read-only backend and record its name and status.
-The stages must run in order:
+This is the normative gate for PICO Spatial performance diagnosis when the general plugin's
+`pico-dev-knowledge` MCP is exposed. Run every lookup through the general plugin's
+`knowledge-query` Skill so project detection, live activation, querying, and restoration remain
+owned by one protocol. Pass the explicit engineering project as `--project <target-dir>` and, when
+distinct, its resource workspace as `--workspace-root <session-root>`. Record the actual backend
+name and status. The stages must run in order:
 
 1. `reference_loaded`: read this document before KB-derived guidance,
    leaf-level drilling, or a root-cause conclusion.
-2. `probe`: with MCP exposed, call `graph_stats` and record the real result.
-3. `global_triage`: call `query_graph` with the global triage query below.
-4. `category_specific`: issue at least one category-specific query for every
-   still-relevant reported symptom/category.
-5. `window_anchored`: after abnormal-window and leaf/mechanism evidence,
-   query the observed mechanism with same-window correlation to refine the
-   current candidate set.
-6. `pre_conclusion_cross_check`: before `root_cause`,
-   `primary_root_cause`, or a `confirmed` / `likely` primary diagnosis,
-   query the provisional primary candidate together with its strongest
-   remaining alternative and missing discriminator. This challenges the
-   ranking; it does not repeat the window-anchored query.
+2. `probe`: through `knowledge-query`, obtain and record the real `graph_stats` result.
+3. `global_triage`: through the same delegated query lifecycle, run `query_graph` with the global
+   triage query below.
+4. `category_specific`: issue at least one category-specific query for every still-relevant
+   reported symptom/category through that lifecycle.
+5. `window_anchored`: after abnormal-window and leaf/mechanism evidence, query the observed
+   mechanism with same-window correlation to refine the current candidate set.
+6. `pre_conclusion_cross_check`: before `root_cause`, `primary_root_cause`, or a `confirmed` /
+   `likely` primary diagnosis, query the provisional primary candidate together with its strongest
+   remaining alternative and missing discriminator. This challenges the ranking; it does not
+   repeat the window-anchored query.
 7. `recorded`: record backend, retrieval results, every stage status, exact
    canonical IDs, and skipped/unavailable reasons.
 
@@ -41,28 +42,33 @@ corresponding `conclusion_level` of `candidate` or `insufficient_evidence`.
 Do not treat a KB match as current-Trace proof or its recommendation as the
 active repair.
 
-Recommended output:
+Recommended output (JSON shape; lives inside the topic `.meta.json` sidecar):
 
-```yaml
-extensions:
-  knowledge_base:
-    backend: pico-spatial-knowledge
-    status: available|unavailable|retrieval_failed|not_applicable
-    gate:
-      reference_loaded: true
-      probe: completed|failed|skipped
-      global_triage: completed|failed|skipped
-      category_specific: completed|failed|skipped
-      window_anchored: completed|failed|skipped
-      pre_conclusion_cross_check: completed|failed|skipped
-      complete: true|false
-    matched_entries: [PERF-...]
-    selected_observations: []
-    missing_stages: []
-    limitation: null
+```json
+{
+  "extensions": {
+    "knowledge_base": {
+      "backend": "pico-dev-knowledge",
+      "status": "available|unavailable|retrieval_failed|not_applicable",
+      "gate": {
+        "reference_loaded": true,
+        "probe": "completed|failed|skipped",
+        "global_triage": "completed|failed|skipped",
+        "category_specific": "completed|failed|skipped",
+        "window_anchored": "completed|failed|skipped",
+        "pre_conclusion_cross_check": "completed|failed|skipped",
+        "complete": true
+      },
+      "matched_entries": ["PERF-..."],
+      "selected_observations": [],
+      "missing_stages": [],
+      "limitation": null
+    }
+  }
+}
 ```
 
-`matched_entries` contains only exact frontmatter IDs returned by the backend.
+`matched_entries` contains only exact backend-returned entry IDs (previously called "frontmatter IDs" when entries carried a YAML header).
 Never infer IDs from labels, titles, paths, filenames, or query text.
 
 ## 2. Query Construction
@@ -136,7 +142,7 @@ must never be converted into an application repair.
 ## 5. Unavailable or Failed Backend
 
 For generic OS6 workflows, KB retrieval is assistive and must not block trace
-analysis. If `pico-spatial-knowledge` is unavailable or retrieval fails,
+analysis. If `pico-dev-knowledge` is unavailable or retrieval fails,
 record the status, missing stages, and limitation; state that the KB is
 unavailable and continue strictly with trace / empirical evidence. Do not
 claim the gate completed or emit a KB-backed confirmed/likely conclusion. A

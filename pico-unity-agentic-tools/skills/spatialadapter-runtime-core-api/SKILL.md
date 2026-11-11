@@ -1,10 +1,16 @@
 ---
 name: spatialadapter-runtime-core-api
-description: 'Use when working with SpatialAdapterRuntime core APIs in Spatial Adapter, PICO Spatial, or Unity Spatial scenes: initialization, resource registration, mesh sync, or textures.'
+description: Use for SpatialAdapterRuntime initialization, resource registration, scene synchronization, mesh sync, dynamic textures, manager state, or runtime DTOs. Window lifecycle belongs to spatialadapter-camera-window-api; API exploration belongs to runtime-overview. Platform names alone do not activate this skill.
 license: 'Apache-2.0'
 ---
 
 # SpatialAdapter Runtime Core API
+
+## When NOT to Use
+
+- High-level API overview or topic comparison — use `spatialadapter-runtime-overview`
+- Scene setup or camera configuration — use `spatialadapter-scene-setup`
+- Input or interaction handling — use `spatialadapter-input-api`
 
 ## Overview
 
@@ -16,12 +22,12 @@ Confirm Spatial mode from the saved `mode`, installed package, and scene evidenc
 
 ## Trigger Keywords
 
-- `Spatial Adapter`
-- `PICO Spatial`
-- `Unity Spatial`
 - `SpatialAdapterRuntime`
 - `SyncMesh`
 - `SpatialAdapterResourceData`
+- runtime initialization, resource registration, or dynamic texture synchronization
+
+Platform names alone do not activate this skill. Require a concrete runtime API topic. Use [spatialadapter-camera-window-api](../spatialadapter-camera-window-api/SKILL.md) for window lifecycle, even when its low-level methods are on `SpatialAdapterRuntime`; use [spatialadapter-runtime-overview](../spatialadapter-runtime-overview/SKILL.md) for API exploration or comparison.
 
 ## When to Use
 

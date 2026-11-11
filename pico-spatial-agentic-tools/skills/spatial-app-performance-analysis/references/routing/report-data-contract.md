@@ -3,7 +3,7 @@
 This document is the single source of truth for the data that the HTML report consumes. It exists because the report has three independent producers/consumers that must agree on the same field shapes:
 
 1. `query_report_data.py` -> `report-data.json` (trace/fast-perf derived metrics)
-2. `final-summary.md` + `topic-result/output-*.md` (agent-authored analysis)
+2. `final-summary.md` + `final-summary.meta.json` + `topic-result/output-*.md` + `topic-result/output-*.meta.json` (agent-authored analysis)
 3. `generate_report.py` -> injects both of the above into `reportData` inside `templates/pico-perf-report-template.html`
 
 The template renders **only** the `reportData` object described in section 2. Any field the template renders MUST be listed here with a defined source and a defined missing-value behavior, so the report never falls back to mock data.
@@ -21,7 +21,7 @@ The template renders **only** the `reportData` object described in section 2. An
 | Source | Produced by | Feeds |
 |---|---|---|
 | `report-data.json` | `query_report_data.py` | `quickDiagnosis.*`, `details.*` (buckets/stats/frame durations), `findings.frameSummary` |
-| `final-summary.md` front-matter | agent (per [Final Summary Contract](final-summary-contract.md)) | `header.*`, `findings.rootCause`, `recommendations.*`, `header.activeProtocols` |
+| `final-summary.meta.json` | agent (per [Final Summary Contract](final-summary-contract.md)) | `header.*`, `findings.rootCause`, `recommendations.*`, `header.activeProtocols` |
 | `topic-result/output-*.md` | agent (per [Output Contract](output-contract.md)) | `analysisTopics[]`, `findings.evidence` |
 | none (blanked) | — | `header.deviceModel/osVersion`; all metric fields are empty when `--report-data` is omitted |
 
@@ -31,13 +31,13 @@ The template renders **only** the `reportData` object described in section 2. An
 
 | Field | Type | Source | Required | Missing behavior |
 |---|---|---|---|---|
-| `appPackage` | string | final-summary `header.app_package` | Yes | empty -> PKG chip hidden |
-| `appName` | string | final-summary `header.app_name` | Yes | falls back to a neutral title |
-| `analysisTime` | string | final-summary `header.analysis_time` | Recommended | empty -> TIME chip hidden |
-| `traceFileName` | string | final-summary `header.trace_file` | Recommended | empty -> TRACE chip hidden |
-| `deviceModel` | string | final-summary `header.device_model` | Optional | empty -> DEVICE/OS chip hidden |
-| `osVersion` | string | final-summary `header.os_version` | Optional | empty -> DEVICE/OS chip hidden |
-| `summary` | string | final-summary `header.summary` | Recommended | empty -> summary line blank |
+| `appPackage` | string | final-summary.meta.json `header.app_package` | Yes | empty -> PKG chip hidden |
+| `appName` | string | final-summary.meta.json `header.app_name` | Yes | falls back to a neutral title |
+| `analysisTime` | string | final-summary.meta.json `header.analysis_time` | Recommended | empty -> TIME chip hidden |
+| `traceFileName` | string | final-summary.meta.json `header.trace_file` | Recommended | empty -> TRACE chip hidden |
+| `deviceModel` | string | final-summary.meta.json `header.device_model` | Optional | empty -> DEVICE/OS chip hidden |
+| `osVersion` | string | final-summary.meta.json `header.os_version` | Optional | empty -> DEVICE/OS chip hidden |
+| `summary` | string | final-summary.meta.json `header.summary` | Recommended | empty -> summary line blank |
 | `activeProtocols` | string[] | final-summary `activated_subprotocols` | Recommended | empty -> no protocol badges |
 
 ### 2.2 `quickDiagnosis` (object)
@@ -63,10 +63,10 @@ The template renders **only** the `reportData` object described in section 2. An
 | Field | Type | Source | Required | Missing behavior |
 |---|---|---|---|---|
 | `frameSummary` | `{late,miss,discard}` numbers | `report-data.json.spr_frame_types` | Recommended | zeros |
-| `evidence` | object[] | topics' `evidence` list | Recommended | empty -> "（无结构化证据条目）" |
+| `evidence` | object[] | topics' `evidence` list | Recommended | empty -> "(no structured evidence entries)" |
 | `rootCause` | `{description, confidence}` | final-summary `root_cause` + `conclusion_level` | Recommended | empty strings |
 
-`evidence[]` item: `{ type:string, window:string, description:string }`. Mapped from each topic's YAML `evidence[]` as `type<-topic, window<-location, description<-one_line_finding`. `rootCause.confidence` maps `conclusion_level`: `confirmed->高`; all lower-confidence or unknown levels -> `一般`.
+`evidence[]` item: `{ type:string, window:string, description:string }`. Mapped from each topic sidecar's `evidence[]` as `type<-topic, window<-location, description<-one_line_finding`. `rootCause.confidence` maps `conclusion_level`: `confirmed->high`; all lower-confidence or unknown levels -> `moderate`.
 
 ### 2.4 `details` (object — note: `snake_case` keys)
 
@@ -145,7 +145,7 @@ Each item MUST be:
 }
 ```
 
-The template filters `analysisTopics.filter(t => t && t.report)`; a topic without a `report` object is silently dropped, so `report` and its keys are mandatory. `generate_report.py` builds these from each `topic-result/output-*.md` (YAML header + the 6 body sections). Body section titles are matched tolerantly (circled `①` or arabic `1.`), per [Output Contract](output-contract.md).
+The template filters `analysisTopics.filter(t => t && t.report)`; a topic without a `report` object is silently dropped, so `report` and its keys are mandatory. `generate_report.py` builds these from each `topic-result/output-*.meta.json` (machine fields) + its sibling `output-*.md` body (the 6 narrative sections). Body section titles are matched tolerantly (circled `①` or arabic `1.`), per [Output Contract](output-contract.md).
 
 **Fallback:** when a summary omits `topic_outputs` entirely, `generate_report.py` emits a single `analysisReport` object (built from the summary's `A./B./C./D.` sections) instead of `analysisTopics`. An explicitly present but empty `topic_outputs` is invalid, because it usually means the controller finalized before executing discovered topics. The template renders `analysisReport` only when `analysisTopics` is empty. Prefer the per-topic path; `analysisReport` is the degraded single-panel view.
 
@@ -222,10 +222,10 @@ All numeric fields may be `null` when a sample is missing; the report treats `nu
 
 Before generating a report, confirm:
 
-- `final-summary.md` front-matter has `header` (at least `app_package`), `root_cause`, `conclusion_level`, `limitations`, `next_actions`, `activated_subprotocols`, and `topic_outputs[]`.
-- Each `topic_outputs[].file` exists and follows the [Output Contract](output-contract.md).
+- `final-summary.meta.json` has `header` (at least `app_package`), `root_cause`, `conclusion_level`, `limitations`, `next_actions`, `activated_subprotocols`, and `topic_outputs[]`.
+- Each `topic_outputs[]` entry has an existing `file` path ending with `.meta.json`; the referenced topic sidecar follows the [Output Contract](output-contract.md) and resolves its Markdown body via `sections_file` (or the sibling `.md` fallback).
 - Run `query_report_data.py` first and pass its `report-data.json` whenever trace SQL extraction succeeds. This script consumes the diagnostic tables produced by `pico-cli perf trace load --spatial-diagnose true`; it must not recreate Spatial diagnostic tables itself. If `fast-perf.json` is unavailable, still pass the trace-derived `report-data.json`; only Quick Diagnosis Overview is hidden.
-- Invoke `generate_report.py` only after the Main protocol has completed its topic loop and finalized `final-summary.md`; do not generate HTML while topic outputs are still being added.
+- Invoke `generate_report.py` only after the Main protocol has completed its topic loop and finalized `final-summary.md` + `final-summary.meta.json`; do not generate HTML while topic outputs are still being added.
 - After generation, verify that `report.html` contains every executed topic name and that the output is non-empty. A generation error is a failed artifact, not a reason to keep a stale previous report.
 - `report-data.json`, when provided, matches section 3.
 - Fields with no real source stay blank; do not hand-fill them with plausible numbers to "make the report look complete".

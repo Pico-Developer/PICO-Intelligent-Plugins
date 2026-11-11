@@ -29,7 +29,8 @@ VALID_RECEIPT = {
         "designDocComplete": True,
         "designSpecValid": True,
         "previewMatchesSpec": True,
-        "postBuildVerdict": "pass",
+        "critiqueVerdict": "pass",
+        "consistencyReviewVerdict": "pass",
     },
 }
 
@@ -67,6 +68,11 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def write(self, name: str, payload: dict) -> None:
+        if (
+            name == "design_escalation_receipt.json"
+            and not (self.scratch_dir / "design-spec.json").exists()
+        ):
+            self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         (self.scratch_dir / name).write_text(json.dumps(payload), encoding="utf-8")
 
     def run_main(self, **kwargs) -> int:
@@ -117,12 +123,47 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("design_escalation_receipt.json", str(ctx.exception))
 
     def test_designer_passed_receipt_is_accepted(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
 
         self.assertEqual(0, self.run_main(input_mode="intent_only"))
 
+    def test_product_doc_accepts_matching_designer_receipt(self) -> None:
+        self.write(
+            "design_escalation_receipt.json",
+            dict(VALID_RECEIPT, input_mode="product_doc"),
+        )
+
+        self.assertEqual(0, self.run_main(input_mode="product_doc"))
+
+    def test_no_visual_hybrid_accepts_matching_designer_receipt(self) -> None:
+        self.write(
+            "design_escalation_receipt.json",
+            dict(VALID_RECEIPT, input_mode="hybrid"),
+        )
+
+        self.assertEqual(0, self.run_main(input_mode="hybrid", visual_asset="false"))
+
+    def test_product_doc_rejects_copied_intent_only_receipt(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
+        self.write("design_escalation_receipt.json", VALID_RECEIPT)
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="product_doc")
+
+        self.assertIn("does not match", str(ctx.exception))
+
+    def test_no_visual_hybrid_rejects_copied_intent_only_receipt(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
+        self.write("design_escalation_receipt.json", VALID_RECEIPT)
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.run_main(input_mode="hybrid", visual_asset="false")
+
+        self.assertIn("does not match", str(ctx.exception))
+
     def test_valid_user_package_does_not_require_designer_receipt(self) -> None:
-        self.write("design-spec.json", {"schemaVersion": "1.0"})
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
 
         self.assertEqual(
             0,
@@ -131,6 +172,17 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
                 design_gate_result="user_package_passed",
             ),
         )
+
+    def test_old_user_package_is_rejected(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "1.0"})
+        with self.assertRaisesRegex(SystemExit, "Unsupported design schemaVersion"):
+            self.run_main(input_mode="product_doc", design_gate_result="user_package_passed")
+
+    def test_old_designer_package_is_rejected(self) -> None:
+        self.write("design_escalation_receipt.json", VALID_RECEIPT)
+        self.write("design-spec.json", {"schemaVersion": "1.0"})
+        with self.assertRaisesRegex(SystemExit, "Unsupported design schemaVersion"):
+            self.run_main()
 
     def test_user_package_result_requires_design_spec(self) -> None:
         with self.assertRaises(SystemExit) as ctx:
@@ -153,7 +205,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("Invalid JSON", str(ctx.exception))
 
     def test_user_package_result_rejects_intent_only_mode(self) -> None:
-        self.write("design-spec.json", {"schemaVersion": "1.0"})
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
 
         with self.assertRaises(SystemExit) as ctx:
             self.run_main(
@@ -184,13 +236,13 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
 
     def test_failed_designer_critique_is_rejected(self) -> None:
         receipt = json.loads(json.dumps(VALID_RECEIPT))
-        receipt["pre_gates"]["postBuildVerdict"] = "fail"
+        receipt["pre_gates"]["critiqueVerdict"] = "fail"
         self.write("design_escalation_receipt.json", receipt)
 
         with self.assertRaises(SystemExit) as ctx:
             self.run_main(input_mode="intent_only")
 
-        self.assertIn("postBuildVerdict", str(ctx.exception))
+        self.assertIn("critiqueVerdict", str(ctx.exception))
 
     def test_invalid_design_spec_is_rejected(self) -> None:
         receipt = json.loads(json.dumps(VALID_RECEIPT))
@@ -238,6 +290,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
     # ---- onboarding handoff ----------------------------------------------
 
     def test_new_project_requires_onboarding_handoff(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
 
         with self.assertRaises(SystemExit) as ctx:
@@ -246,12 +299,14 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("onboarding_handoff.json", str(ctx.exception))
 
     def test_scaffold_only_handoff_is_accepted(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write("onboarding_handoff.json", VALID_HANDOFF)
 
         self.assertEqual(0, self.run_main(input_mode="intent_only", generation_mode="new_project"))
 
     def test_rejects_handoff_that_implemented_product_ui(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write("onboarding_handoff.json", dict(VALID_HANDOFF, product_ui_implemented=True))
 
@@ -261,6 +316,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("product_ui_implemented", str(ctx.exception))
 
     def test_rejects_handoff_with_failed_build(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write("onboarding_handoff.json", dict(VALID_HANDOFF, build_passed=False))
 
@@ -270,6 +326,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("build_passed", str(ctx.exception))
 
     def test_explicit_pico_package_is_accepted(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write(
             "onboarding_handoff.json",
@@ -283,6 +340,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertEqual(0, self.run_main(input_mode="intent_only", generation_mode="new_project"))
 
     def test_generated_package_must_use_safe_default_shape(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write(
             "onboarding_handoff.json",
@@ -295,6 +353,7 @@ class CheckHandoffReceiptsTest(unittest.TestCase):
         self.assertIn("Generated Onboarding Handoff.package", str(ctx.exception))
 
     def test_unchecked_launch_requires_a_note(self) -> None:
+        self.write("design-spec.json", {"schemaVersion": "write-spec-draft-1"})
         self.write("design_escalation_receipt.json", VALID_RECEIPT)
         self.write("onboarding_handoff.json", dict(VALID_HANDOFF, launch_checked=False))
 

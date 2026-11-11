@@ -27,22 +27,14 @@ if [ ! -d "$DIR" ]; then
 fi
 
 # Resolve gradle root + task name.
-GRADLE_ROOT=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GRADLE_ROOT="$(node "$SCRIPT_DIR/verification-summary.mjs" gradle-root "$DIR")" || exit 2
 GRADLE_TASK=""
 if [ -f "$DIR/gradlew" ]; then
-    GRADLE_ROOT="$DIR"
     GRADLE_TASK=":app:assembleDebug"
 else
     MODULE_NAME="$(basename "$DIR")"
-    SEARCH="$DIR"
-    while [ "$SEARCH" != "/" ] && [ -n "$SEARCH" ]; do
-        SEARCH="$(dirname "$SEARCH")"
-        if [ -f "$SEARCH/gradlew" ]; then
-            GRADLE_ROOT="$SEARCH"
-            GRADLE_TASK=":${MODULE_NAME}:assembleDebug"
-            break
-        fi
-    done
+    GRADLE_TASK=":${MODULE_NAME}:assembleDebug"
 fi
 
 if [ -z "$GRADLE_ROOT" ]; then

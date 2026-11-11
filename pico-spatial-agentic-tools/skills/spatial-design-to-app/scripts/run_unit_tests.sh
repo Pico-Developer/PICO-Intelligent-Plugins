@@ -26,25 +26,17 @@ if [ ! -d "$DIR" ]; then
     exit 2
 fi
 
-GRADLE_ROOT=""
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GRADLE_ROOT="$(node "$SCRIPT_DIR/verification-summary.mjs" gradle-root "$DIR")" || exit 2
 GRADLE_TASK=""
 TEST_RESULTS_DIR=""
 if [ -f "$DIR/gradlew" ]; then
-    GRADLE_ROOT="$DIR"
     GRADLE_TASK=":app:testDebugUnitTest"
     TEST_RESULTS_DIR="$DIR/app/build/test-results/testDebugUnitTest"
 else
     MODULE_NAME="$(basename "$DIR")"
-    SEARCH="$DIR"
-    while [ "$SEARCH" != "/" ] && [ -n "$SEARCH" ]; do
-        SEARCH="$(dirname "$SEARCH")"
-        if [ -f "$SEARCH/gradlew" ]; then
-            GRADLE_ROOT="$SEARCH"
-            GRADLE_TASK=":${MODULE_NAME}:testDebugUnitTest"
-            TEST_RESULTS_DIR="$DIR/build/test-results/testDebugUnitTest"
-            break
-        fi
-    done
+    GRADLE_TASK=":${MODULE_NAME}:testDebugUnitTest"
+    TEST_RESULTS_DIR="$DIR/build/test-results/testDebugUnitTest"
 fi
 
 if [ -z "$GRADLE_ROOT" ]; then

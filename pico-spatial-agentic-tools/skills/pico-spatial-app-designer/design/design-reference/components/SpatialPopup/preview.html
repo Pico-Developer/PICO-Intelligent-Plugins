@@ -1,0 +1,97 @@
+<!-- @dsCard group="Overlay" height=360 subtitle="Anchored popup; switch anchor types" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpatialPopup · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .popup-stage{width:456px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px}
+    #anchor-example{width:100%}
+    .popup-canvas{position:relative;width:100%;height:248px;margin-top:16px}
+    #volume-anchor{position:absolute;bottom:0;left:0}
+    #details-anchor{position:absolute;top:0;right:0}
+    .anchor-row{display:flex;align-items:center;gap:16px;min-width:0}
+    .popup-body{width:360px;max-width:100%;min-height:184px;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+    .popup-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .popup-slider-frame{min-width:0;width:100%}
+    .popup-facts{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 16px;margin:0;font-size:14px;line-height:18px}
+    .popup-facts dt{color:var(--label-semidark-alpha)}
+    .popup-facts dd{margin:0;color:var(--label-darkest-alpha)}
+    @media(max-width:600px){.popup-stage{max-width:calc(100% - 32px);margin:0 16px;padding:16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>SpatialPopup</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>SpatialPopup</h1><p>IconButton and Button anchors</p></header>
+  <div class="sui-stage popup-stage">
+    <sui-segment-control id="anchor-example" options="IconButton,Button" size="small" selected-index="0" semantic-label="Anchor example"></sui-segment-control>
+    <div class="popup-canvas">
+      <sui-icon-button id="volume-anchor" icon="ic_volume_loud" semantic-label="Adjust volume" aria-expanded="true" aria-controls="volume-popup"></sui-icon-button>
+      <sui-button id="details-anchor" text="File details" size="small" leading-icon="ic_info_circle" aria-expanded="false" aria-controls="details-popup" hidden></sui-button>
+    </div>
+  </div>
+
+  <sui-spatial-popup id="volume-popup" for="volume-anchor" offset-y="-8" semantic-label="Volume">
+    <div class="popup-body">
+      <div class="popup-heading">
+        <sui-text text="Volume" text-style="titleMedium"></sui-text>
+        <sui-text id="volume-value" text="50%" text-style="bodyLarge"></sui-text>
+      </div>
+      <div id="volume-frame" class="popup-slider-frame">
+        <sui-symbol-slider id="volume-slider" icon="ic_volume_loud" value="0.5" width="312" semantic-label="Volume"></sui-symbol-slider>
+      </div>
+    </div>
+  </sui-spatial-popup>
+  <sui-spatial-popup id="details-popup" for="details-anchor" horizontal-placement="align-end" vertical-placement="below" semantic-label="File details" hidden>
+    <div class="popup-body">
+      <div class="anchor-row" style="gap:12px">
+        <sui-icon name="ic_document" size="24" aria-hidden="true"></sui-icon>
+        <sui-text text="Scene notes.pdf" text-style="titleMedium"></sui-text>
+      </div>
+      <dl class="popup-facts">
+        <dt>Format</dt><dd>PDF document</dd>
+        <dt>Size</dt><dd>2.4 MB</dd>
+        <dt>Version</dt><dd>3</dd>
+      </dl>
+    </div>
+  </sui-spatial-popup>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const pairs = [
+        [document.getElementById('volume-anchor'), document.getElementById('volume-popup')],
+        [document.getElementById('details-anchor'), document.getElementById('details-popup')],
+      ];
+      pairs.forEach(([trigger, popup]) => {
+        trigger.addEventListener('click-action', () => {
+          const opening = popup.hidden;
+          pairs.forEach(([, other]) => { other.hidden = true; });
+          popup.hidden = !opening;
+        });
+        const updateExpanded = () => trigger.setAttribute('aria-expanded', String(!popup.hidden));
+        new MutationObserver(updateExpanded).observe(popup, {attributes:true, attributeFilter:['hidden']});
+        updateExpanded();
+      });
+      document.getElementById('anchor-example').addEventListener('select', event => {
+        const active = event.detail.index;
+        pairs.forEach(([trigger, popup], index) => {
+          trigger.hidden = index !== active;
+          popup.hidden = index !== active;
+        });
+      });
+      const slider = document.getElementById('volume-slider');
+      slider.addEventListener('value-change', event => {
+        const percent = Math.round(event.detail.value * 100);
+        document.getElementById('volume-value').setAttribute('text', percent + '%');
+      });
+      const frame = document.getElementById('volume-frame');
+      new ResizeObserver(() => {
+        if (frame.clientWidth > 0) slider.setAttribute('width', String(frame.clientWidth));
+      }).observe(frame);
+    });
+  </script>
+</body>
+</html>

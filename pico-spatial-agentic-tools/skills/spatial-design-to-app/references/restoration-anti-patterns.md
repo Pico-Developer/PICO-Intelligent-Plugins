@@ -2,6 +2,73 @@
 
 Read this reference before writing Compose UI from accepted design evidence.
 
+## Button used as a content container
+
+`Button` represents a concise command. Do not use it as the outer shell for a
+card, catalog tile, metadata group, or read-only detail panel merely to obtain
+hover, click, background, selected, or disabled styling. A `Button` may compose
+a compact command label, optional icons, and loading state; rich heterogeneous
+content belongs to an item or layout component. Generated two-line explanatory
+commands are not an exception. Recognized container misuse fails the scanner;
+comments cannot suppress it. Do not extract rich content into helpers to evade
+the rule. Focus, hover, and click needs do not justify a Button shell.
+
+```kotlin
+// Wrong: a rich selectable item becomes one oversized command button.
+Button(
+    onClick = onSelect,
+    modifier = Modifier.height(150.dp),
+) {
+    Column {
+        Icon(painter = appIcon, contentDescription = null)
+        Text(app.title)
+        Text(app.release)
+        Text(app.metadata)
+    }
+}
+
+// Wrong: disabled Button styling is used as a read-only surface.
+Button(
+    onClick = {},
+    enabled = false,
+) {
+    Column {
+        AppDescription()
+        CompatibilityMetadata()
+    }
+}
+
+// Correct for a standard actionable information row.
+ListItem(
+    modifier = Modifier.clickable(onClick = onSelect),
+    // Preserve the restoration default when the design omits padding.
+    padding = PaddingValues(16.dp),
+    headlineContent = { Text(app.title) },
+    supportingContent = { Text(app.metadata) },
+)
+
+// Correct when no built-in matches the accepted rich item layout.
+Column(
+    modifier = modifier
+        .clip(itemShape)
+        .spatialHoverEffect()
+        .clickable(onClick = onSelect)
+        .padding(16.dp),
+) {
+    AppArtworkAndMetadata()
+}
+
+// Correct for a read-only detail region.
+Column(modifier = modifier) {
+    AppDescription()
+    CompatibilityMetadata()
+}
+```
+
+Prefer the closest semantic SpatialUI component before composing a custom
+interactive layout. When a custom layout is necessary, hover and interaction
+must share the same hit-target modifier chain.
+
 ## Padding a container that owns its decoration
 
 Do not apply content padding to a container that also hosts a full-size

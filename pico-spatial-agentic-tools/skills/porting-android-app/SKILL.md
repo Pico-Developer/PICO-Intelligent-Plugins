@@ -8,15 +8,19 @@ license: 'Apache-2.0'
 
 This skill helps refine an existing Android application for a Spatial runtime such as PICO OS. It follows the official porting direction of preparing architecture first, then integrating the Spatial SDK, then migrating screens and interactions incrementally instead of attempting a one-shot rewrite.
 
+## When NOT to Use
+
+- New Spatial app delivery — use `spatial-app-dev-workflow`; use `spatial-app-onboarding` when only a runnable scaffold is requested
+- SDK version upgrades — use `spatial-sdk-update`
+- Pure UI capability questions — use `spatial-ui-ability`
+- Performance diagnosis — use `spatial-app-performance-workflow`
+
 ## When to use
 
-Use this skill when:
-
-- an existing Android phone or tablet app needs to run on a Spatial platform such as PICO OS
-- the app must be adapted from a traditional 2D Activity-owned UI into Spatial containers
-- the project needs Spatial SDK integration guidance
-- the app should support both Spatial runtime and standard Android runtime safely
-- the migration needs to be staged instead of rewritten from scratch
+- An existing Android app needs to run on a Spatial platform such as PICO OS
+- The app must be adapted from a traditional 2D Activity-owned UI into Spatial containers
+- The project needs Spatial SDK integration guidance for a staged migration
+- The app should support both Spatial runtime and standard Android runtime safely
 
 DO NOT use this skill when:
 
@@ -480,19 +484,8 @@ guesses. For an implementation request, distinguish completed work from
 deferred or blocked work. The required information is semantic; do not add
 empty or mechanical headings merely to satisfy this contract.
 
-## Constraints / pitfalls
-
-- DO NOT port a single-Activity navigation model directly into multiple Spatial containers
-- DO NOT assume mobile-style system Back behavior exists on the Spatial runtime
-- DO NOT keep major UI ownership tightly coupled to Activity lifecycle code if the UI is being split across containers
-- DO NOT hardcode the SDK version in multiple dependency locations; keep the verified artifact version in one variable
-- DO NOT infer a Spatial SDK/BOM artifact version from the PICO OS generation
-- DO NOT choose or change a Spatial BOM version without project, template, Maven, or PICO development knowledge evidence
-- DO NOT add Compose exclusions unless dependency conflicts actually require them
-- DO NOT call Spatial-only APIs on standard Android devices
-- DO NOT treat the migration as only a rendering task; interaction and navigation changes are part of the port
-- DO NOT add MR, tracking, or ML features before the basic launcher and navigation flow are stable
+## Constraints / pitfalls → [references/constraints-pitfalls.md](references/constraints-pitfalls.md)
 
 ## Summary
 
-A good Spatial port is a staged transformation of architecture, entry, interaction, and runtime behavior. Start by making screens independent, integrate the Spatial SDK, migrate entry and containers incrementally, then add Spatial capabilities only where they improve the experience.
+A good Spatial port stages architecture, entry, interaction, and runtime behavior. Make screens independent, integrate the Spatial SDK, migrate containers incrementally, then add Spatial capabilities only where they improve the experience.

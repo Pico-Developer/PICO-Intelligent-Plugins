@@ -111,6 +111,13 @@ Typical portal building blocks:
 - `PortalComponent`
 - `PortalMaterial`
 
+Inspect the exact symbols in the project's SDK version before implementation.
+When a selected Portal API has an experimental opt-in annotation declared by
+the selected PICO Spatial SDK version, follow
+[Experimental API Opt-In](experimental-apis.md). Kotlin `@OptIn` without the
+application Manifest runtime gate compiles but can fail at runtime.
+
 Checklist:
 - [ ] Make portal surface and portal world consistent.
 - [ ] Consider whether entity crossing is desired (and validate it explicitly).
+- [ ] If an exact Portal symbol is experimental, verify both source and runtime opt-ins.

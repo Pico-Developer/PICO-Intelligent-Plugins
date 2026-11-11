@@ -1,0 +1,58 @@
+<!-- @dsCard group="Selection" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Slider · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .slider-sizes{display:grid;gap:12px}
+    .slider-size{display:flex;align-items:center;gap:16px}
+    .slider-size span{width:72px;flex:none;font-size:14px}
+    .brightness-control{width:240px;max-width:100%;display:grid;gap:12px}
+    .brightness-heading,.brightness-range{display:flex;justify-content:space-between;gap:16px}
+    .brightness-heading output{font-variant-numeric:tabular-nums}
+    #brightness-example .brightness-range{margin:0;font-size:14px}
+    #brightness-example{overflow-x:auto}
+    @media(max-width:600px){
+      .slider-size{flex-direction:column;align-items:flex-start;gap:8px}
+      .slider-size span{width:auto}
+    }
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Slider</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro">
+    <h1>Slider</h1>
+    <p>Size reference · original defaults</p>
+  </header>
+  <div class="sui-stage">
+    <div class="slider-sizes">
+      <div class="slider-size"><span>Small</span><sui-slider value="0.4" size="small" semantic-label="Small size reference"></sui-slider></div>
+      <div class="slider-size"><span>Regular</span><sui-slider value="0.4" size="regular" semantic-label="Regular size reference"></sui-slider></div>
+      <div class="slider-size"><span>Max</span><sui-slider value="0.4" size="max" semantic-label="Max size reference"></sui-slider></div>
+    </div>
+  </div>
+  <section class="example" id="brightness-example">
+    <h2>Plan recommendation · brightness</h2>
+    <p class="example-note">Adjust brightness from 0% to 100%. The current percentage updates as you drag. This example does not change device brightness.</p>
+    <div class="brightness-control">
+      <div class="brightness-heading"><span>Brightness</span><output id="brightness-value" for="brightness">40%</output></div>
+      <sui-slider id="brightness" value="40" min="0" max="100" size="regular" width="240" semantic-label="Brightness in percent"></sui-slider>
+      <p class="brightness-range"><span>0%</span><span>100%</span></p>
+    </div>
+  </section>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const slider = document.getElementById('brightness');
+      const readout = document.getElementById('brightness-value');
+      const update = value => { readout.textContent = Math.round(value) + '%'; };
+      slider.addEventListener('value-change', event => update(event.detail.value));
+      update(slider.value);
+    });
+  </script>
+</body>
+</html>

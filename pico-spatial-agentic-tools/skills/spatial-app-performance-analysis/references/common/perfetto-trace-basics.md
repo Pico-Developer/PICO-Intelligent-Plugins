@@ -81,7 +81,7 @@ Only count rows where `overlap_end_ns > overlap_start_ns`.
 
 - `pid` / `tid` are system IDs. They can be reused across time and should not be the primary join key inside Perfetto SQL.
 - `upid` / `utid` are Perfetto internal IDs. Prefer them for joins against `process`, `thread`, `thread_track`, `slice`, and `thread_state`.
-- A thread name such as `main` is not enough evidence. Spatial apps may drive frames from a package-named frame-driving thread. Use `trace-probe-detail.yaml` or an identity query to pin `utid`.
+- A thread name such as `main` is not enough evidence. Spatial apps may drive frames from a package-named frame-driving thread. Use `trace-probe-detail.json` or an identity query to pin `utid`.
 - A process or thread may have `start_ts` / `end_ts`; if multiple rows match a package or name, use the row whose lifetime overlaps the issue window.
 
 ## 5. Track and Slice Joins

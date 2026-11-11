@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "write-spec-draft-1",
+  "metadata": {
+    "projectName": "Character scene",
+    "revision": 2,
+    "preview": "preview.html",
+    "references": [
+      {
+        "path": "../../design-reference/README.md",
+        "sha256": "d6d8aef786c0c6a9aadb736a6dfe630d29a037b638bfb24936ee8c22d7c46cb3"
+      },
+      {
+        "path": "../../design-reference/tokens.json",
+        "sha256": "8788c7ae95d02eca1827cf42b0688aa6b12de57706a97dce1d7f79becee4b0bd"
+      },
+      {
+        "path": "../../design-reference/color-roles.json",
+        "sha256": "3888822c83b7f287d6c4e18bcbf9ec6cc7ce38db5012caf5e42a8df96461bf3f"
+      },
+      {
+        "path": "../../design-reference/runtime/components.js",
+        "sha256": "38b037860a19398898c7786a9878d6d7e24742145c244c5a24597783159daccd"
+      },
+      {
+        "path": "../../design-reference/3d-preview.md",
+        "sha256": "c20b14d15ea5b7e7e27e615e04627943c3652d4aac59707edddf62e38615e2b4"
+      }
+    ]
+  },
+  "experience": {
+    "subject": "Inspect and greet a character",
+    "form": "Volume scene with a scene-bound information panel; Web simulates the front view"
+  },
+  "theme": {
+    "brandColors": {}
+  },
+  "surfaces": [
+    {
+      "id": "character-volume",
+      "type": "volume",
+      "defaultSize": {
+        "width": 900,
+        "height": 600,
+        "depth": 400,
+        "unit": "dp"
+      },
+      "rootNodeId": "scene-root"
+    }
+  ],
+  "initialStateId": "initial",
+  "states": [
+    {
+      "id": "initial",
+      "surfaceRoots": {
+        "character-volume": "scene-root"
+      },
+      "values": {
+        "characterYawDegrees": 0
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "rotate-character",
+      "purpose": "Rotate only character-model by 30 degrees around the vertical axis; character-info-panel stays stationary"
+    },
+    {
+      "id": "reset-character",
+      "purpose": "Return character-model to its initial orientation; panel stays stationary"
+    },
+    {
+      "id": "greet-character",
+      "purpose": "Play the character waving animation; Preview reports the request only, animation must be implemented in native"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "scene-root",
+      "kind": "layout",
+      "purpose": "Character scene composition; HTML is a layout simulation, not native spatial parenting",
+      "layout": {
+        "mode": "row",
+        "widthDp": 900,
+        "heightDp": 600,
+        "gapDp": 32,
+        "align": "center"
+      },
+      "children": [
+        "character-model",
+        "character-info-panel"
+      ]
+    },
+    {
+      "id": "character-model",
+      "kind": "domain_visual",
+      "rendererKey": "character-model",
+      "purpose": "Create a 3D character, not a flat illustration; preserve the confirmed blue jacket and requested behaviors",
+      "layout": {
+        "widthDp": 480,
+        "heightDp": 440
+      },
+      "designNotes": {
+        "represents": "3D character model",
+        "previewRepresentation": "Simplified placeholder; jacket color is confirmed, facial details are not specified",
+        "assetStatus": "to-create",
+        "appearance": [
+          "Stylized character wearing a blue jacket"
+        ],
+        "behaviors": [
+          "Rotate around the vertical axis in 30-degree steps; Reset returns to the initial orientation",
+          "Wave when Greet is activated"
+        ],
+        "previewLimitations": [
+          "Waving is not simulated; rotation only transforms a flat SVG placeholder"
+        ]
+      }
+    },
+    {
+      "id": "character-info-panel",
+      "kind": "spatialui",
+      "component": "sui-attachment-panel",
+      "props": {
+        "background": "material"
+      },
+      "layout": {
+        "widthDp": 340,
+        "paddingDp": 24,
+        "gapDp": 16,
+        "mode": "column"
+      },
+      "designNotes": {
+        "relationship": "Inside the character scene, to the right of the character; exact scene distance is not yet specified",
+        "followBehavior": "Remain stationary when the character rotates"
+      },
+      "children": [
+        "panel-title",
+        "panel-copy",
+        "panel-actions"
+      ]
+    },
+    {
+      "id": "panel-title",
+      "kind": "text",
+      "content": "Character",
+      "textStyle": {
+        "typography": "bodyLarge",
+        "color": "labelPrimary",
+        "overrides": {
+          "weight": 700
+        }
+      }
+    },
+    {
+      "id": "panel-copy",
+      "kind": "text",
+      "content": "Blue jacket \u00b7 stylized figure",
+      "textStyle": {
+        "typography": "bodyLargeMultiline",
+        "color": "labelSecondary"
+      }
+    },
+    {
+      "id": "panel-actions",
+      "kind": "layout",
+      "layout": {
+        "mode": "row",
+        "gapDp": 8,
+        "justify": "end"
+      },
+      "children": [
+        "rotate",
+        "reset",
+        "greet"
+      ]
+    },
+    {
+      "id": "rotate",
+      "kind": "spatialui",
+      "component": "sui-button",
+      "props": {
+        "text": "Rotate"
+      },
+      "events": {
+        "click": "rotate-character"
+      }
+    },
+    {
+      "id": "reset",
+      "kind": "spatialui",
+      "component": "sui-button",
+      "props": {
+        "text": "Reset"
+      },
+      "events": {
+        "click": "reset-character"
+      }
+    },
+    {
+      "id": "greet",
+      "kind": "spatialui",
+      "component": "sui-button",
+      "props": {
+        "text": "Greet"
+      },
+      "events": {
+        "click": "greet-character"
+      }
+    }
+  ],
+  "assets": []
+}

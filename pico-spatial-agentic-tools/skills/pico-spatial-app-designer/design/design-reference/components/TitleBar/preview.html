@@ -1,0 +1,67 @@
+<!-- @dsCard group="Navigation" height=560 subtitle="TitleBar variants" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TitleBar · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .titlebar-gallery{width:920px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:16px;display:grid;gap:16px}
+    .titlebar-gallery>section{min-width:0}
+    .variant-label{margin:0 0 4px;color:var(--label-semidark-alpha);font-size:12px;line-height:16px;font-weight:500}
+    .primary-title{font-weight:700}
+    .title-group{min-width:0}
+    .title-search-layout{display:flex;align-items:center;gap:16px;width:100%;min-width:0}
+    .title-search-layout .primary-title{flex:1;min-width:0}
+    .title-search-layout sui-search-field{flex:none}
+    .titlebar-viewport{overflow-x:auto}
+    #titlebar-search{min-width:560px}
+    @media(max-width:600px){.titlebar-gallery{max-width:calc(100% - 32px);margin:0 16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>TitleBar</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>TitleBar</h1><p>Title, alignment and action-slot examples</p></header>
+  <div class="sui-stage titlebar-gallery">
+    <section aria-labelledby="default-label">
+      <h2 id="default-label" class="variant-label">CenterInBar · title only</h2>
+      <sui-title-bar id="titlebar-default" alignment="center-in-bar">
+        <span class="title-copy">Settings</span>
+      </sui-title-bar>
+    </section>
+    <section aria-labelledby="center-label">
+      <h2 id="center-label" class="variant-label">Center · title with actions</h2>
+      <sui-title-bar id="titlebar-centered" alignment="center">
+        <span class="title-copy">Photos</span>
+        <sui-icon-button slot="leading" size="small" icon="ic_cross" container-color="transparent" content-color="var(--label-darkest-alpha)" semantic-label="Close"></sui-icon-button>
+        <sui-button slot="trailing" size="small" text="Done"></sui-button>
+      </sui-title-bar>
+    </section>
+    <section aria-labelledby="subtitle-label">
+      <h2 id="subtitle-label" class="variant-label">Title and subtitle</h2>
+      <sui-title-bar id="titlebar-subtitle">
+        <div class="title-group">
+          <span class="primary-title">Library</span>
+          <sui-text text="Downloaded books" text-style="bodyMedium" color="var(--label-ultradark-alpha)"></sui-text>
+        </div>
+        <sui-icon-button slot="trailing" size="small" icon="ic_plus" container-color="transparent" content-color="var(--label-darkest-alpha)" semantic-label="Add to library"></sui-icon-button>
+      </sui-title-bar>
+    </section>
+    <section aria-labelledby="search-label">
+      <h2 id="search-label" class="variant-label">Title and search</h2>
+      <div class="titlebar-viewport">
+        <sui-title-bar id="titlebar-search">
+          <div class="title-search-layout">
+            <span class="primary-title">Library</span>
+            <sui-search-field id="title-search" placeholder="Search library" width="280" semantic-label="Search library"></sui-search-field>
+          </div>
+          <sui-icon-button slot="trailing" size="small" icon="ic_ellipsis" container-color="transparent" content-color="var(--label-darkest-alpha)" semantic-label="More library actions"></sui-icon-button>
+        </sui-title-bar>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

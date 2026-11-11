@@ -10,8 +10,9 @@ from pathlib import Path
 SCRIPT_PATH = Path(__file__).resolve().parent / "scan_implementation.py"
 SKILL_DIR = SCRIPT_PATH.parent.parent
 WEB_TO_COMPOSE_PATH = SKILL_DIR / "references/spatialui-web-to-compose.md"
-WEB_PARITY_PATH = (
-    SKILL_DIR.parent / "pico-spatial-app-designer/assets/spatialui-web/COMPONENT_PARITY.md"
+RESTORATION_ANTI_PATTERNS_PATH = SKILL_DIR / "references/restoration-anti-patterns.md"
+DESIGNER_RUNTIME_PATH = (
+    SKILL_DIR.parent / "pico-spatial-app-designer/design/design-reference/runtime/components.js"
 )
 
 
@@ -96,17 +97,10 @@ class ScanImplementationTest(unittest.TestCase):
     def test_web_to_compose_mapping_covers_designer_catalog(self) -> None:
         scanner = load_scanner_module()
         allowed, _ = scanner.load_component_vocabulary()
-        parity_text = WEB_PARITY_PATH.read_text(encoding="utf-8")
+        parity_text = DESIGNER_RUNTIME_PATH.read_text(encoding="utf-8")
         mapping_text = WEB_TO_COMPOSE_PATH.read_text(encoding="utf-8")
 
-        parity_tags = set(
-            re.findall(
-                r"^\|\s*`[^`]+`\s*\|\s*`(sui-[^`]+)`\s*\|",
-                parity_text,
-                re.MULTILINE,
-            )
-        )
-        parity_tags.add("sui-augment")
+        runtime_tags = set(re.findall(r"(?:register|define)\('(sui-[^']+)'", parity_text))
         mapping_rows = re.findall(
             r"^\|\s*`(sui-[^`]+)`\s*\|\s*`([A-Z][A-Za-z0-9]*)`\s*\|",
             mapping_text,
@@ -114,7 +108,10 @@ class ScanImplementationTest(unittest.TestCase):
         )
         mapped_tags = {tag for tag, _ in mapping_rows}
 
-        self.assertEqual(parity_tags, mapped_tags)
+        # Every mapped component must exist in the maintained runtime.
+        # Runtime-only preview shells/helpers do not require native component mappings.
+        native_only = {"sui-augment", "sui-stereo-image"}
+        self.assertEqual(mapped_tags - runtime_tags, native_only)
         legal_components = allowed | scanner.GENERIC_PRIMITIVES
         for tag, component in mapping_rows:
             self.assertIn(
@@ -132,6 +129,16 @@ class ScanImplementationTest(unittest.TestCase):
         )
         self.assertIn("Do not convert it to `Button { ListItem(...) }`", mapping_text)
         self.assertIn("SpatialUI 6.1.9 `ListItem` already", mapping_text)
+
+    def test_titlebar_and_button_semantics_are_documented(self) -> None:
+        mapping_text = WEB_TO_COMPOSE_PATH.read_text(encoding="utf-8")
+        anti_patterns = RESTORATION_ANTI_PATTERNS_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("titleAlignment = TitleAlignment.Center", mapping_text)
+        self.assertIn("titleAlignment = TitleAlignment.CenterInBar", mapping_text)
+        self.assertIn("Command buttons are not content containers", mapping_text)
+        self.assertIn("Button used as a content container", anti_patterns)
+        self.assertIn("spatialHoverEffect()", anti_patterns)
 
     def test_empty_vocabulary_fails_instead_of_passing_silently(self) -> None:
         scanner = load_scanner_module()
@@ -327,6 +334,7 @@ class ScanImplementationTest(unittest.TestCase):
     def test_accepts_ui_built_from_spatialui_components(self) -> None:
         scanner = load_scanner_module()
         self.write_manifest()
+        (self.scratch_dir / "design-spec.json").write_text('{"nodes": []}', encoding="utf-8")
         self.write_kt(
             """
             fun mainApp(scope: SpatialAppScope) = with(scope) {
@@ -335,7 +343,9 @@ class ScanImplementationTest(unittest.TestCase):
 
             @Composable
             private fun Screen() {
-                SideNavigation { SideNavigationItem(text = "Home") }
+                SideNavigation {
+                    SideNavigationItem(selected = true, modifier = Modifier.heightIn(min = 48.dp)) { Text("Home") }
+                }
                 SearchField(value = "", onValueChange = {})
                 Button(onClick = {}) { Text("Start") }
             }
@@ -402,6 +412,320 @@ class ScanImplementationTest(unittest.TestCase):
         result = scanner.check_invented_component_names(self.sources(scanner))
 
         self.assertTrue(result["passed"], msg=result["failures"])
+
+    def test_accepts_center_in_bar_for_title_only(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    titleAlignment = TitleAlignment.CenterInBar,
+                    title = { Text("Store") },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["warnings"])
+
+    def test_warns_for_center_title_only(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    titleAlignment = TitleAlignment.Center,
+                    title = { Text("Store") },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["failures"])
+        self.assertIn("TitleAlignment.CenterInBar", "\n".join(result["warnings"]))
+
+    def test_existing_module_warns_for_center_title_only_without_blocking(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    titleAlignment = TitleAlignment.Center,
+                    title = { Text("Existing") },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_alignment(
+            self.sources(scanner), generation_mode="existing_module"
+        )
+
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["failures"])
+        self.assertIn("existing-module", "\n".join(result["warnings"]))
+
+    def test_alignment_distinguishes_search_from_title_only_in_same_file(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt("""
+            @Composable fun Header() {
+                TitleBar(titleAlignment = TitleAlignment.CenterInBar,
+                         title = { Column { Text("Title"); Text("Subtitle") } })
+                TitleBar(titleAlignment = TitleAlignment.Center,
+                         title = { Row { Text("Store"); SearchField(value = "") } })
+                TitleBar(titleAlignment = TitleAlignment.CenterInBar,
+                         title = { Row { Text("Store"); SearchField(value = "") } })
+                TitleBar(titleAlignment = TitleAlignment.CenterInBar,
+                         title = { CustomHeader() })
+            }
+        """)
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+        self.assertTrue(result["passed"])
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("search-containing", result["warnings"][0])
+        self.assertEqual(len(result["evidence"]["compositions"]), 3)
+
+    def test_titlebar_alignment_ignores_search_names_in_text_and_comments(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt("""
+            @Composable fun Header() {
+                TitleBar(titleAlignment = TitleAlignment.CenterInBar,
+                    title = { Text("SearchField()", maxLines = 1) /* SearchField() */ })
+                TitleBar(title = { Text("Title") })
+            }
+        """)
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+        self.assertTrue(result["passed"])
+        self.assertEqual(len(result["warnings"]), 1)
+        self.assertIn("implicit or dynamic", result["warnings"][0])
+        self.assertEqual(
+            [item["expected"] for item in result["evidence"]["compositions"]],
+            ["CenterInBar", "CenterInBar"],
+        )
+
+    def test_titlebar_actions_use_remaining_space_alignment(self) -> None:
+        scanner = load_scanner_module()
+        for slot in ("leadingActions", "trailingActions"):
+            for alignment in ("Center", "CenterInBar"):
+                with self.subTest(slot=slot, alignment=alignment):
+                    self.write_kt(f"""
+                        @Composable fun Header() {{
+                            TitleBar(titleAlignment = TitleAlignment.{alignment},
+                                title = {{ Text("Month") }},
+                                {slot} = {{ Button(onClick = {{}}) {{ Text("Next") }} }})
+                        }}
+                    """)
+                    result = scanner.check_titlebar_alignment(self.sources(scanner))
+                    self.assertEqual(result["evidence"]["compositions"][0]["expected"], "Center")
+                    self.assertEqual(len(result["warnings"]), int(alignment == "CenterInBar"))
+
+    def test_titlebar_empty_actions_keep_text_only_alignment(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt("""
+            @Composable fun Header() {
+                TitleBar(titleAlignment = TitleAlignment.CenterInBar,
+                    title = { Text("Month") },
+                    leadingActions = {}, trailingActions = { /* empty */ })
+            }
+        """)
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+        self.assertFalse(result["warnings"])
+        self.assertEqual(result["evidence"]["compositions"][0]["expected"], "CenterInBar")
+
+    def test_titlebar_compound_title_uses_center(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt("""
+            @Composable fun Header() {
+                TitleBar(titleAlignment = TitleAlignment.Center,
+                    title = { Row { Icon(imageVector = icon); Text("Month") } })
+            }
+        """)
+        result = scanner.check_titlebar_alignment(self.sources(scanner))
+        self.assertFalse(result["warnings"])
+        self.assertEqual(result["evidence"]["compositions"][0]["expected"], "Center")
+
+    def test_warns_when_titlebar_search_omits_weighted_space(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            Text("Store")
+                            SearchField(value = "", onValueChange = {})
+                        }
+                    },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_search_layout(self.sources(scanner))
+
+        self.assertTrue(result["passed"])
+        self.assertIn("Spacer(Modifier.weight(1f))", "\n".join(result["warnings"]))
+
+    def test_accepts_canonical_titlebar_search_layout(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    title = {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Text("Store")
+                            Spacer(modifier = Modifier.weight(1f))
+                            SearchField(value = "", onValueChange = {})
+                        }
+                    },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_search_layout(self.sources(scanner))
+
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["warnings"])
+
+    def test_warns_when_titlebar_weighted_search_keeps_fixed_spacing(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Header() {
+                TitleBar(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            Text("Store")
+                            Spacer(modifier = Modifier.weight(1f))
+                            SearchField(value = "", onValueChange = {})
+                        }
+                    },
+                )
+            }
+            """
+        )
+
+        result = scanner.check_titlebar_search_layout(self.sources(scanner))
+
+        self.assertTrue(result["passed"])
+        self.assertIn("explicitly requires it", "\n".join(result["warnings"]))
+
+    def test_rejects_button_wrapping_a_column(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun AppTile(onSelect: () -> Unit) {
+                Button(
+                    onClick = onSelect,
+                    modifier = Modifier.height(150.dp),
+                ) {
+                    Column {
+                        Text("App")
+                        Text("Version 2.0")
+                        Text("120 MB")
+                    }
+                }
+            }
+            """
+        )
+
+        result = scanner.check_button_container_semantics(self.sources(scanner))
+
+        self.assertFalse(result["passed"])
+        self.assertIn("wraps a Column", "\n".join(result["failures"]))
+
+    def test_rejects_disabled_button_as_read_only_surface(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Detail() {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                ) {
+                    DetailContent()
+                }
+            }
+            """
+        )
+
+        result = scanner.check_button_container_semantics(self.sources(scanner))
+
+        self.assertFalse(result["passed"])
+        self.assertIn("disabled with an empty onClick", "\n".join(result["failures"]))
+
+    def test_accepts_concise_command_button(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Install(onInstall: () -> Unit) {
+                Button(onClick = onInstall) {
+                    Icon(painter = installIcon, contentDescription = null)
+                    Text("Install")
+                }
+            }
+            """
+        )
+
+        result = scanner.check_button_container_semantics(self.sources(scanner))
+
+        self.assertFalse(result["warnings"])
+        self.assertTrue(result["passed"])
+        self.assertFalse(result["failures"])
+
+    def test_legacy_rich_button_marker_cannot_suppress_failure(self) -> None:
+        scanner = load_scanner_module()
+        self.write_kt(
+            """
+            @Composable
+            private fun Command(onRun: () -> Unit) {
+                // spatial-ui: intentional-rich-button compact two-line command
+                Button(onClick = onRun) {
+                    Column {
+                        Text("Run")
+                        Text("Uses current settings")
+                    }
+                }
+            }
+            """
+        )
+
+        result = scanner.check_button_container_semantics(self.sources(scanner))
+
+        self.assertFalse(result["passed"])
+        self.assertIn("wraps a Column", "\n".join(result["failures"]))
+        self.assertFalse(result["warnings"])
+        summary = scanner.scan(self.target_dir, self.scratch_dir)
+        self.assertFalse(summary["passed"])
+        self.assertTrue(
+            any(
+                "[button_container_semantics]" in failure
+                for failure in summary["failures_or_explicit_none"]
+            )
+        )
 
     # ---- window chrome ----------------------------------------------------
 

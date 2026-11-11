@@ -180,15 +180,18 @@ Hand back caller/callee, transaction, server-side, downstream-dependency, time-w
 
 ## Topic Output State
 
-The Binder topic output must distinguish activation, execution, closure, and causal assessment:
+The Binder topic output must distinguish activation, execution, closure, and causal assessment (JSON shape; lives inside the topic `.meta.json` sidecar):
 
-```yaml
-topic_state:
-  activation: activated
-  execution: completed | completed_with_evidence_gap | blocked
-  closure_level: signal | caller_path | transaction_callee | service_module | server_cause
-  causal_role: background_noise | candidate | contributor | amplifier | upstream_cause | primary_cause
-  controller_handoff: [<cross-topic evidence items>]
+```json
+{
+  "topic_state": {
+    "activation": "activated",
+    "execution": "completed | completed_with_evidence_gap | blocked",
+    "closure_level": "signal | caller_path | transaction_callee | service_module | server_cause",
+    "causal_role": "background_noise | candidate | contributor | amplifier | upstream_cause | primary_cause",
+    "controller_handoff": ["<cross-topic evidence items>"]
+  }
+}
 ```
 
 Use `completed_with_evidence_gap` when the topic ran but the trace cannot resolve the callee or server-side cause. Use `blocked` only when the minimum evidence needed to run even the caller-side checks is unavailable.

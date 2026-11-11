@@ -3,7 +3,7 @@
 Use this reference when a PICO app needs a new or materially repaired UI icon.
 It adapts the production rules from the ICON 7.0 handoff dated 2026-09-16 to
 the source-to-app workflow. It is not a replacement for an icon supplied by
-Figma, an existing app resource, an SDK-owned icon, or a matching bundled ICON
+Figma, an existing app resource, or a matching bundled ICON
 7.0 asset.
 
 ## Source authority and reuse order
@@ -12,9 +12,8 @@ Resolve the source before drawing. Use the first available authoritative asset:
 
 1. A user-supplied Figma/download asset or explicit reference image.
 2. An existing approved icon in the target app or current product icon family.
-3. An SDK-owned icon that expresses the same semantics and state.
-4. An exact semantic match in the bundled ICON 7.0 catalog.
-5. A newly drawn ICON 7.0-style vector following this reference.
+3. An exact semantic match in the bundled ICON 7.0 catalog.
+4. A newly drawn ICON 7.0-style vector following this reference.
 
 Do not redraw an available source merely to make it look more generic. When a
 reference image exists, preserve its recognisable silhouette, direction,
@@ -226,16 +225,16 @@ The approved design source is an SVG under
 - use `currentColor` for monochrome positive artwork;
 - preserve holes with fill type/winding or Boolean subtraction;
 - do not use a white/background-colored shape as a fake cutout;
-- do not embed raster data, fonts, scripts, external references, or transforms
-  that cannot be represented faithfully by Android VectorDrawable.
+- do not embed raster data, fonts, scripts, or external references.
 
-During app Build, create a matching Android vector drawable:
+During app Build, follow
+[Image and icon sources](preview-first-restoration.md#image-and-icon-sources):
 
-- use `android:width="24dp"`, `android:height="24dp"`, and a 24 x 24 viewport;
-- preserve the approved SVG path geometry and transparent holes;
-- render it through SpatialUI `Icon`, `IconButton`, or the semantic component
-  slot with an appropriate `contentDescription`; decorative icons may use
-  `null`;
+- package the approved 24 x 24 SVG unchanged and load it through Coil with SVG
+  support, preserving its geometry and transparent holes;
+- supply the Coil Painter to SpatialUI `Icon` inside `IconButton` or the
+  semantic component slot with an appropriate `contentDescription`;
+  decorative icons may use `null`;
 - follow `../../spatial-ui-design-style/references/tokens.md` for semantic tint
   and `../../spatial-ui-design-style/references/builtins.md` for component
   selection.

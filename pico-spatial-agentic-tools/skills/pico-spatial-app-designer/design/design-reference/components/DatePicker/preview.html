@@ -1,0 +1,77 @@
+<!-- @dsCard group="Pickers" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DatePicker · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>DatePicker</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>DatePicker</h1><p>Reference examples · original defaults unless explicitly overridden</p></header>
+  <div class="sui-stage stack" style="gap:40px;align-items:flex-start">
+    <section class="stack" aria-label="Inline calendar with navigation header" style="gap:16px">
+      <p class="muted" style="margin:0">Inline · Navigation</p>
+      <sui-date-picker selected="2026-10-13"></sui-date-picker>
+    </section>
+    <section class="stack" aria-label="Inline calendar with dropdown header" style="gap:16px">
+      <p class="muted" style="margin:0">Inline · Dropdown</p>
+      <sui-date-picker header-style="dropdown" selected="2026-10-02"></sui-date-picker>
+    </section>
+    <section class="stack" aria-label="Date picker dialog" style="gap:16px">
+      <p class="muted" style="margin:0">Dialog · Title and Cancel / Apply</p>
+      <sui-button id="open-date-dialog" text="Date dialog"></sui-button>
+      <sui-date-picker-dialog id="date-dialog" title="Choose a date" dismiss-on-click-outside="false" dismiss-on-escape="false" hidden>
+        <sui-date-picker id="dialog-date-picker" selected="2026-10-14"></sui-date-picker>
+        <sui-button id="cancel-date" slot="negative" size="regular" text="Cancel" container-color="var(--fill-semilight-alpha)" content-color="var(--label-darkest-alpha)"></sui-button>
+        <sui-button id="apply-date" slot="positive" size="regular" text="Apply"></sui-button>
+      </sui-date-picker-dialog>
+      <p id="date-result" class="status" role="status" style="margin:0">Committed date: 2026-10-14</p>
+    </section>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const dialog = document.getElementById('date-dialog');
+      const picker = document.getElementById('dialog-date-picker');
+      const result = document.getElementById('date-result');
+      let committedDate = picker.getAttribute('selected');
+      let draftDate = committedDate;
+
+      document.getElementById('open-date-dialog').addEventListener('click-action', () => {
+        draftDate = committedDate;
+        picker.setAttribute('selected', draftDate);
+        // Reset the displayed month too, including navigation made before Cancel.
+        picker.removeAttribute('year');
+        picker.removeAttribute('month');
+        const [year, month] = committedDate.split('-');
+        picker.setAttribute('year', year);
+        picker.setAttribute('month', month);
+        dialog.removeAttribute('hidden');
+      });
+
+      picker.addEventListener('date-select', (event) => {
+        draftDate = event.detail.date;
+      });
+
+      function cancel() {
+        draftDate = committedDate;
+        picker.setAttribute('selected', committedDate);
+        dialog.setAttribute('hidden', '');
+      }
+
+      document.getElementById('cancel-date').addEventListener('click-action', cancel);
+      dialog.addEventListener('dismiss-request', (event) => {
+        if (event.target === dialog) cancel();
+      });
+      document.getElementById('apply-date').addEventListener('click-action', () => {
+        committedDate = draftDate;
+        result.textContent = 'Committed date: ' + committedDate;
+        dialog.setAttribute('hidden', '');
+      });
+    });
+  </script>
+</body>
+</html>

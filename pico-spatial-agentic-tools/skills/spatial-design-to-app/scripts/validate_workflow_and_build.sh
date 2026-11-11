@@ -17,7 +17,7 @@
 # Preflight: invocation + design-color coverage against design-spec.json
 # Step order:
 #   1. intent brief + handoff receipts (designer gate + scaffold-only onboarding handoff)
-#   2. implementation scanner (root, entry, manifest, Stage legality, components)
+#   2. implementation scanner + experimental API source/runtime opt-in
 #   3. design fidelity (design-spec.json vs implementation mapping + source)
 #   4. Gradle sync/project discovery (CLI proxy for Android Studio sync)
 #   5. smoke build (assembleDebug)
@@ -185,8 +185,10 @@ WARNINGS=()
 SKIPS=()
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 RECEIPT_CHECKER="$SCRIPT_DIR/check_handoff_receipts.py"
 IMPL_SCANNER="$SCRIPT_DIR/scan_implementation.py"
+EXPERIMENTAL_API_CHECKER="$SKILLS_ROOT/spatial-sdk-guideline/scripts/check_experimental_api_opt_in.py"
 DESIGN_FIDELITY_CHECKER="$SCRIPT_DIR/check_design_fidelity.py"
 SMOKE_BUILD="$SCRIPT_DIR/smoke_build.sh"
 GRADLE_SYNC="$SCRIPT_DIR/gradle_sync_check.sh"
@@ -194,11 +196,10 @@ ARCH_CHECKER="$SCRIPT_DIR/check_architecture.py"
 UNIT_TESTS="$SCRIPT_DIR/run_unit_tests.sh"
 RUNTIME_LAUNCH="$SCRIPT_DIR/runtime_launch_check.sh"
 
-# Resolve sibling spatial-ui-design-style verifier.
-SKILLS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Resolve sibling skill verifiers.
 DESIGN_STYLE_VERIFIER="$SKILLS_ROOT/spatial-ui-design-style/scripts/verify-design-style.sh"
 
-for required in "$RECEIPT_CHECKER" "$IMPL_SCANNER" "$DESIGN_FIDELITY_CHECKER" "$GRADLE_SYNC" "$SMOKE_BUILD" "$RUNTIME_LAUNCH" "$ARCH_CHECKER" "$UNIT_TESTS"; do
+for required in "$RECEIPT_CHECKER" "$IMPL_SCANNER" "$EXPERIMENTAL_API_CHECKER" "$DESIGN_FIDELITY_CHECKER" "$GRADLE_SYNC" "$SMOKE_BUILD" "$RUNTIME_LAUNCH" "$ARCH_CHECKER" "$UNIT_TESTS"; do
     if [ ! -f "$required" ]; then
         echo "[validate] required script not found: $required" >&2
         exit 2
@@ -279,6 +280,13 @@ if spec_path.is_file():
 print("[validate] design-color contract passed")
 PY
 
+# Every supplied design record must satisfy the current contract before source admission.
+if [[ -f "$DESIGN_SPEC" ]]; then
+    python3 "$SKILLS_ROOT/pico-spatial-app-designer/design/scripts/check_design_spec.py" "$DESIGN_SPEC"
+fi
+# Capture host-owned source/design identity immediately before the checks.
+node "$SCRIPT_DIR/verification-summary.mjs" begin "$TARGET"
+
 echo "[validate] [1/9] intent brief and handoff receipts"
 python3 "$RECEIPT_CHECKER" --target "$TARGET" \
     --input-mode "$INPUT_MODE" \
@@ -290,6 +298,7 @@ echo "[validate] [2/9] implementation scanner"
 python3 "$IMPL_SCANNER" --target "$TARGET" \
     --generation-mode "$GENERATION_MODE" \
     --profile "$PROFILE"
+python3 "$EXPERIMENTAL_API_CHECKER" --target "$TARGET"
 
 echo "[validate] [3/9] design JSON to app fidelity"
 python3 "$DESIGN_FIDELITY_CHECKER" --target "$TARGET" \
@@ -498,11 +507,19 @@ temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
 temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 temporary.replace(path)
 PY
+node "$SCRIPT_DIR/verification-summary.mjs" complete "$TARGET"
+read -r CLEAN FINAL_EXIT_CODE < <(python3 - "$VERIFICATION_SUMMARY" <<'PYCODE'
+import json
+import sys
+summary = json.load(open(sys.argv[1], encoding="utf-8"))
+print("true" if summary["clean"] else "false", summary.get("exit_code", 0))
+PYCODE
+)
 SUMMARY_FINALIZED="true"
 
 echo "[validate] WROTE $VERIFICATION_SUMMARY"
 if [ "$CLEAN" = "true" ]; then
-    echo "[validate] MACHINE GATES PASSED clean: handoff receipts + implementation scan + design fidelity + Gradle sync/project discovery + smoke build + runtime launch + architecture + unit tests + design-style passed. Figma runs remain pending until agent-owned d2c hooks write figma_hooks_result.json"
+    echo "[validate] MACHINE GATES PASSED clean: handoff receipts + implementation scan + experimental API opt-in + design fidelity + Gradle sync/project discovery + smoke build + runtime launch + architecture + unit tests + design-style passed. Figma runs remain pending until agent-owned d2c hooks write figma_hooks_result.json"
 else
     echo "[validate] DEGRADED: machine gates completed with warnings/skips; exit 0 with --allow-degraded is operational-only, not skill-complete. See $VERIFICATION_SUMMARY and disclose warnings/skips in handoff"
     if [ "$FINAL_EXIT_CODE" -ne 0 ]; then

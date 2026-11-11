@@ -1,0 +1,104 @@
+<!-- @dsCard group="Selection" height=340 subtitle="SDK-aligned" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Option · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav">
+    <a href="../../index.html">All components</a>
+    <span>Option</span>
+    <a href="README.md">Guidelines</a>
+  </nav>
+  <header class="preview-intro">
+    <h1>Option</h1>
+    <p>Option supports selection and deselection. The page owns single- or multiple-choice rules, and the three groups below keep independent state.</p>
+  </header>
+
+  <section class="sui-stage" data-option-group="multiple" role="group" aria-labelledby="multiple-title">
+    <h2 id="multiple-title">Multiple choice</h2>
+    <p>Select any number of options. Selecting an active option again clears it, including the last selection. The component keeps its default styling.</p>
+    <div class="sui-row">
+      <sui-option data-value="a" label="Option A" checked></sui-option>
+      <sui-option data-value="b" label="Option B"></sui-option>
+      <sui-option data-value="icon" label="With icon" icon="home"></sui-option>
+      <sui-option data-value="disabled" label="Disabled" disabled></sui-option>
+    </div>
+    <p class="status" role="status"></p>
+  </section>
+
+  <section class="example" data-option-group="single-optional" role="group" aria-labelledby="optional-title">
+    <h2 id="optional-title">Single choice, optional</h2>
+    <p class="example-note">Plan recommendation · Page composition example using the component's default styling.</p>
+    <p>Select at most one option. Selecting another clears the previous option, and selecting the active option again clears the group. The initial state is empty.</p>
+    <div class="sui-row">
+      <sui-option data-value="a" label="Option A"></sui-option>
+      <sui-option data-value="b" label="Option B"></sui-option>
+      <sui-option data-value="icon" label="With icon" icon="home"></sui-option>
+      <sui-option data-value="disabled" label="Disabled" disabled></sui-option>
+    </div>
+    <p class="status" role="status"></p>
+  </section>
+
+  <section class="example" data-option-group="single-required" role="group" aria-labelledby="required-title">
+    <h2 id="required-title">Single choice, required</h2>
+    <p class="example-note">Plan recommendation · Page composition example using the component's default styling.</p>
+    <p>Keep exactly one option selected. Selecting another clears the previous option, while selecting the active option keeps it selected. Option A is selected by default.</p>
+    <div class="sui-row">
+      <sui-option data-value="a" label="Option A" checked></sui-option>
+      <sui-option data-value="b" label="Option B"></sui-option>
+      <sui-option data-value="icon" label="With icon" icon="home"></sui-option>
+      <sui-option data-value="disabled" label="Disabled" disabled></sui-option>
+    </div>
+    <p class="status" role="status"></p>
+  </section>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-option-group]').forEach(group => {
+        const options = Array.from(group.querySelectorAll('sui-option'));
+        const mode = group.dataset.optionGroup;
+        const selectedValues = new Set(
+          options.filter(option => option.hasAttribute('checked')).map(option => option.dataset.value)
+        );
+        let selectedValue = options.find(option => option.hasAttribute('checked'))?.dataset.value ?? null;
+
+        function render() {
+          options.forEach(option => {
+            const selected = mode === 'multiple'
+              ? selectedValues.has(option.dataset.value)
+              : option.dataset.value === selectedValue;
+            option.toggleAttribute('checked', selected);
+          });
+          const labels = options.filter(option => option.hasAttribute('checked'))
+            .map(option => option.getAttribute('label'));
+          group.querySelector('.status').textContent = 'Current selection: ' + (labels.join(', ') || 'None');
+        }
+
+        group.addEventListener('checked-change', event => {
+          const option = event.target;
+          if (!options.includes(option) || option.hasAttribute('disabled')) return;
+          const value = option.dataset.value;
+          if (mode === 'multiple') {
+            if (event.detail.checked) selectedValues.add(value);
+            else selectedValues.delete(value);
+          } else if (event.detail.checked) {
+            selectedValue = value;
+          } else if (mode === 'single-optional') {
+            selectedValue = null;
+          }
+          // SuiOption toggles itself before emitting. Reapply the caller-owned
+          // group state, including restoring the required selection on cancel.
+          render();
+        });
+        render();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -42,12 +42,22 @@ Core content must fall inside the **horizontal 65° / vertical 40°** clear-FOV 
 
 - **Hit target ≥ 56×56 dp** — directly constrains minimum usable width; widen the window if controls get dense.
 - **Body text ≥ 12 dp** (smaller only for non-core, non-interactive text); for CJK / ≤17sp body use Medium weight. When wide, keep a single line ≤ ~50 Chinese characters — split into columns past that.
-- **Framework overhead stacks on top of content**: TitleBar 96 dp, TabBar main area 64 dp, Toolbar min 64 dp, AlertDialog min height 184 dp, ListItem min height 60 dp. Subtract these before sizing the content area.
+- **Framework overhead stacks on top of content**: TitleBar 96 dp, TabBar main area 64 dp, Toolbar min 64 dp, AlertDialog min height 184 dp, ListItem min height 60 dp. Subtract in-page chrome before sizing the content area. Toolbar is an attachment and does not consume page layout height; instead check that its overlap leaves underlying content reachable.
 - **Depth = priority**: nearest/most-central = most important; don't stack interactive content behind interactive 3D content.
 
 ### 5 · Set default + range, not a fixed number
 
 PICO windows are user-movable and resizable by design. For Planar, choose a sensible **default inside 320×180 ~ 2700×1800 dp** plus a min/max, not a single locked size. For Volumetric, follow the knowledge boundary above and do not turn an Editor/design range into a runtime limit. New windows appear in front of the user with a 56 dp gap from the source, ordered left-to-right, top-to-bottom.
+
+Preview and App first-open size both use the accepted `defaultSize`; min/max
+only bound resizing and do not replace it. Keep the default inside that range.
+Browser canvas size or display scaling must not change logical window size.
+Restore Planar first-open size through launcher manifest `defaultsize` metadata,
+not only `windowConstraints`; verify the manifest dimensions/unit against spec.
+
+Sheet maximum height is the owning App's current `screenHeightDp - 64dp`.
+Preview applies the same limit from the owning logical window height, not the
+browser viewport. Keep content short and check that content and operations fit.
 
 ## Padding tokens — spacing inside containers
 

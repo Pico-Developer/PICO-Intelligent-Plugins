@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "Example input for generate_report.py --input <this file>.",
+    "This is a bundled analysis-output.json form. It can be used directly without topic sidecar files.",
+    "The shape of analysis_topics[] matches the topic payload consumed by generate_report.py and the HTML template."
+  ],
+
+  "header": {
+    "app_package": "com.picoxr.spatial.demo",
+    "app_name": "PICO Spatial Gallery",
+    "analysis_time": "2026-07-30 22:34:12 CST",
+    "app_type": "no_debug",
+    "device_type": "real",
+    "device_model": "PICO 4 Ultra",
+    "os_version": "6.1.0",
+    "trace_file": "trace_spatial_gallery_20260730_221508.perfetto-trace",
+    "fast_perf_file": "",
+    "simple_perf_file": ""
+  },
+
+  "_classification_note": "Final root-cause classification is not written here. It is the standalone artifact session-output-<timestamp>/root-cause-classification.json; see templates/root_cause_classification_example.json and references/routing/root-cause-classification-contract.md.",
+
+  "analysis_topics": [
+    {
+      "topic": "spatial-engine",
+      "conclusion_level": "likely",
+      "report": {
+        "symptom": "Dragging the model stalls for 1-2 seconds with visual judder and delayed head tracking.",
+        "existing_evidence": [
+          {
+            "type": "perfetto_trace",
+            "finding": "Late Frames appear continuously inside the issue window in the Perfetto trace."
+          },
+          {
+            "type": "fast_perf",
+            "finding": "Triangle and Vertex counters rise together during the scene-transition window."
+          }
+        ],
+        "investigation_process": "Tracing backward along the frame-driving thread shows resource rebuilding during the scene transition in the same window as the over-budget EngineRender stage.",
+        "root_cause_judgment": {
+          "one_line": "Resource rebuilding during the scene transition triggers a GPU/rendering workload peak, with the budget bound to Spatial Engine.",
+          "conclusion_level": "likely",
+          "reasoning": "Late Frames, the over-budget rendering stage, and rendering-load counter peaks occur in the same window. GPU counters are missing, so the conclusion is likely rather than confirmed."
+        },
+        "actions": [
+          "Reduce rendering work on the drag path",
+          "Spread resource rebuilding across multiple frames"
+        ],
+        "limitations_and_next_validation": "GPU counters are missing, so concurrent GPU saturation cannot be fully excluded. Capture GPU counters or same-window simpleperf data next."
+      }
+    }
+  ]
+}

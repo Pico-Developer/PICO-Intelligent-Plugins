@@ -1,7 +1,8 @@
-# ICON 7.0 Selection and Rendering
+# ICON 7.0 Selection for Figma and Compose
 
-Use the bundled ICON 7.0 catalog for app-authored icon slots in a
-`design-spec.json`. The catalog contains 209 monochrome 24 x 24 assets:
+Use this catalog for the current Figma-to-App fallback and its Compose asset
+materialization. Designer authoring uses its own `design/` icon guidance.
+This catalog contains 209 monochrome 24 x 24 assets:
 
 - `../assets/icon-7.0/svg/` contains preview SVGs whose foreground is
   `currentColor`.
@@ -14,8 +15,7 @@ Use the bundled ICON 7.0 catalog for app-authored icon slots in a
 
 ## When to choose an icon
 
-Choose component semantics and hierarchy first. Search the catalog during the
-Designer **Plan** phase only when the accepted component has an explicit icon
+Choose component semantics and hierarchy first. Search the catalog during Figma mapping only when the accepted component has an explicit icon
 slot, is an icon-only action, or needs an app-authored directional/status cue.
 
 Do not add a separate icon when the chosen SpatialUI component already owns the
@@ -27,9 +27,8 @@ Resolve icon sources in this order:
 
 1. A user-supplied Figma/download asset or explicit reference image.
 2. An existing approved icon in the target app.
-3. An SDK-owned icon that expresses the same semantics and state.
-4. An exact semantic match in the bundled ICON 7.0 catalog.
-5. A custom vector drawn through
+3. An exact semantic match in the bundled ICON 7.0 catalog.
+4. A custom vector drawn through
    [`../../spatial-design-to-app/references/icon-drawing.md`](../../spatial-design-to-app/references/icon-drawing.md).
 
 Do not select a merely similar bundled icon to avoid the drawing step. When no
@@ -92,21 +91,9 @@ Reference either source from an explicit icon node:
 ```
 
 An icon slotted into another SpatialUI component may use that component node's
-`assetId`, provided the renderer maps the asset to the documented icon slot.
+`assetId`, provided the native mapping assigns it to the documented icon slot.
 Do not encode an icon as an emoji, Unicode glyph, text character, data URL, or
 untracked inline path.
-
-## Preview rendering
-
-For an `icon70://` asset, resolve the URI to the matching bundled SVG. For a
-custom asset, read its design-package-relative SVG. Inline the complete SVG as
-slotted content in both cases. Do not use `sui-icon[src]`: an `<img>` does not
-inherit `currentColor`. The `sui-icon` or owning component supplies size and
-tint.
-
-Because `preview.html` is self-contained, the resolved SVG markup must be
-embedded during generation. The delivered HTML must not fetch the catalog or
-refer to the skill installation path at runtime.
 
 ## Compose materialization
 

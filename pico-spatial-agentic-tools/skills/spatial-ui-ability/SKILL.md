@@ -15,6 +15,20 @@ You are a code assistant for the SpatialUI framework. This file routes required
 capabilities to focused references so unrelated examples stay out of the working
 context.
 
+Return the scoped guidance, changes or verification to the actual caller. Direct entry is valid; read `spatial-app-dev-workflow` when the task expands into full application delivery, without replaying completed work.
+
+## When to Use
+
+- Production-ready code snippets for spatial gestures, hover, depth layout, or Augment
+- Implementing SpatialUI capabilities like `spatialHoverEffect`, `windowConstraints`, or `Box3D`
+- Resolving spatial UI symptoms like gestures not responding or hover not working
+
+## When NOT to Use
+
+- Full app delivery — use `spatial-app-dev-workflow`, with UI source interpretation from `spatial-design-to-app`
+- PicoTheme tokens, design-style admission, or verifier contract — use `spatial-ui-design-style`
+- 3D scene or Entity work — use `spatial-editor` or `spatial-sdk-scene-builder`
+
 ## Working Loop
 
 1. **Identify all required capability domains** from the routing table below

@@ -1,0 +1,56 @@
+<!-- @dsCard group="Input" height=260 subtitle="Bound values and range limits" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stepper · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .stepper-gallery{width:456px;max-width:calc(100% - 56px);min-height:0;margin:0 28px;padding:24px}
+    .stepper-examples{display:flex;flex-wrap:wrap;gap:24px}
+    .stepper-example{display:grid;gap:12px}
+    .variant-label{margin:0;font-size:14px;line-height:20px;font-weight:600}
+    .range-note{margin:0 0 16px;color:var(--label-semidark-alpha);font-size:12px;line-height:16px}
+    @media(max-width:600px){.stepper-gallery{max-width:calc(100% - 32px);margin:0 16px;padding:16px}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Stepper</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>Stepper</h1><p>Increase, decrease and range limits</p></header>
+  <div class="sui-stage stepper-gallery">
+    <p class="range-note">Range: 1–5 · Step: 1</p>
+    <div class="stepper-examples">
+      <section class="stepper-example" aria-labelledby="minus-add-title">
+        <h2 id="minus-add-title" class="variant-label">Minus / plus</h2>
+        <sui-stepper id="number-stepper" value="3" button-color="var(--label-darkest-alpha)"></sui-stepper>
+      </section>
+      <section class="stepper-example" aria-labelledby="arrow-title">
+        <h2 id="arrow-title" class="variant-label">Arrows</h2>
+        <sui-stepper id="arrow-stepper" value="3" icon-style="arrow" button-color="var(--label-darkest-alpha)"></sui-stepper>
+      </section>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const min = 1;
+      const max = 5;
+      document.querySelectorAll('.stepper-example sui-stepper').forEach(stepper => {
+        let value = Number(stepper.getAttribute('value'));
+        function render() {
+          stepper.setAttribute('value', String(value));
+          stepper.setAttribute('decreasable', String(value > min));
+          stepper.setAttribute('increasable', String(value < max));
+        }
+        stepper.addEventListener('step', event => {
+          value = Math.max(min, Math.min(max, value + event.detail.step));
+          render();
+        });
+        render();
+      });
+    });
+  </script>
+</body>
+</html>

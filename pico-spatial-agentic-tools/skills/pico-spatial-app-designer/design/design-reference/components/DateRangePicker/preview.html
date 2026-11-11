@@ -1,0 +1,57 @@
+<!-- @dsCard group="Pickers" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DateRangePicker · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>DateRangePicker</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>DateRangePicker</h1><p>Reference examples · original defaults unless explicitly overridden</p></header>
+  <div class="sui-stage stack" style="gap:16px;align-items:flex-start">
+    <h2 id="range-title" style="margin:0;font-size:20px">Report period</h2>
+    <p class="muted" style="margin:0">Choose a start date, then an end date. After a complete range, select any date to start again.</p>
+    <sui-date-range-picker id="report-range" aria-labelledby="range-title" start="2026-10-08" end="2026-10-17"></sui-date-range-picker>
+    <div class="status stack" role="status" style="gap:4px">
+      <p style="margin:0">Start: <span id="range-start">2026-10-08</span></p>
+      <p style="margin:0">End: <span id="range-end">2026-10-17</span></p>
+      <p id="range-status" style="margin:0">Range complete. Select a date to choose a new start.</p>
+    </div>
+    <sui-button id="clear-range" text="Clear range" size="regular"></sui-button>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const picker = document.getElementById('report-range');
+      const startText = document.getElementById('range-start');
+      const endText = document.getElementById('range-end');
+      const status = document.getElementById('range-status');
+      const clear = document.getElementById('clear-range');
+
+      function render() {
+        const start = picker.getAttribute('start');
+        const end = picker.getAttribute('end');
+        startText.textContent = start || 'Not selected';
+        endText.textContent = end || (start ? 'Choose an end date' : 'Not selected');
+        status.textContent = !start
+          ? 'No range selected. Choose a start date.'
+          : !end
+            ? 'Start selected. Choose an end date on or after the start; an earlier date replaces the start.'
+            : 'Range complete. Select a date to choose a new start.';
+        clear.toggleAttribute('disabled', !start && !end);
+      }
+
+      picker.addEventListener('range-change', render);
+      clear.addEventListener('click-action', () => {
+        picker.removeAttribute('start');
+        picker.removeAttribute('end');
+        render();
+      });
+      render();
+    });
+  </script>
+</body>
+</html>

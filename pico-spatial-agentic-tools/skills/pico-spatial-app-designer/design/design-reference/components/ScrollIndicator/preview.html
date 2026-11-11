@@ -1,0 +1,131 @@
+<!-- @dsCard group="Feedback" height=480 subtitle="SDK-aligned · live scrolling" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ScrollIndicator · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .scroll-demo-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;max-width:1100px;margin:0 auto; }
+    .scroll-demo { display:flex;flex-direction:column;min-width:0;padding:20px;border-radius:20px;background:#ffffff66; }
+    .scroll-demo h2 { margin:0 0 8px;font-size:18px; }
+    .scroll-demo p { margin:0 0 16px;font-size:14px;line-height:22px;color:#4c5663; }
+    .scroll-demo .description { min-height:44px; }
+    .scroll-pair { display:flex;align-items:center;gap:3px; }
+    .scroll-pair.horizontal { flex-direction:column; }
+    .scroll-pair > sui-scroll-indicator,.scroll-pair > sui-basic-scroll-indicator { flex:none; }
+    .scroll-viewport { min-width:0;width:100%;height:216px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;border-radius:12px;background:#ffffff80; }
+    .scroll-viewport::-webkit-scrollbar { display:none; }
+    .scroll-viewport:focus-visible { outline:2px solid var(--semantic-interaction,#3377ff);outline-offset:2px; }
+    .scroll-items { list-style:none;margin:0;padding:0; }
+    .scroll-items li { box-sizing:border-box;height:54px;padding:16px;border-bottom:1px solid #00000012;font-size:14px;line-height:22px; }
+    .scroll-viewport.horizontal { overflow-x:auto;overflow-y:hidden; }
+    .horizontal-items { display:flex;gap:12px;width:max-content;padding:12px; }
+    .horizontal-items li { display:flex;flex:none;flex-direction:column;justify-content:space-between;width:152px;height:192px;padding:16px;border:0;border-radius:10px;background:#d5dfe9; }
+    .horizontal-items li:nth-child(3n+2) { background:#dfdfd3; }
+    .horizontal-items li:nth-child(3n) { background:#ded8e5; }
+    .horizontal-items small { font-size:12px;color:#4c5663; }
+    .scroll-demo .status { margin:12px 0 0;min-height:44px;font-variant-numeric:tabular-nums; }
+    .demo-action { display:flex;justify-content:flex-end;margin-top:auto;padding-top:12px;min-height:40px; }
+    .scroll-demo-note { max-width:1100px;margin:20px auto 0;font-size:14px;line-height:22px;color:#4c5663; }
+    @media(max-width:360px) { .scroll-demo-grid { grid-template-columns:minmax(0,1fr); } }
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>ScrollIndicator</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro">
+    <h1>ScrollIndicator</h1>
+    <p>Scroll a list or drag its indicator to observe synchronized content and thumb movement. The indicator retains its default appearance.</p>
+  </header>
+  <main class="sui-stage">
+    <div class="scroll-demo-grid">
+      <section class="scroll-demo" aria-labelledby="vertical-title">
+        <h2 id="vertical-title">Vertical list</h2>
+        <p class="description">Scroll the list or drag the right-hand thumb to browse all 12 items.</p>
+        <div class="scroll-pair">
+          <div id="vertical-list" class="scroll-viewport" role="region" aria-label="Vertical example list" tabindex="0">
+            <ol id="vertical-items" class="scroll-items"></ol>
+          </div>
+          <sui-scroll-indicator for="vertical-list" semantic-label="Vertical list scroll indicator"></sui-scroll-indicator>
+        </div>
+        <p id="vertical-status" class="status">12 items · scrolled 0%</p>
+      </section>
+      <section class="scroll-demo" aria-labelledby="horizontal-title">
+        <h2 id="horizontal-title">Horizontal list</h2>
+        <p class="description">Scroll the cards horizontally or drag the lower thumb to browse all 10 cards.</p>
+        <div class="scroll-pair horizontal">
+          <div id="horizontal-list" class="scroll-viewport horizontal" role="region" aria-label="Horizontal example list" tabindex="0">
+            <ol id="horizontal-items" class="scroll-items horizontal-items"></ol>
+          </div>
+          <sui-scroll-indicator for="horizontal-list" orientation="horizontal" semantic-label="Horizontal list scroll indicator"></sui-scroll-indicator>
+        </div>
+        <p id="horizontal-status" class="status">10 cards · scrolled 0%</p>
+      </section>
+      <section class="scroll-demo" aria-labelledby="basic-title">
+        <h2 id="basic-title">Basic · hidden when content fits</h2>
+        <p class="description">Start with two items so the indicator stays hidden. Add content to enable the right-hand thumb.</p>
+        <div class="scroll-pair">
+          <div id="basic-list" class="scroll-viewport" role="region" aria-label="Example list with switchable item count" tabindex="0">
+            <ol id="basic-items" class="scroll-items"></ol>
+          </div>
+          <sui-basic-scroll-indicator for="basic-list" semantic-label="Basic list scroll indicator"></sui-basic-scroll-indicator>
+        </div>
+        <p id="basic-status" class="status" role="status">2 items · content fits, indicator hidden</p>
+        <div class="demo-action"><sui-button id="toggle-content" size="small">Increase to 12 items</sui-button></div>
+      </section>
+    </div>
+    <p class="scroll-demo-note">The short ticks shown while holding the indicator are SDK scroll feedback; releasing it restores the regular track.</p>
+  </main>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      function fillItems(id, count, horizontal = false) {
+        const list = document.getElementById(id);
+        list.replaceChildren();
+        for (let index = 1; index <= count; index++) {
+          const item = document.createElement('li');
+          item.textContent = horizontal ? `Card ${String(index).padStart(2, '0')}` : `List item ${String(index).padStart(2, '0')}`;
+          if (horizontal) {
+            const caption = document.createElement('small');
+            caption.textContent = `${index} / ${count}`;
+            item.append(caption);
+          }
+          list.append(item);
+        }
+      }
+      fillItems('vertical-items', 12);
+      fillItems('horizontal-items', 10, true);
+      fillItems('basic-items', 2);
+
+      for (const [id, label, horizontal] of [
+        ['vertical', '12 items', false],
+        ['horizontal', '10 cards', true],
+      ]) {
+        const viewport = document.getElementById(`${id}-list`);
+        const update = () => {
+          const maximum = horizontal ? viewport.scrollWidth - viewport.clientWidth : viewport.scrollHeight - viewport.clientHeight;
+          const offset = horizontal ? viewport.scrollLeft : viewport.scrollTop;
+          const percent = maximum > 0 ? Math.round(offset / maximum * 100) : 0;
+          document.getElementById(`${id}-status`).textContent = `${label} · scrolled ${percent}%`;
+        };
+        viewport.addEventListener('scroll', update, { passive:true });
+        update();
+      }
+
+      let expanded = false;
+      const toggle = document.getElementById('toggle-content');
+      toggle.addEventListener('click-action', () => {
+        expanded = !expanded;
+        fillItems('basic-items', expanded ? 12 : 2);
+        document.getElementById('basic-list').scrollTop = 0;
+        document.getElementById('basic-status').textContent = expanded
+          ? '12 items · content overflows; scroll or drag the right-hand indicator'
+          : '2 items · content fits, indicator hidden';
+        toggle.textContent = expanded ? 'Restore 2 items' : 'Increase to 12 items';
+      });
+    });
+  </script>
+</body>
+</html>

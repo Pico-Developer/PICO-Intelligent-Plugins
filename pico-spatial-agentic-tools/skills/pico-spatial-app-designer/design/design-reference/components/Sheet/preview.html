@@ -1,0 +1,83 @@
+<!-- @dsCard group="Overlay" height=220 subtitle="SDK-aligned" -->
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sheet · Design reference</title><link rel="stylesheet" href="../../runtime/tokens.css"><link rel="stylesheet" href="../../runtime/preview.css"><script src="../../runtime/components.js" defer></script><meta charset="utf-8"></head><body><nav class="preview-nav"><a href="../../index.html">All components</a><span>Sheet</span><a href="README.md">Guidelines</a></nav><header class="preview-intro"><h1>Sheet</h1><p>Reference examples · original defaults unless explicitly overridden</p></header><div class="sui-stage"><sui-button id="sh-t" size="small" text="Open sheet" data-opens="sh-s"></sui-button><sui-sheet id="sh-s" title="Choose a mode" semantic-label="Choose a mode" hidden>
+  <div class="stack" style="gap:16px">
+    <sui-text text="Choose one mode, then select Done to save it." text-style="bodyMediumMultiline" color="var(--label-ultradark-alpha)"></sui-text>
+    <div id="mode-options" class="stack" style="gap:8px" role="group" aria-label="Choose one mode">
+    <sui-option class="mode-option" data-mode="reading" gap="12" content-padding="16" horizontal-arrangement="start" semantic-label="Reading" checked>
+      <sui-icon slot="icon" name="ic_book" size="24" aria-hidden="true"></sui-icon>
+      <div class="mode-option-content">
+        <div class="stack" style="flex:1;min-width:0;gap:4px">
+          <sui-text text="Reading" text-style="bodyLarge"></sui-text>
+          <sui-text text="Read books and articles." text-style="bodyMedium" color="var(--label-semidark-alpha)"></sui-text>
+        </div>
+        <sui-icon class="mode-check" name="ic_check" size="20" aria-hidden="true"></sui-icon>
+      </div>
+    </sui-option>
+    <sui-option class="mode-option" data-mode="cinema" gap="12" content-padding="16" horizontal-arrangement="start" semantic-label="Cinema">
+      <sui-icon slot="icon" name="ic_film" size="24" aria-hidden="true"></sui-icon>
+      <div class="mode-option-content">
+        <div class="stack" style="flex:1;min-width:0;gap:4px">
+          <sui-text text="Cinema" text-style="bodyLarge"></sui-text>
+          <sui-text text="Watch films and videos." text-style="bodyMedium" color="var(--label-semidark-alpha)"></sui-text>
+        </div>
+        <sui-icon class="mode-check" name="ic_check" size="20" aria-hidden="true" hidden></sui-icon>
+      </div>
+    </sui-option>
+    <sui-option class="mode-option" data-mode="relax" gap="12" content-padding="16" horizontal-arrangement="start" semantic-label="Relax">
+      <sui-icon slot="icon" name="ic_headset" size="24" aria-hidden="true"></sui-icon>
+      <div class="mode-option-content">
+        <div class="stack" style="flex:1;min-width:0;gap:4px">
+          <sui-text text="Relax" text-style="bodyLarge"></sui-text>
+          <sui-text text="Listen to music and ambient audio." text-style="bodyMedium" color="var(--label-semidark-alpha)"></sui-text>
+        </div>
+        <sui-icon class="mode-check" name="ic_check" size="20" aria-hidden="true" hidden></sui-icon>
+      </div>
+    </sui-option>
+    </div>
+  </div>
+  <div slot="bottom" class="actions">
+    <sui-button id="mode-done" text="Done" leading-icon="ic_check" data-closes></sui-button>
+  </div>
+</sui-sheet><p id="mode-summary" class="status" role="status">Mode: Reading</p><div class="sui-row" style="margin-top:16px"><sui-button text="Image sheet" data-opens="image-sheet"></sui-button><sui-head-image-sheet id="image-sheet" title="A quieter place" hidden><img slot="header-image" src="../../assets/illustrations/lake-scene.svg" alt="Illustration of a quiet mountain lake" style="width:100%;height:180px;object-fit:cover;display:block">A weekend by the lake.<sui-button slot="bottom" text="Done" data-closes></sui-button></sui-head-image-sheet></div><div class="sui-row" style="margin-top:16px"><sui-button text="BasicSheet" data-opens="basic-Sheet"></sui-button><sui-basic-sheet id="basic-Sheet" hidden><sui-title-bar><span style="font-weight:700">Custom task</span><sui-icon-button slot="leading" icon="ic_cross" size="small" semantic-label="Close custom task" data-closes></sui-icon-button></sui-title-bar><div class="page-body"><sui-text text="Custom content"></sui-text></div></sui-basic-sheet></div></div><script>(function(){if(window.__suiWire)return;window.__suiWire=1;
+function hide(o){o.setAttribute('hidden','')}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-opens]');if(t){var o=document.getElementById(t.dataset.opens);if(o){if(o.hasAttribute('hidden'))o.removeAttribute('hidden');else hide(o)}return}
+var c=e.target.closest('[data-closes]');if(c){var p=c.closest('sui-menu,sui-sub-menu,sui-spatial-popup,sui-subwindow,sui-basic-alert-dialog,sui-basic-sheet,sui-date-picker-dialog,sui-alert-dialog,sui-sheet,sui-head-image-sheet,sui-coachmark,sui-image-coachmark,sui-rich-coachmark,sui-simple-coachmark');if(p)hide(p)}
+var s=e.target.closest('[data-snack]');if(s)document.getElementById(s.dataset.snack).show('Saved to Library',{action:'Undo'})});
+document.addEventListener('dismiss-request',function(e){hide(e.target)});
+document.addEventListener('select',function(e){var m=e.target.closest&&e.target.closest('sui-menu');if(m&&!m.hasAttribute('keep-open'))hide(m);var cm=e.target.closest&&e.target.closest('sui-coachmark');if(cm)hide(cm)});
+})();</script><section class="example"><h2>Plan recommendation · edit form</h2><p class="example-note">The supplied title and top-left close are reused. Help is a trailing IconButton; Save is at bottom-right. There is no duplicate bottom Cancel.</p><sui-button text="Edit profile" leading-icon="ic_edit" id="open-profile"></sui-button><p id="profile-summary" class="status" role="status">Profile: Alex</p><p id="profile-details" class="status">Exploring new places</p><sui-sheet id="profile-sheet" title="Edit profile" hidden><sui-icon-button slot="trailing" id="profile-help" size="small" icon="ic_info_circle" semantic-label="Profile help"></sui-icon-button><div class="stack" style="gap:16px"><label>Name<sui-text-field id="profile-name" value="Alex" width="416" semantic-label="Name"></sui-text-field></label><label>About<sui-text-area id="profile-about" value="Exploring new places" width="416" semantic-label="About"></sui-text-area></label><p id="profile-help-text" class="status">Changes are saved only when you choose Save.</p></div><div slot="bottom" class="actions"><sui-button id="profile-save" text="Save" leading-icon="ic_check"></sui-button></div></sui-sheet></section><script>window.addEventListener("DOMContentLoaded",()=>{let savedName='Alex',savedAbout='Exploring new places';const name=document.getElementById('profile-name'),about=document.getElementById('profile-about'),sheet=document.getElementById('profile-sheet');document.getElementById('open-profile').addEventListener('click-action',()=>{sheet.hidden=false;name.value=savedName;about.value=savedAbout});document.getElementById('profile-help').addEventListener('click-action',()=>document.getElementById('profile-help-text').textContent='Your name and description appear on your profile.');document.getElementById('profile-save').addEventListener('click-action',()=>{savedName=name.value||'Unnamed';savedAbout=about.value;document.getElementById('profile-summary').textContent='Profile: '+savedName;document.getElementById('profile-details').textContent=savedAbout;sheet.hidden=true});sheet.addEventListener('dismiss-request',()=>{name.value=savedName;about.value=savedAbout});});</script><style>
+.mode-option{display:flex;min-width:0}
+.mode-option::part(root){width:100%}
+.mode-option-content{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.mode-option-content .mode-check{flex:none}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const sheet = document.getElementById('sh-s');
+  const options = [...document.querySelectorAll('#mode-options .mode-option')];
+  const names = {reading: 'Reading', cinema: 'Cinema', relax: 'Relax'};
+  let savedMode = 'reading';
+  let draftMode = savedMode;
+  const renderSelection = () => {
+    options.forEach(option => {
+      const selected = option.dataset.mode === draftMode;
+      option.toggleAttribute('checked', selected);
+      option.querySelector('.mode-check').hidden = !selected;
+    });
+  };
+  const discardDraft = () => { draftMode = savedMode; renderSelection(); };
+  document.getElementById('sh-t').addEventListener('click-action', discardDraft);
+  document.getElementById('mode-options').addEventListener('checked-change', event => {
+    const option = event.target.closest('.mode-option');
+    if (!option) return;
+    draftMode = option.dataset.mode;
+    renderSelection();
+  });
+  document.getElementById('mode-done').addEventListener('click-action', () => {
+    savedMode = draftMode;
+    document.getElementById('mode-summary').textContent = 'Mode: ' + names[savedMode];
+  });
+  sheet.addEventListener('dismiss-request', discardDraft);
+  renderSelection();
+});
+</script></body></html>

@@ -1,0 +1,808 @@
+{
+  "schemaVersion": "write-spec-draft-1",
+  "metadata": {
+    "projectName": "Weekend Reading List",
+    "revision": 8,
+    "preview": "preview.html",
+    "references": [
+      {
+        "path": "../../design-reference/README.md",
+        "sha256": "c8bd764932c53fdb5b19ff3281f2955835cc2d9f72b8d0f85722c7523d1e980f"
+      },
+      {
+        "path": "../../design-reference/general-rules.md",
+        "sha256": "905d84b2f854e01ee8029db98106e373a22c078b0a7c6e236d133bf49dd94a4f"
+      },
+      {
+        "path": "../../design-reference/tokens.json",
+        "sha256": "8788c7ae95d02eca1827cf42b0688aa6b12de57706a97dce1d7f79becee4b0bd"
+      },
+      {
+        "path": "../../design-reference/runtime/components.js",
+        "sha256": "38b037860a19398898c7786a9878d6d7e24742145c244c5a24597783159daccd"
+      },
+      {
+        "path": "../../design-reference/runtime/tokens.css",
+        "sha256": "cd316672ea73a2f386a6ce9fb8a39d5456c3b4f88e772ddfd5aed5fbbd2cf3c0"
+      },
+      {
+        "path": "../../design-reference/components/ListItem/README.md",
+        "sha256": "b661889910068985fca038b554d749b2218beca4acce2f56802cbde1a849e60a"
+      },
+      {
+        "path": "../../design-reference/components/Subwindow/README.md",
+        "sha256": "1a766ad572f12a98af379755265fd23b3e27d0f00da116596a302e36fed19593"
+      },
+      {
+        "path": "../../design-reference/components/TitleBar/README.md",
+        "sha256": "a0c3b9682e9ed8ca2ec27b073d4e37e2e174351e1d469823213afd853e8f8548"
+      },
+      {
+        "path": "../../design-reference/color-roles.json",
+        "sha256": "3888822c83b7f287d6c4e18bcbf9ec6cc7ce38db5012caf5e42a8df96461bf3f"
+      }
+    ]
+  },
+  "experience": {
+    "subject": "Browse three books, compare their overviews, and start a preview",
+    "form": "planar"
+  },
+  "theme": {
+    "brandColors": {}
+  },
+  "surfaces": [
+    {
+      "id": "main",
+      "type": "planar",
+      "defaultSize": {
+        "width": 720,
+        "height": 540,
+        "unit": "dp"
+      },
+      "rootNodeId": "main-window",
+      "windowBackground": "material"
+    },
+    {
+      "id": "detail",
+      "type": "subwindow",
+      "defaultSize": {
+        "width": 360,
+        "height": 540,
+        "unit": "dp"
+      },
+      "rootNodeId": "book-detail",
+      "ownerSurfaceId": "main",
+      "placement": {
+        "side": "right",
+        "align": "top",
+        "gapDp": 24,
+        "depthDp": 0
+      },
+      "initiallyVisible": false
+    }
+  ],
+  "initialStateId": "browse",
+  "states": [
+    {
+      "id": "browse",
+      "values": {
+        "ui": {
+          "detailOpen": false,
+          "selectedBookId": null,
+          "saved": false,
+          "reading": false
+        }
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "select-slow",
+      "purpose": "Select The Unhurried Days, update its details and cover, highlight the row, open the same auxiliary window, and leave preview mode",
+      "effects": {
+        "selectedBookId": "slow",
+        "detailOpen": true,
+        "reading": false
+      }
+    },
+    {
+      "id": "select-city",
+      "purpose": "Select Another Side of the City, update its details and cover, highlight the row, open the same auxiliary window, and leave preview mode",
+      "effects": {
+        "selectedBookId": "city",
+        "detailOpen": true,
+        "reading": false
+      }
+    },
+    {
+      "id": "select-stars",
+      "purpose": "Select Letters to the Night Sky, update its details and cover, highlight the row, open the same auxiliary window, and leave preview mode",
+      "effects": {
+        "selectedBookId": "stars",
+        "detailOpen": true,
+        "reading": false
+      }
+    },
+    {
+      "id": "close-detail",
+      "purpose": "Close details, clear the selected-row appearance, preserve the list scroll position, and return focus to the selected row"
+    },
+    {
+      "id": "toggle-save",
+      "purpose": "Toggle the saved-list marker and button label between Save List and Saved for the current session"
+    },
+    {
+      "id": "toggle-reading",
+      "purpose": "Switch between the overview and local preview excerpt in the same detail window; use Overview or Preview Excerpt as the heading and Start Preview or Back to Overview as the button label"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "main-window",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "widthDp": 720,
+        "heightDp": 540,
+        "overflow": "hidden"
+      },
+      "children": [
+        "main-titlebar",
+        "body"
+      ]
+    },
+    {
+      "id": "main-titlebar",
+      "kind": "spatialui",
+      "component": "sui-title-bar",
+      "children": [
+        "header-copy",
+        "save"
+      ],
+      "props": {
+        "title-node-id": "main-title",
+        "subtitle-node-id": "main-subtitle"
+      }
+    },
+    {
+      "id": "header-copy",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "gapDp": 4
+      },
+      "children": [
+        "main-title",
+        "main-subtitle"
+      ]
+    },
+    {
+      "id": "main-title",
+      "kind": "text",
+      "content": "Weekend Reading List",
+      "textStyle": {
+        "overrides": {
+          "weight": 700
+        }
+      }
+    },
+    {
+      "id": "main-subtitle",
+      "kind": "text",
+      "content": "Three books to enjoy at an unhurried pace",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelSecondary"
+      }
+    },
+    {
+      "id": "save",
+      "kind": "spatialui",
+      "component": "sui-button",
+      "props": {
+        "slot": "trailing",
+        "size": "small",
+        "text": "Save List"
+      },
+      "events": {
+        "click-action": "toggle-save"
+      }
+    },
+    {
+      "id": "body",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "paddingDp": {
+          "top": 0,
+          "right": 32,
+          "bottom": 32,
+          "left": 32
+        },
+        "gapDp": 16,
+        "grow": 1,
+        "minHeightDp": 0,
+        "overflow": "scroll"
+      },
+      "children": [
+        "intro",
+        "book-list"
+      ]
+    },
+    {
+      "id": "intro",
+      "kind": "text",
+      "content": "Essays, cities, and nature: set aside some weekend reading time.",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelTertiary"
+      }
+    },
+    {
+      "id": "book-list",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "gapDp": 8
+      },
+      "children": [
+        "row-slow",
+        "row-city",
+        "row-stars"
+      ]
+    },
+    {
+      "id": "row-slow",
+      "kind": "spatialui",
+      "component": "sui-list-item",
+      "props": {
+        "content-padding": 16,
+        "custom-width": 656
+      },
+      "children": [
+        "cover-slow",
+        "copy-slow",
+        "summary-slow"
+      ],
+      "events": {
+        "click-action": "select-slow"
+      },
+      "visualStates": {
+        "selected": {
+          "props": {
+            "container-color": "fillSecondary"
+          }
+        }
+      }
+    },
+    {
+      "id": "cover-slow",
+      "kind": "media",
+      "assetId": "slow-cover",
+      "props": {
+        "slot": "leading",
+        "fit": "cover",
+        "objectPosition": "center"
+      },
+      "layout": {
+        "mode": "stack",
+        "widthDp": 60,
+        "heightDp": 80
+      },
+      "appearance": {
+        "radiusDp": 6
+      }
+    },
+    {
+      "id": "copy-slow",
+      "kind": "layout",
+      "props": {
+        "slot": "headline"
+      },
+      "layout": {
+        "mode": "column",
+        "gapDp": 4
+      },
+      "children": [
+        "name-slow",
+        "meta-slow"
+      ]
+    },
+    {
+      "id": "name-slow",
+      "kind": "text",
+      "content": "The Unhurried Days",
+      "textStyle": {
+        "typography": "titleMedium",
+        "color": "labelPrimary"
+      }
+    },
+    {
+      "id": "meta-slow",
+      "kind": "text",
+      "content": "Lin Jian · Life essays · about 2 hours",
+      "textStyle": {
+        "typography": "bodySmall",
+        "color": "labelTertiary"
+      }
+    },
+    {
+      "id": "summary-slow",
+      "kind": "text",
+      "content": "Find your own rhythm in everyday moments.",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelTertiary"
+      },
+      "props": {
+        "slot": "supporting"
+      }
+    },
+    {
+      "id": "row-city",
+      "kind": "spatialui",
+      "component": "sui-list-item",
+      "props": {
+        "content-padding": 16,
+        "custom-width": 656
+      },
+      "children": [
+        "cover-city",
+        "copy-city",
+        "summary-city"
+      ],
+      "events": {
+        "click-action": "select-city"
+      },
+      "visualStates": {
+        "selected": {
+          "props": {
+            "container-color": "fillSecondary"
+          }
+        }
+      }
+    },
+    {
+      "id": "cover-city",
+      "kind": "media",
+      "assetId": "city-cover",
+      "props": {
+        "slot": "leading",
+        "fit": "cover",
+        "objectPosition": "center"
+      },
+      "layout": {
+        "mode": "stack",
+        "widthDp": 60,
+        "heightDp": 80
+      },
+      "appearance": {
+        "radiusDp": 6
+      }
+    },
+    {
+      "id": "copy-city",
+      "kind": "layout",
+      "props": {
+        "slot": "headline"
+      },
+      "layout": {
+        "mode": "column",
+        "gapDp": 4
+      },
+      "children": [
+        "name-city",
+        "meta-city"
+      ]
+    },
+    {
+      "id": "name-city",
+      "kind": "text",
+      "content": "Another Side of the City",
+      "textStyle": {
+        "typography": "titleMedium",
+        "color": "labelPrimary"
+      }
+    },
+    {
+      "id": "meta-city",
+      "kind": "text",
+      "content": "Zhou Yuan · Urban observations · about 3 hours",
+      "textStyle": {
+        "typography": "bodySmall",
+        "color": "labelTertiary"
+      }
+    },
+    {
+      "id": "summary-city",
+      "kind": "text",
+      "content": "Rediscover a familiar city along its streets and alleys.",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelTertiary"
+      },
+      "props": {
+        "slot": "supporting"
+      }
+    },
+    {
+      "id": "row-stars",
+      "kind": "spatialui",
+      "component": "sui-list-item",
+      "props": {
+        "content-padding": 16,
+        "custom-width": 656
+      },
+      "children": [
+        "cover-stars",
+        "copy-stars",
+        "summary-stars"
+      ],
+      "events": {
+        "click-action": "select-stars"
+      },
+      "visualStates": {
+        "selected": {
+          "props": {
+            "container-color": "fillSecondary"
+          }
+        }
+      }
+    },
+    {
+      "id": "cover-stars",
+      "kind": "media",
+      "assetId": "stars-cover",
+      "props": {
+        "slot": "leading",
+        "fit": "cover",
+        "objectPosition": "center"
+      },
+      "layout": {
+        "mode": "stack",
+        "widthDp": 60,
+        "heightDp": 80
+      },
+      "appearance": {
+        "radiusDp": 6
+      }
+    },
+    {
+      "id": "copy-stars",
+      "kind": "layout",
+      "props": {
+        "slot": "headline"
+      },
+      "layout": {
+        "mode": "column",
+        "gapDp": 4
+      },
+      "children": [
+        "name-stars",
+        "meta-stars"
+      ]
+    },
+    {
+      "id": "name-stars",
+      "kind": "text",
+      "content": "Letters to the Night Sky",
+      "textStyle": {
+        "typography": "titleMedium",
+        "color": "labelPrimary"
+      }
+    },
+    {
+      "id": "meta-stars",
+      "kind": "text",
+      "content": "Xu Xing · Nature reading · about 2.5 hours",
+      "textStyle": {
+        "typography": "bodySmall",
+        "color": "labelTertiary"
+      }
+    },
+    {
+      "id": "summary-stars",
+      "kind": "text",
+      "content": "Experience nature at scale through starlight and seasons.",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelTertiary"
+      },
+      "props": {
+        "slot": "supporting"
+      }
+    },
+    {
+      "id": "book-detail",
+      "kind": "spatialui",
+      "component": "sui-subwindow",
+      "props": {
+        "for": "main-window",
+        "placement": "end",
+        "depth": 0,
+        "custom-width": 360,
+        "custom-height": 540,
+        "content-padding": 0,
+        "corner-radius": 32,
+        "dismiss-on-click-outside": false
+      },
+      "bindings": {
+        "hidden": "!ui.detailOpen"
+      },
+      "children": [
+        "detail-content"
+      ],
+      "regions": {
+        "titleBarNodeId": "detail-titlebar",
+        "bodyNodeId": "detail-body"
+      }
+    },
+    {
+      "id": "detail-content",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "widthDp": 360,
+        "heightDp": 540
+      },
+      "children": [
+        "detail-titlebar",
+        "detail-body"
+      ]
+    },
+    {
+      "id": "detail-titlebar",
+      "kind": "spatialui",
+      "component": "sui-title-bar",
+      "children": [
+        "close-detail",
+        "detail-heading"
+      ],
+      "props": {
+        "title-node-id": "detail-heading"
+      }
+    },
+    {
+      "id": "close-detail",
+      "kind": "spatialui",
+      "component": "sui-icon-button",
+      "props": {
+        "slot": "leading",
+        "size": "small",
+        "semantic-label": "Close book details",
+        "navigation-action": "close"
+      },
+      "children": [
+        "close-icon"
+      ],
+      "events": {
+        "click-action": "close-detail"
+      }
+    },
+    {
+      "id": "close-icon",
+      "kind": "spatialui",
+      "component": "sui-icon",
+      "assetId": "close-icon",
+      "props": {
+        "size": 16,
+        "name": "ICON7-P239"
+      }
+    },
+    {
+      "id": "detail-heading",
+      "kind": "text",
+      "content": "Book Details",
+      "textStyle": {
+        "overrides": {
+          "weight": 700
+        }
+      }
+    },
+    {
+      "id": "detail-body",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "paddingDp": {
+          "top": 0,
+          "right": 32,
+          "bottom": 32,
+          "left": 32
+        },
+        "gapDp": 16,
+        "grow": 1,
+        "minHeightDp": 0,
+        "overflow": "scroll"
+      },
+      "children": [
+        "detail-identity",
+        "detail-label",
+        "detail-description",
+        "detail-actions"
+      ]
+    },
+    {
+      "id": "detail-identity",
+      "kind": "layout",
+      "layout": {
+        "mode": "row",
+        "gapDp": 16,
+        "align": "center"
+      },
+      "children": [
+        "detail-cover",
+        "detail-copy"
+      ]
+    },
+    {
+      "id": "detail-cover",
+      "kind": "media",
+      "bindings": {
+        "assetId": "selectedBook.coverAssetId"
+      },
+      "layout": {
+        "mode": "stack",
+        "widthDp": 72,
+        "heightDp": 96
+      },
+      "props": {
+        "fit": "cover",
+        "objectPosition": "center"
+      },
+      "appearance": {
+        "radiusDp": 6
+      }
+    },
+    {
+      "id": "detail-copy",
+      "kind": "layout",
+      "layout": {
+        "mode": "column",
+        "gapDp": 4,
+        "grow": 1
+      },
+      "children": [
+        "detail-name",
+        "detail-author"
+      ]
+    },
+    {
+      "id": "detail-name",
+      "kind": "text",
+      "content": "",
+      "textStyle": {
+        "typography": "titleMedium",
+        "color": "labelPrimary"
+      },
+      "bindings": {
+        "content": "selectedBook.title"
+      }
+    },
+    {
+      "id": "detail-author",
+      "kind": "text",
+      "content": "",
+      "textStyle": {
+        "typography": "bodyMedium",
+        "color": "labelTertiary"
+      },
+      "bindings": {
+        "content": "selectedBook.authorAndTag"
+      }
+    },
+    {
+      "id": "detail-label",
+      "kind": "text",
+      "content": "Overview",
+      "textStyle": {
+        "typography": "titleSmall",
+        "color": "labelPrimary"
+      }
+    },
+    {
+      "id": "detail-description",
+      "kind": "text",
+      "content": "",
+      "textStyle": {
+        "typography": "bodyMediumMultiline",
+        "color": "labelTertiary"
+      },
+      "bindings": {
+        "content": "selectedBook.description or excerpt according to ui.reading"
+      }
+    },
+    {
+      "id": "detail-actions",
+      "kind": "layout",
+      "layout": {
+        "mode": "row",
+        "justify": "end",
+        "gapDp": 8,
+        "marginTop": "auto"
+      },
+      "children": [
+        "read"
+      ]
+    },
+    {
+      "id": "read",
+      "kind": "spatialui",
+      "component": "sui-button",
+      "props": {
+        "size": "regular",
+        "text": "Start Preview"
+      },
+      "events": {
+        "click-action": "toggle-reading"
+      }
+    }
+  ],
+  "dataCases": {
+    "books": [
+      {
+        "id": "slow",
+        "title": "The Unhurried Days",
+        "author": "Lin Jian",
+        "tag": "Life essays · about 2 hours",
+        "summary": "Find your own rhythm in everyday moments.",
+        "description": "A collection of short essays about walking, cooking, and solitude. Through ordinary details, the author explores how to make room for yourself. Ideal for a few pages on a weekend afternoon.",
+        "excerpt": "That morning, I did not rush outside. Window light moved slowly across the table, and yesterday's unfinished book still waited on the same page.",
+        "color": "#537c70",
+        "coverAssetId": "slow-cover",
+        "authorAndTag": "Lin Jian · Life essays · about 2 hours"
+      },
+      {
+        "id": "city",
+        "title": "Another Side of the City",
+        "author": "Zhou Yuan",
+        "tag": "Urban observations · about 3 hours",
+        "summary": "Rediscover a familiar city along its streets and alleys.",
+        "description": "From secondhand bookshops and morning markets to riverside paths and late-night stores, this book records overlooked city routines and the people within them.",
+        "excerpt": "Past the familiar intersection and down a narrow alley, I heard the city waking for the first time.",
+        "color": "#a57253",
+        "coverAssetId": "city-cover",
+        "authorAndTag": "Zhou Yuan · Urban observations · about 3 hours"
+      },
+      {
+        "id": "stars",
+        "title": "Letters to the Night Sky",
+        "author": "Xu Xing",
+        "tag": "Nature reading · about 2.5 hours",
+        "summary": "Experience nature at scale through starlight and seasons.",
+        "description": "Beginning with the first visible star, follow seasonal changes across the night sky. There are no complex formulas, only observations and curiosity that can start at your window.",
+        "excerpt": "After the lights went out, the night did not darken at once. As my eyes adjusted, distant stars appeared one after another.",
+        "color": "#586584",
+        "coverAssetId": "stars-cover",
+        "authorAndTag": "Xu Xing · Nature reading · about 2.5 hours"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "id": "slow-cover",
+      "kind": "image",
+      "src": "assets/slow.svg",
+      "purpose": "Cover of The Unhurried Days"
+    },
+    {
+      "id": "city-cover",
+      "kind": "image",
+      "src": "assets/city.svg",
+      "purpose": "Cover of Another Side of the City"
+    },
+    {
+      "id": "stars-cover",
+      "kind": "image",
+      "src": "assets/stars.svg",
+      "purpose": "Cover of Letters to the Night Sky"
+    },
+    {
+      "id": "close-icon",
+      "kind": "icon",
+      "src": "assets/close.svg",
+      "catalogId": "ICON7-P239",
+      "purpose": "Close-details control"
+    }
+  ]
+}

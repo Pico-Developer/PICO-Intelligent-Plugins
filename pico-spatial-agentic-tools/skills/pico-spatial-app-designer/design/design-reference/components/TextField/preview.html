@@ -1,0 +1,124 @@
+<!-- @dsCard group="Input" height=340 subtitle="SDK-aligned" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TextField · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .field-grid { display: flex; flex-wrap: wrap; gap: 32px; }
+    .field-example { display: grid; align-content: start; gap: 8px; width: 280px; }
+    .field-example h3 { margin: 0; font-size: 16px; }
+    .field-label { font-size: 14px; line-height: 18px; color: var(--label-darkest-alpha); }
+    .field-example .example-note { margin: 0; }
+    .field-form { display: grid; gap: 16px; width: 280px; }
+    .field-form .actions { justify-content: flex-start; }
+    .field-form .status { margin: 0; }
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>TextField</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro">
+    <h1>TextField</h1>
+    <p>The text field retains the SDK default appearance; field naming, input rules, and validation are composed externally.</p>
+  </header>
+  <section class="sui-stage" aria-labelledby="states-heading">
+    <h2 id="states-heading">Field state examples</h2>
+    <p class="example-note">The samples below show fixed states. A complete field with interactive validation follows.</p>
+    <div class="field-grid">
+      <div class="field-example">
+        <h3>Empty</h3>
+        <span class="field-label" id="empty-label">Device name (required)</span>
+        <sui-text-field data-label="empty-label" placeholder="For example: Living Room Headset" supporting-text="Required, up to 20 characters."></sui-text-field>
+      </div>
+      <div class="field-example">
+        <h3>Filled</h3>
+        <span class="field-label" id="filled-label">Device name (required)</span>
+        <sui-text-field data-label="filled-label" value="Living Room Headset" placeholder="For example: Living Room Headset" supporting-text="Required, up to 20 characters."></sui-text-field>
+      </div>
+      <div class="field-example">
+        <h3>Error state example</h3>
+        <span class="field-label" id="error-label">Device name (required)</span>
+        <sui-text-field data-label="error-label" value="This device name is deliberately longer than twenty characters" placeholder="For example: Living Room Headset" error supporting-text="Device name cannot exceed 20 characters."></sui-text-field>
+        <p class="example-note">Static error sample demonstrating the appearance of an overlong value.</p>
+      </div>
+      <div class="field-example">
+        <h3>With leading icon</h3>
+        <span class="field-label" id="leading-label">Device name (required)</span>
+        <sui-text-field data-label="leading-label" placeholder="For example: Living Room Headset" supporting-text="Required, up to 20 characters.">
+          <sui-icon slot="leading" name="ic_headset" size="20"></sui-icon>
+        </sui-text-field>
+      </div>
+    </div>
+  </section>
+  <section class="example" aria-labelledby="validation-heading">
+    <h2 id="validation-heading">Plan recommendation · Complete field and validation</h2>
+    <p class="example-note">Validation starts after the first Check name action. After an error, it updates with input and clears once the value is valid. Leading and trailing whitespace is ignored; whitespace-only input is empty.</p>
+    <form class="field-form" id="device-form" novalidate>
+      <div class="field-example">
+        <span class="field-label" id="device-label">Device name (required)</span>
+        <sui-text-field id="device-name" data-label="device-label" placeholder="For example: Living Room Headset" supporting-text="Required, up to 20 characters."></sui-text-field>
+      </div>
+      <div class="actions"><sui-button id="validate-name" text="Check name"></sui-button></div>
+      <p class="status" id="validation-status" role="status"></p>
+    </form>
+  </section>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      await customElements.whenDefined('sui-text-field');
+
+      // Preview composition only: label the actual shadow input and link its
+      // supporting text without adding native SDK parameters.
+      document.querySelectorAll('sui-text-field[data-label]').forEach(field => {
+        const label = document.getElementById(field.dataset.label);
+        const input = field.shadowRoot.querySelector('.in');
+        const supporting = field.shadowRoot.querySelector('.sup');
+        input.setAttribute('aria-label', label.textContent);
+        input.setAttribute('aria-required', 'true');
+        input.setAttribute('aria-invalid', String(field.hasAttribute('error')));
+        supporting.id = 'field-supporting';
+        input.setAttribute('aria-describedby', supporting.id);
+        label.addEventListener('click', () => field.focus());
+      });
+
+      const field = document.getElementById('device-name');
+      const input = field.shadowRoot.querySelector('.in');
+      const supporting = field.shadowRoot.querySelector('.sup');
+      const status = document.getElementById('validation-status');
+      let submitted = false;
+      supporting.setAttribute('aria-live', 'polite');
+
+      function validate() {
+        const name = field.value.trim();
+        const message = !name ? 'Enter a device name.'
+          : Array.from(name).length > 20 ? 'Device name cannot exceed 20 characters.' : '';
+        field.toggleAttribute('error', !!message);
+        field.setAttribute('supporting-text', message || 'Required, up to 20 characters.');
+        input.setAttribute('aria-invalid', String(!!message));
+        return !message;
+      }
+
+      function submit(event) {
+        event.preventDefault();
+        submitted = true;
+        const valid = validate();
+        status.textContent = valid ? 'Validation passed. The device name meets the rules.' : '';
+        if (!valid) field.focus();
+      }
+
+      document.getElementById('device-form').addEventListener('submit', submit);
+      document.getElementById('validate-name').addEventListener('click-action', submit);
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.isComposing) submit(event);
+      });
+      field.addEventListener('value-change', () => {
+        status.textContent = '';
+        if (submitted) validate();
+      });
+    });
+  </script>
+</body>
+</html>

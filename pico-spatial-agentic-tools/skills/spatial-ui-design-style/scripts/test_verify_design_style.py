@@ -58,6 +58,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
         return subprocess.run(
             args,
             text=True,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
@@ -479,6 +480,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
                 "--no-design-colors",
             ],
             text=True,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
@@ -504,6 +506,7 @@ class VerifyDesignStyleTest(unittest.TestCase):
         result = subprocess.run(
             ["bash", str(SCRIPT_PATH), str(self.module_dir)],
             text=True,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
@@ -549,6 +552,160 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stdout)
         self.assertNotIn("R9", result.stdout)
+
+    def test_direct_text_style_at_title_large_ceiling_warns(self) -> None:
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.Text
+
+            fun Demo() {
+                PicoTheme {
+                    Text(
+                        text = "October",
+                        style = PicoTheme.typography.headlineLarge,
+                    )
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertIn("R5b", result.stdout)
+        self.assertIn("headlineLarge (24sp)", result.stdout)
+        self.assertIn("warnings: 1", result.stdout)
+
+    def test_surface_title_exemption_requires_unique_marker_and_matching_design(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "detail",
+                    "kind": "spatialui",
+                    "component": "sui-subwindow",
+                    "children": ["heading"],
+                },
+                {
+                    "id": "heading",
+                    "kind": "text",
+                    "content": "Event",
+                    "textRole": "surface_title",
+                    "textStyle": {"typography": "headlineLarge", "color": "labelPrimary"},
+                },
+            ]
+        )
+        header = "import com.pico.spatial.ui.design.*\nfun Demo() { PicoTheme {\n"
+        title = '// design-style: surface-title heading\nText("Event", style = PicoTheme.typography.headlineLarge)\n'
+        body = 'Text("Notes", style = PicoTheme.typography.titleLarge)\n'
+        self.write_ui(header + title + body + "}}")
+        result = self.run_verifier("--design-spec", str(spec))
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("headlineLarge (24sp)", result.stdout)
+        self.assertIn("titleLarge (20sp)", result.stdout)
+        for name, source, use_spec in [
+            ("no-contract", title, False),
+            ("missing-marker", title.split("\n", 1)[1], True),
+            ("unknown", title.replace("surface-title heading", "surface-title missing"), True),
+            ("mismatched-token", title.replace("headlineLarge", "titleLarge"), True),
+            ("reused", title + title, True),
+            (
+                "block-comment",
+                "/*\n// design-style: surface-title heading\n*/\n" + title.split("\n", 1)[1],
+                True,
+            ),
+            ("not-adjacent", title.replace("\nText", "\nval x = 1\nText"), True),
+        ]:
+            with self.subTest(name=name):
+                self.write_ui(header + source + "}}")
+                result = self.run_verifier(*(["--design-spec", str(spec)] if use_spec else []))
+                self.assertEqual(0, result.returncode, result.stdout)
+                self.assertIn("[warning] R5b", result.stdout)
+        self.write_ui(header + title + "}}")
+        spec.write_text(
+            json.dumps(
+                {
+                    "nodes": [
+                        {
+                            "id": "heading",
+                            "kind": "text",
+                            "content": "Event",
+                            "textRole": "surface_title",
+                            "textStyle": {"typography": "headlineLarge", "color": "labelPrimary"},
+                        },
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        result = self.run_verifier("--design-spec", str(spec))
+        self.assertIn("[warning] R5b", result.stdout)
+
+    def test_direct_text_style_below_title_large_ceiling_does_not_warn(self) -> None:
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.Text
+
+            fun Demo() {
+                PicoTheme {
+                    Text(
+                        style = PicoTheme.typography.titleMedium,
+                        text = "Upcoming",
+                    )
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("[warning] R5b", result.stdout)
+
+    def test_text_without_direct_style_does_not_warn(self) -> None:
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.Text
+
+            fun Demo() {
+                PicoTheme {
+                    val titleStyle = PicoTheme.typography.headlineLarge
+                    Text(text = "Inherited")
+                    Text(text = "Indirect", style = titleStyle)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("[warning] R5b", result.stdout)
+
+    def test_adjacent_text_call_does_not_borrow_later_direct_style(self) -> None:
+        self.write_ui(
+            """
+            import com.pico.spatial.ui.design.PicoTheme
+            import com.pico.spatial.ui.design.Text
+
+            fun Demo() {
+                PicoTheme {
+                    Text(text = "Default")
+                    Text(
+                        text = "Explicit",
+                        style = PicoTheme.typography.titleLarge,
+                    )
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier()
+
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertEqual(1, result.stdout.count("[warning] R5b"), result.stdout)
 
     def test_text_with_explicit_semantic_color_is_accepted(self) -> None:
         self.write_ui(
@@ -756,6 +913,121 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, result.stdout)
 
+    def test_background_mapped_to_domain_visual_part_default_fill_is_accepted(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "month-grid",
+                    "kind": "domain_visual",
+                    "parts": {
+                        "dayCell": {
+                            "appearance": {
+                                "fill": "fillLight",
+                                "radiusDp": 16,
+                            }
+                        }
+                    },
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-part node=month-grid part=dayCell
+                        .background(PicoTheme.colorScheme.fillLight)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_background_mapped_to_domain_visual_part_state_fill_is_accepted(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "month-grid",
+                    "kind": "domain_visual",
+                    "parts": {
+                        "dayCell": {
+                            "appearance": {
+                                "foreground": "labelPrimary",
+                                "radiusDp": 16,
+                            },
+                            "states": {
+                                "selected": {"fill": "selectedDayFill"},
+                            },
+                        }
+                    },
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-part node=month-grid part=dayCell
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertEqual(0, result.returncode, result.stdout)
+
+    def test_background_marker_for_transparent_domain_visual_part_is_rejected(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "month-grid",
+                    "kind": "domain_visual",
+                    "parts": {
+                        "dayCell": {
+                            "appearance": {
+                                "foreground": "labelPrimary",
+                                "radiusDp": 16,
+                            }
+                        }
+                    },
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-part node=month-grid part=dayCell
+                        .background(PicoTheme.colorScheme.fillLight)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("design part declares no fill", result.stdout)
+
     def test_duplicate_background_marker_is_rejected(self) -> None:
         spec = self.write_design_spec(
             [
@@ -873,6 +1145,37 @@ class VerifyDesignStyleTest(unittest.TestCase):
 
         self.assertNotEqual(0, result.returncode, result.stdout)
         self.assertIn("declares no fill", result.stdout)
+
+    def test_unknown_design_node_kind_is_rejected(self) -> None:
+        spec = self.write_design_spec(
+            [
+                {
+                    "id": "illegal-surface",
+                    "kind": "visual",
+                    "appearance": {"fill": "fillSecondary"},
+                }
+            ]
+        )
+        self.write_ui(
+            """
+            import androidx.compose.foundation.background
+            import androidx.compose.ui.Modifier
+            import com.pico.spatial.ui.design.PicoTheme
+
+            fun Demo() {
+                PicoTheme {
+                    Modifier
+                        // design-style: design-surface illegal-surface
+                        .background(PicoTheme.colorScheme.fillSecondary)
+                }
+            }
+            """,
+        )
+
+        result = self.run_verifier("--design-spec", str(spec))
+
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("unsupported kind 'visual'", result.stdout)
 
     def test_structural_fill_node_is_rejected(self) -> None:
         spec = self.write_design_spec(

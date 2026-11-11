@@ -4,7 +4,7 @@ This document centralizes the Perfetto SQL used by `analysis-kotlin-spatial-app-
 
 Execution contract: run these SQL snippets through `pico-cli perf trace query --session <sessionId> --sql "..."` after `pico-cli perf trace load`. If the daemon/session is gone, restart the daemon and reload the trace; do not invoke `trace_processor_shell` directly during normal analysis.
 
-Unified parameter convention: for new queries, prefer placeholders named like `$FRAME_THREAD_UTID`, `$WINDOW_START_NS`, `$WINDOW_END_NS`, `$FRAME_BUDGET_NS`. Among them, `$FRAME_THREAD_UTID` must be read from `trace-probe-detail.yaml` at `identities.app_frame_driving_threads.candidates[0].utid`. Hardcoding the thread name `main` is forbidden. query-01 ~ query-10a must all pin down the frame-driving thread by `$FRAME_THREAD_UTID`, to avoid misjudgment caused by `t.name = 'main'`.
+Unified parameter convention: for new queries, prefer placeholders named like `$FRAME_THREAD_UTID`, `$WINDOW_START_NS`, `$WINDOW_END_NS`, `$FRAME_BUDGET_NS`. Among them, `$FRAME_THREAD_UTID` must be read from `trace-probe-detail.json` at `identities.app_frame_driving_threads.candidates[0].utid`. Hardcoding the thread name `main` is forbidden. query-01 ~ query-10a must all pin down the frame-driving thread by `$FRAME_THREAD_UTID`, to avoid misjudgment caused by `t.name = 'main'`.
 
 Before adapting or interpreting these queries, follow [Perfetto Trace Basics](../common/perfetto-trace-basics.md). In particular, all `ts` and `dur` values are Perfetto trace-processor nanoseconds in the loaded session. Do not invent, round, normalize, or manually "align" a window such as `s.ts BETWEEN 1250000000 AND 1260000000` unless those exact bounds came from a prior verified trace row in the same session. After locating an abnormal `doFrame`, carry its exact `s.ts` and `s.ts + s.dur` into drill-down queries, or prefer a CTE that selects the anchor row and joins dependent queries in the same SQL. If a time-window query unexpectedly returns no rows, first validate `trace_bounds`, `MIN/MAX(ts)` for the exact table/thread/filter, and the anchor row identity through `pico-cli perf trace query`; do not switch to `trace_processor_shell`.
 
@@ -325,16 +325,16 @@ LIMIT 50;
 
 ## query-10-frame-thread-overbudget-doframe.sql: Find Over-Budget Janky Frames by Frame-Driving Thread
 
-Purpose: use the frame-driving thread `utid` pinned down in `trace-probe-detail.yaml` to find over-budget `Choreographer#doFrame`. This query replaces coarse filtering by thread name `main` to avoid missing cases where the frame-driving thread is not consistently named `main` in Spatial Apps. In 90Hz scenarios, `$FRAME_BUDGET_NS` is usually `11111111`; in 60Hz scenarios it can be `16666667`.
+Purpose: use the frame-driving thread `utid` pinned down in `trace-probe-detail.json` to find over-budget `Choreographer#doFrame`. This query replaces coarse filtering by thread name `main` to avoid missing cases where the frame-driving thread is not consistently named `main` in Spatial Apps. In 90Hz scenarios, `$FRAME_BUDGET_NS` is usually `11111111`; in 60Hz scenarios it can be `16666667`.
 
 Parameter sources:
 
-- `$TARGET_APP_PACKAGE_NAME`: the package name of target app, read from `trace-probe-detail.yaml` at `identities.target_app.candidates.requested_names`.
-- `$FRAME_THREAD_UTID`: read from `trace-probe-detail.yaml` at `identities.app_frame_driving_threads.candidates[0].utid`.
+- `$TARGET_APP_PACKAGE_NAME`: the package name of target app, read from `trace-probe-detail.json` at `identities.target_app.candidates.requested_names`.
+- `$FRAME_THREAD_UTID`: read from `trace-probe-detail.json` at `identities.app_frame_driving_threads.candidates[0].utid`.
 
 ```sql
 -- Find over-budget doFrame on the frame-driving thread within the issue window.
--- Note: the frame-driving thread utid must come from trace-probe-detail.yaml; hardcoding thread name main is forbidden.
+-- Note: the frame-driving thread utid must come from trace-probe-detail.json; hardcoding thread name main is forbidden.
 SELECT
   p.name AS process_name,
   t.name AS thread_name,

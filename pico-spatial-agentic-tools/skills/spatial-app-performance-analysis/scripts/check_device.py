@@ -115,107 +115,77 @@ def classify_signal(name: str, value: str) -> Signal:
     v = (value or "").strip()
     low = v.lower()
 
-    if name == "serial":
-        if re.match(r"^emulator-\d+$", low) or re.match(r"^127\.0\.0\.1:\d+$", low) or re.match(r"^localhost:\d+$", low):
-            return Signal(name, v, "emulator", 0.95, "Serial matches a typical emulator pattern")
-        return Signal(name, v, "real-device-likely", 0.35, "Serial does not match common emulator patterns")
+    if name == "ro.boot.qemu":
+        if low == "1":
+            return Signal(name, v, "emulator", 1.00, "ro.boot.qemu is 1")
+        if low == "0":
+            return Signal(name, v, "swan", 1.00, "ro.boot.qemu is 0")
+        if low == "":
+            return Signal(name, "<empty>", "unknown", 0.0, "ro.boot.qemu is absent")
+        return Signal(name, v or "<empty>", "unknown", 0.0, "ro.boot.qemu must be 0 or 1")
 
     if name == "ro.kernel.qemu":
         if low == "1":
-            return Signal(name, v, "emulator", 1.00, "QEMU flag detected")
-        if low == "0" or low == "":
-            return Signal(name, v or "<empty>", "real-device-likely", 0.45, "QEMU flag not detected")
-        return Signal(name, v, "unknown", 0.20, "Unexpected QEMU flag value")
-
-    if name == "ro.hardware":
-        pats = ["goldfish", "ranchu", "vbox86"]
-        if any(p in low for p in pats):
-            return Signal(name, v, "emulator", 0.95, "Hardware field contains common emulator keywords")
-        return Signal(name, v, "real-device-likely", 0.40, "Hardware field does not contain common emulator keywords")
-
-    if name == "ro.product.model":
-        pats = ["android sdk built for", "sdk", "emulator", "google_sdk"]
-        if any(p in low for p in pats):
-            return Signal(name, v, "emulator", 0.80, "Model looks like an emulator")
-        return Signal(name, v, "real-device-likely", 0.35, "Model looks like a commercial device")
-
-    if name == "ro.product.manufacturer":
-        pats = ["genymotion", "unknown"]
-        if any(p in low for p in pats):
-            return Signal(name, v, "emulator", 0.70, "Manufacturer looks like an emulator environment")
-        return Signal(name, v, "real-device-likely", 0.30, "Manufacturer looks like a real vendor")
-
-    if name == "ro.product.device":
-        pats = ["generic", "emulator", "vbox86"]
-        if any(p in low for p in pats):
-            return Signal(name, v, "emulator", 0.80, "Device field contains common emulator keywords")
-        return Signal(name, v, "real-device-likely", 0.35, "Device field does not contain common emulator keywords")
-
-    if name == "ro.build.fingerprint":
-        pats = ["generic", "test-keys", "sdk_gphone", "emulator"]
-        hits = [p for p in pats if p in low]
-        if hits:
-            score = 0.65 + min(0.25, 0.10 * (len(hits) - 1))
-            return Signal(name, v, "emulator", min(score, 0.90), f"Fingerprint matched keywords: {', '.join(hits)}")
-        return Signal(name, v, "real-device-likely", 0.35, "Fingerprint does not contain common emulator keywords")
+            return Signal(name, v, "emulator", 1.00, "ro.kernel.qemu is 1")
+        if low in ("", "0"):
+            return Signal(name, v or "<empty>", "swan", 1.00, "ro.kernel.qemu is 0 or absent")
+        return Signal(name, v or "<empty>", "unknown", 0.0, "ro.kernel.qemu must be 0 or 1")
 
     return Signal(name, v, "unknown", 0.0, "No rule matched")
 
 
 def summarize(signals: List[Signal]) -> Dict[str, object]:
     emu_scores = [s.score for s in signals if s.verdict == "emulator"]
-    real_scores = [s.score for s in signals if s.verdict == "real-device-likely"]
+    swan_scores = [s.score for s in signals if s.verdict == "swan"]
 
     emu_total = sum(emu_scores)
-    real_total = sum(real_scores)
-    total = emu_total + real_total
+    swan_total = sum(swan_scores)
+    total = emu_total + swan_total
     max_possible_total = len(signals) * 1.0
 
     emu_score_normalized = emu_total / max_possible_total if max_possible_total else 0.0
-    real_score_normalized = real_total / max_possible_total if max_possible_total else 0.0
+    swan_score_normalized = swan_total / max_possible_total if max_possible_total else 0.0
 
     if total == 0:
         final = "unknown"
         confidence = 0.0
-    elif emu_total >= real_total:
+    elif emu_total > swan_total:
         final = "emulator"
         confidence = emu_total / total
     else:
-        final = "real-device"
-        confidence = real_total / total
+        final = "swan"
+        confidence = swan_total / total
 
     return {
         "final_verdict": final,
         "confidence": round(confidence, 4),
         "emulator_score_sum": round(emu_total, 4),
-        "real_device_score_sum": round(real_total, 4),
+        "swan_score_sum": round(swan_total, 4),
         "emulator_score_normalized": round(emu_score_normalized, 4),
-        "real_device_score_normalized": round(real_score_normalized, 4),
+        "swan_score_normalized": round(swan_score_normalized, 4),
         "max_possible_score_sum": round(max_possible_total, 4),
     }
 
 
 def detect_pico(props: Dict[str, str]) -> Dict[str, object]:
-    brand = (props.get("ro.product.brand") or "").strip()
-    manufacturer = (props.get("ro.product.manufacturer") or "").strip()
-    device = (props.get("ro.product.device") or "").strip()
-    ota_version = (props.get("ro.pico.ota.version") or "").strip()
-
-    brand_ok = brand.lower() == "pico" or manufacturer.lower() == "pico"
-    swan_ok = device.lower() == "swan"
-    os_info = classify_pico_os_from_ota(ota_version)
-
+    brand = (props.get("ro.product.brand") or "").strip().lower()
+    manufacturer = (props.get("ro.product.manufacturer") or "").strip().lower()
+    device = (props.get("ro.product.device") or "").strip().lower()
+    os_info = classify_pico_os_from_ota(props.get("ro.pico.ota.version", ""))
+    brand_ok = brand == "pico" or manufacturer == "pico"
+    swan_ok = device == "swan"
     return {
-        "is_pico_swan": bool(brand_ok and swan_ok),
-        "brand_ok": bool(brand_ok),
-        "product_device_is_swan": bool(swan_ok),
-        "os": {
-            "status": os_info["status"],
-            "ota_version": os_info["ota_version"],
-            "parsed_version": os_info["parsed_version"],
-            "reason": os_info["reason"],
-        },
+        "is_pico_swan": brand_ok and swan_ok,
+        "brand_ok": brand_ok,
+        "product_device_is_swan": swan_ok,
+        "os": os_info,
     }
+
+
+def require_swan_identity(summary: Dict[str, object], props: Dict[str, str]) -> None:
+    if summary["final_verdict"] == "swan" and not detect_pico(props)["is_pico_swan"]:
+        summary["final_verdict"] = "unknown"
+        summary["confidence"] = 0.0
 
 
 def print_cli_output(signals: List[Signal], summary: Dict[str, object], serial: str, props: Dict[str, str]) -> None:
@@ -232,9 +202,7 @@ def print_cli_output(signals: List[Signal], summary: Dict[str, object], serial: 
     print(f"Serial      : {serial}")
     print(f"Final       : {summary['final_verdict']}")
     print(f"Confidence  : {summary['confidence']:.2%}")
-    print(f"Brand       : {props.get('ro.product.brand', '<empty>') or '<empty>'}")
-    print(f"Manufacturer: {props.get('ro.product.manufacturer', '<empty>') or '<empty>'}")
-    print(f"Device      : {props.get('ro.product.device', '<empty>') or '<empty>'}")
+    print(f"PICO OS     : {classify_pico_os_from_ota(props.get('ro.pico.ota.version', ''))['status']}")
     print("")
 
     header = (
@@ -263,40 +231,36 @@ def print_cli_output(signals: List[Signal], summary: Dict[str, object], serial: 
     print("Summary")
     print("-------")
     print(f"Emulator score sum        : {summary['emulator_score_sum']:.2f}")
-    print(f"Real device score sum     : {summary['real_device_score_sum']:.2f}")
+    print(f"Swan score sum            : {summary['swan_score_sum']:.2f}")
     print(f"Emulator normalized score : {summary['emulator_score_normalized']:.2%}")
-    print(f"Real normalized score     : {summary['real_device_score_normalized']:.2%}")
+    print(f"Swan normalized score     : {summary['swan_score_normalized']:.2%}")
     print(f"Max possible score sum    : {summary['max_possible_score_sum']:.2f}")
-    print("Rule                      : choose the side with the higher weighted total score")
+    print("Rule                      : ro.boot.qemu, then ro.kernel.qemu when boot is absent")
 
 
 def print_simple_output(summary: Dict[str, object], serial: str, props: Dict[str, str]) -> None:
-    brand = props.get("ro.product.brand", "") or "<empty>"
-    manufacturer = props.get("ro.product.manufacturer", "") or "<empty>"
-    device = props.get("ro.product.device", "") or "<empty>"
     pico = detect_pico(props)
     print(f"device={summary['final_verdict']} | confidence={summary['confidence']:.2%}")
     print(f"serial={serial}")
-    print(f"brand={brand}")
-    print(f"manufacturer={manufacturer}")
-    print(f"product_device={device}")
     print(f"is_pico_swan={'true' if pico['is_pico_swan'] else 'false'}")
     print(f"pico_os={pico['os']['status']}")
 
 
 def print_json(signals: List[Signal], summary: Dict[str, object], serial: str, props: Dict[str, str]) -> None:
+    pico = detect_pico(props)
     data = {
         "serial": serial,
         "device_info": {
+            "ro.boot.qemu": props.get("ro.boot.qemu", ""),
+            "ro.kernel.qemu": props.get("ro.kernel.qemu", ""),
             "ro.product.brand": props.get("ro.product.brand", ""),
             "ro.product.manufacturer": props.get("ro.product.manufacturer", ""),
             "ro.product.device": props.get("ro.product.device", ""),
-            "ro.product.model": props.get("ro.product.model", ""),
-            "ro.build.display.id": props.get("ro.build.display.id", ""),
-            "ro.build.version.incremental": props.get("ro.build.version.incremental", ""),
             "ro.pico.ota.version": props.get("ro.pico.ota.version", ""),
         },
-        "pico": detect_pico(props),
+        "is_pico_swan": pico["is_pico_swan"],
+        "pico_os": pico["os"]["status"],
+        "pico": pico,
         "summary": summary,
         "signals": [s.__dict__ for s in signals],
     }
@@ -304,7 +268,7 @@ def print_json(signals: List[Signal], summary: Dict[str, object], serial: str, p
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Classify an Android device as emulator or real device via adb")
+    parser = argparse.ArgumentParser(description="Classify a PICO target as emulator or Swan via adb")
     parser.add_argument("-s", "--serial", "--sn", dest="serial", help="Device serial; if omitted, auto-select the only online device")
     parser.add_argument("--json", action="store_true", help="Output result in JSON format")
     parser.add_argument("--detail", action="store_true", help="Output detailed analysis")
@@ -324,30 +288,19 @@ def main() -> int:
         serial = serials[0]
 
     props = {
-        "serial": serial,
-        "ro.kernel.qemu": adb_shell_getprop(serial, "ro.kernel.qemu"),
-        "ro.hardware": adb_shell_getprop(serial, "ro.hardware"),
-        "ro.product.brand": adb_shell_getprop(serial, "ro.product.brand"),
-        "ro.product.model": adb_shell_getprop(serial, "ro.product.model"),
-        "ro.product.manufacturer": adb_shell_getprop(serial, "ro.product.manufacturer"),
-        "ro.product.device": adb_shell_getprop(serial, "ro.product.device"),
-        "ro.build.fingerprint": adb_shell_getprop(serial, "ro.build.fingerprint"),
-        "ro.build.display.id": adb_shell_getprop_optional(serial, "ro.build.display.id"),
-        "ro.build.version.incremental": adb_shell_getprop_optional(serial, "ro.build.version.incremental"),
+        "ro.boot.qemu": adb_shell_getprop(serial, "ro.boot.qemu"),
+        "ro.product.brand": adb_shell_getprop_optional(serial, "ro.product.brand"),
+        "ro.product.manufacturer": adb_shell_getprop_optional(serial, "ro.product.manufacturer"),
+        "ro.product.device": adb_shell_getprop_optional(serial, "ro.product.device"),
         "ro.pico.ota.version": adb_shell_getprop_optional(serial, "ro.pico.ota.version"),
     }
+    if not props["ro.boot.qemu"]:
+        props["ro.kernel.qemu"] = adb_shell_getprop(serial, "ro.kernel.qemu")
 
-    order = [
-        "serial",
-        "ro.kernel.qemu",
-        "ro.hardware",
-        "ro.product.model",
-        "ro.product.manufacturer",
-        "ro.product.device",
-        "ro.build.fingerprint",
-    ]
+    order = ["ro.boot.qemu"] if props["ro.boot.qemu"] else ["ro.kernel.qemu"]
     signals = [classify_signal(k, props.get(k, "")) for k in order]
     summary = summarize(signals)
+    require_swan_identity(summary, props)
 
     if args.json:
         print_json(signals, summary, serial, props)

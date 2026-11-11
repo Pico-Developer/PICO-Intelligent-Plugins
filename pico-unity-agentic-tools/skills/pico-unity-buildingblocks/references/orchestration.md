@@ -3,6 +3,12 @@
 This file expands §4 of the main SKILL.md with full step-by-step details and
 the domain-reload settle loop.
 
+For SpatialAdapter Play-to-PICO, use
+[the dedicated workflow](blocks/play-to-pico.md). Its initial gate is
+`pico_xr_play_to_pico(action=status)` and its pending status survives Play Mode
+reloads. The XR Origin, loader and feature dependency steps below apply only to
+XR building blocks.
+
 ## Full orchestration loop
 
 For ANY request "enable / configure / disable / query block B":
@@ -166,10 +172,14 @@ B. For ENABLE / CONFIGURE actions, resolve dependencies (skip for DISABLE/STATUS
           `r.data.controller.installed` nor `r.data.hand.installed` is true,
           STOP before calling `pico_xr_grab` and ask the user to choose
           "Controller Grab or Hand Grab?" Do not silently choose or enable an
-          input path. After the user chooses (or when the original request
-          already names controller/hand), enable that input block first, take a
-          fresh `pico_xr_status` snapshot, and continue only after the selected
-          input block reports installed. The only exception is an explicit
+          input path. For Hand, installed means both model markers AND both Hand
+          Interactor markers are present; a model-only Hand state reports
+          `installed=false`. Call `pico_xr_hand(action=enable)` again to repair
+          that partial state, then refresh `pico_xr_status`. After the user
+          chooses (or when the original request already names controller/hand),
+          enable that input block first, take a fresh status snapshot, and
+          continue only after the selected input block reports installed. The
+          only exception is an explicit
           request to provision just the shared interaction broker or to attach
           `XRGrabInteractable` for later setup; honor that narrower request, but
           clearly report that the result is incomplete/inert and must not be

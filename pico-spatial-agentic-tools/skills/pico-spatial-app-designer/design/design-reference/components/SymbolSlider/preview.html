@@ -1,0 +1,68 @@
+<!-- @dsCard group="Selection" height=220 subtitle="SDK-aligned" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SymbolSlider · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .brightness-reference{width:320px;display:grid;gap:12px}
+    .setting-heading,.setting-range{display:flex;justify-content:space-between;gap:12px}
+    .setting-heading output{font-variant-numeric:tabular-nums}
+    .setting-range{font-size:14px;margin:0}
+    .brightness-states{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px}
+    .brightness-state{width:240px;display:grid;align-content:start;gap:12px}
+    .brightness-state h3{font-size:16px;margin:0}
+    #brightness-states{overflow-x:auto}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>SymbolSlider</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro"><h1>SymbolSlider</h1><p>Reference example · original defaults</p></header>
+  <div class="sui-stage">
+    <div class="brightness-reference">
+      <div class="setting-heading"><span>Brightness</span><output id="brightness-value" for="brightness">50%</output></div>
+      <sui-symbol-slider id="brightness" value="0.5" icon="sun" semantic-label="Brightness, from 0 to 100 percent"></sui-symbol-slider>
+      <div class="setting-range"><span>0%</span><span>100%</span></div>
+    </div>
+  </div>
+  <section class="example" id="brightness-states">
+    <h2>Plan recommendation · brightness states</h2>
+    <p class="example-note">Use the slider above to adjust brightness and see the percentage update. These fixed references show the same sun icon at minimum, low, middle and maximum values. Near zero, the thumb fades out beside the icon; the icon stays visible. This example does not change device brightness.</p>
+    <div class="brightness-states">
+      <div class="brightness-state">
+        <h3>Minimum · 0%</h3>
+        <sui-symbol-slider inert value="0" min="0" max="100" size="regular" width="240" icon="sun"></sui-symbol-slider>
+        <span class="muted">Thumb hidden; sun visible.</span>
+      </div>
+      <div class="brightness-state">
+        <h3>Low · 5%</h3>
+        <sui-symbol-slider inert value="5" min="0" max="100" size="regular" width="240" icon="sun"></sui-symbol-slider>
+        <span class="muted">Thumb starts to appear.</span>
+      </div>
+      <div class="brightness-state">
+        <h3>Middle · 50%</h3>
+        <sui-symbol-slider inert value="50" min="0" max="100" size="regular" width="240" icon="sun"></sui-symbol-slider>
+        <span class="muted">Thumb fully visible.</span>
+      </div>
+      <div class="brightness-state">
+        <h3>Maximum · 100%</h3>
+        <sui-symbol-slider inert value="100" min="0" max="100" size="regular" width="240" icon="sun"></sui-symbol-slider>
+        <span class="muted">Thumb at the right endpoint.</span>
+      </div>
+    </div>
+  </section>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const slider = document.getElementById('brightness');
+      const readout = document.getElementById('brightness-value');
+      const update = value => { readout.textContent = Math.round(value * 100) + '%'; };
+      slider.addEventListener('value-change', event => update(event.detail.value));
+      update(slider.value);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!-- @dsCard group="Overlay" height=600 subtitle="Owned, equal-height companion" -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subwindow · Design reference</title>
+  <link rel="stylesheet" href="../../runtime/tokens.css">
+  <link rel="stylesheet" href="../../runtime/preview.css">
+  <script src="../../runtime/components.js" defer></script>
+  <style>
+    .attachment-example { margin:28px; }
+    .attachment-example h2 { margin:0 0 8px; font-size:20px; }
+    .attachment-example > p { max-width:80ch; color:#4c5663; }
+    .scene-scroll { overflow:auto; background:#dad6d3; border-radius:24px; }
+    .attachment-scene { --main-width:640px; width:calc(var(--main-width) + 448px); padding:32px; }
+    .scene-labels { display:grid; grid-template-columns:var(--main-width) 360px; gap:24px; margin-bottom:12px; font-size:14px; color:#4c5663; }
+    .window-pair { position:relative; }
+    .main-window { width:var(--main-width); height:400px; }
+    .main-window > sui-title-bar, .companion-content > sui-title-bar { flex:none; }
+    .main-body { flex:1; min-height:0; overflow:auto; padding:0 32px 16px; display:flex; flex-direction:column; gap:16px; }
+    .window-title { font-weight:700; }
+    .window-actions { flex:none; display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; padding:0 32px 32px; }
+    .document-copy { margin:0; max-width:50ch; }
+    .document-copy p { margin:0 0 16px; }
+    .document-copy p:last-child { margin-bottom:0; }
+    .companion-content { height:100%; min-height:0; display:flex; flex-direction:column; }
+    .companion-body { flex:1; min-height:0; overflow:auto; padding:0 32px 32px; display:flex; flex-direction:column; gap:16px; }
+    .companion-body p { margin:0; }
+    .metadata { margin:0; display:grid; gap:16px; }
+    .metadata dt { color:#596470; font-size:14px; }
+    .metadata dd { margin:4px 0 0; }
+    .photo-scene { --main-width:720px; }
+    .photo-scene .main-window { height:480px; }
+    .photo { display:block; width:100%; flex:1; min-height:0; object-fit:cover; border-radius:16px; }
+    .photo-caption { display:flex; justify-content:space-between; gap:16px; margin:0; color:#4c5663; font-size:14px; }
+    .adjustment-label { font-weight:600; }
+    .companion-footer { margin-top:auto; display:flex; justify-content:flex-end; }
+    .attachment-example .status { min-height:0; }
+    @media(max-width:600px) { .attachment-example { margin:16px; } }
+
+    /* Dashed bounds show the owning Volume's front projection, not a native glass surface. */
+    .volume-scene { --main-width:600px; }
+    .volume-owner { width:var(--main-width);height:480px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;outline:1px dashed #8c9b99;outline-offset:-1px;background:transparent; }
+    .volume-owner .object-view { flex:1; }
+    .volume-owner h3 { margin:24px 0 0;font-size:18px; }
+    .volume-owner .window-actions { padding-top:16px; }
+    .volume-owner p { margin:0 0 16px;color:#4c5663;font-size:14px; }
+
+.object-view { width:260px;height:260px;display:grid;place-items:center;perspective:800px; }
+.demo-cube { --yaw:-25deg;position:relative;width:120px;height:120px;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(var(--yaw));transition:transform .24s ease; }
+.demo-cube span { position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:18px;font-weight:600;backface-visibility:hidden; }
+.demo-cube .front { background:#477a79;transform:translateZ(60px); }
+.demo-cube .back { background:#356361;transform:rotateY(180deg) translateZ(60px); }
+.demo-cube .right { background:#386967;transform:rotateY(90deg) translateZ(60px); }
+.demo-cube .left { background:#558986;transform:rotateY(-90deg) translateZ(60px); }
+.demo-cube .top { background:#80a6a0;transform:rotateX(90deg) translateZ(60px); }
+.demo-cube .bottom { background:#294d4c;transform:rotateX(-90deg) translateZ(60px); }
+@media(prefers-reduced-motion:reduce){.demo-cube{transition:none}}
+  </style>
+</head>
+<body>
+  <nav class="preview-nav"><a href="../../index.html">All components</a><span>Subwindow</span><a href="README.md">Guidelines</a></nav>
+  <header class="preview-intro">
+    <h1>Subwindow</h1>
+    <p>A companion attached to its main window: 360dp wide, the same height, with a 24dp gap.</p>
+  </header>
+
+  <section class="attachment-example" aria-labelledby="geometry-heading">
+    <h2 id="geometry-heading">Main window + attached details</h2>
+    <p>The two windows start open so their relationship is visible. Change the main window height to see the companion follow. On narrow screens, scroll horizontally to view the pair.</p>
+    <div class="scene-scroll" role="region" aria-label="Main window and attached details preview" tabindex="0">
+      <div class="attachment-scene">
+        <div class="scene-labels" aria-hidden="true"><span id="details-owner-size">Main window · 640 × 400</span><span id="details-size">Subwindow · 360 × 400 · gap 24</span></div>
+        <div class="window-pair">
+          <sui-planar-window id="details-owner" class="main-window" role="region" aria-label="Trip notes main window">
+            <sui-title-bar><span class="window-title">Trip notes</span></sui-title-bar>
+            <div class="main-body">
+              <article class="document-copy">
+                <p><strong>A quiet weekend by the lake</strong></p>
+                <p>Take the lakeside trail in the morning, then stop at the lookout for lunch.</p>
+                <p>Keep these notes open while checking the document details in the companion window.</p>
+              </article>
+            </div>
+            <div class="window-actions">
+              <sui-button id="resize-owner" text="Make window taller" size="small"></sui-button>
+              <sui-button text="Show details" size="small" data-opens="new-Subwindow"></sui-button>
+            </div>
+          </sui-planar-window>
+          <sui-subwindow id="new-Subwindow" for="details-owner" placement="right" semantic-label="Document details" dismiss-on-click-outside="false" dismiss-on-escape="false">
+            <div class="companion-content">
+              <sui-title-bar>
+                <sui-icon-button slot="leading" size="small" icon="ic_cross" semantic-label="Close details" data-closes></sui-icon-button>
+                <span class="window-title">Details</span>
+              </sui-title-bar>
+              <div class="companion-body">
+                <dl class="metadata">
+                  <div><dt>Document</dt><dd>Trip notes</dd></div>
+                  <div><dt>Folder</dt><dd>Weekend plans</dd></div>
+                  <div><dt>Status</dt><dd>All changes saved</dd></div>
+                </dl>
+              </div>
+            </div>
+          </sui-subwindow>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="attachment-example" aria-labelledby="inspector-heading">
+    <h2 id="inspector-heading">Photo viewer + persistent inspector</h2>
+    <p>Adjust the image while the main window remains usable. Clicking the main window, the background, or Show inspector again keeps the inspector open. Use its close button to exit.</p>
+    <div class="scene-scroll" role="region" aria-label="Photo viewer and attached inspector preview" tabindex="0">
+      <div class="attachment-scene photo-scene">
+        <div class="scene-labels" aria-hidden="true"><span>Main window · 720 × 480</span><span>Subwindow · 360 × 480 · gap 24</span></div>
+        <div class="window-pair">
+          <sui-planar-window id="inspector-owner" class="main-window" role="region" aria-label="Photo viewer main window">
+            <sui-title-bar><span class="window-title">Photo viewer</span></sui-title-bar>
+            <div class="main-body">
+              <img id="inspector-photo" class="photo" src="../../assets/illustrations/lake-scene.svg" alt="Mountains reflected in a calm lake">
+              <p class="photo-caption"><span>Lake view</span><span>1 of 1</span></p>
+            </div>
+            <div class="window-actions"><sui-button text="Show inspector" size="small" leading-icon="ic_info_circle" data-opens="plan-inspector"></sui-button></div>
+          </sui-planar-window>
+          <sui-subwindow id="plan-inspector" for="inspector-owner" placement="right" semantic-label="Photo adjustments" dismiss-on-click-outside="false" dismiss-on-escape="false">
+            <div class="companion-content">
+              <sui-title-bar>
+                <sui-icon-button slot="leading" size="small" icon="ic_cross" semantic-label="Close inspector" data-closes></sui-icon-button>
+                <span class="window-title">Adjustments</span>
+              </sui-title-bar>
+              <div class="companion-body">
+                <span class="adjustment-label">Brightness</span>
+                <sui-slider id="inspector-brightness" width="296" value="0.5" semantic-label="Brightness"></sui-slider>
+                <p id="inspector-status" class="status" role="status">Brightness: 50%</p>
+                <p>Changes apply to the image immediately.</p>
+                <div class="companion-footer"><sui-button id="inspector-reset" text="Reset" size="small"></sui-button></div>
+              </div>
+            </div>
+          </sui-subwindow>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="attachment-example" aria-labelledby="volume-heading">
+    <h2 id="volume-heading">Volume subject + ordinary status Subwindow</h2>
+    <p>This optional composition puts the inspection panel beside a Volume window; ordinary information could also stay in the window content. Here the panel belongs to the window, not the rotating object. The dashed rectangle only shows the volume's front bounds. It has no Planar glass background. The Subwindow provides its own glass.</p>
+    <div class="scene-scroll" role="region" aria-label="Volume and status Subwindow example" tabindex="0"><div class="attachment-scene volume-scene">
+      <div class="scene-labels" aria-hidden="true"><span>Volume front bounds · 600 × 480</span><span>Subwindow · 360 × 480 · gap 24</span></div>
+      <div class="window-pair">
+        <div id="volume-owner" class="volume-owner" role="region" aria-label="Volume window containing Module A">
+          <h3>Equipment inspection</h3><div class="object-view" role="img" aria-label="Simplified equipment module"><div class="demo-cube" id="volume-model"><span class="front">A</span><span class="back"></span><span class="right"></span><span class="left"></span><span class="top"></span><span class="bottom"></span></div></div>
+          <p>Model rotation does not rotate the status panel.</p>
+          <div class="window-actions"><sui-icon-button id="volume-rotate" icon="ic_rotate" size="small" semantic-label="Rotate model by 45 degrees"></sui-icon-button><sui-button id="volume-reset" text="Reset view" size="small"></sui-button><sui-button text="Show status" size="small" data-opens="volume-status"></sui-button></div>
+        </div>
+        <sui-subwindow id="volume-status" for="volume-owner" placement="right" semantic-label="Module status" dismiss-on-click-outside="false" dismiss-on-escape="false">
+          <div class="companion-content"><sui-title-bar><sui-icon-button slot="leading" icon="ic_cross" size="small" semantic-label="Close module status" data-closes></sui-icon-button><span class="window-title">Module status</span></sui-title-bar>
+            <div class="companion-body"><div style="display:flex;gap:12px;align-items:center"><sui-icon name="ic_list_check" size="24"></sui-icon><strong>Module A</strong></div><dl class="metadata"><div><dt>Temperature</dt><dd>24 °C</dd></div><div><dt>Inspection</dt><dd id="volume-inspection-status" aria-live="polite">Needs inspection</dd></div></dl><div class="companion-footer"><sui-button id="volume-inspect" text="Mark inspected"></sui-button></div></div>
+          </div>
+        </sui-subwindow>
+      </div>
+    </div></div>
+    <p>For a label that follows a model part, or controls explicitly placed in its scene, use <a href="../AttachmentPanel/preview.html">AttachmentPanel</a> instead.</p>
+  </section>
+  <p class="muted" style="margin:28px">Web uses px as the preview equivalent of dp. Spatial depth, focus and system attachment still require native validation.</p>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('click', (event) => {
+        const opener = event.target.closest('[data-opens]');
+        if (opener) document.getElementById(opener.dataset.opens)?.removeAttribute('hidden');
+        const closer = event.target.closest('[data-closes]');
+        if (closer) closer.closest('sui-subwindow')?.setAttribute('hidden', '');
+      });
+      document.getElementById('resize-owner').addEventListener('click-action', (event) => {
+        const owner = document.getElementById('details-owner');
+        const taller = owner.style.height !== '520px';
+        const height = taller ? 520 : 400;
+        owner.style.height = height + 'px';
+        event.currentTarget.setAttribute('text', taller ? 'Restore window height' : 'Make window taller');
+        document.getElementById('details-owner-size').textContent = 'Main window · 640 × ' + height;
+        document.getElementById('details-size').textContent = 'Subwindow · 360 × ' + height + ' · gap 24';
+      });
+      let volumeAngle = -25;
+      document.getElementById('volume-rotate').addEventListener('click-action', () => {
+        volumeAngle += 45;
+        document.getElementById('volume-model').style.setProperty('--yaw', volumeAngle + 'deg');
+      });
+      document.getElementById('volume-reset').addEventListener('click-action', () => {
+        volumeAngle = -25;
+        document.getElementById('volume-model').style.setProperty('--yaw', '-25deg');
+      });
+      document.getElementById('volume-inspect').addEventListener('click-action', (event) => {
+        const status = document.getElementById('volume-inspection-status');
+        const inspected = status.textContent === 'Inspected';
+        status.textContent = inspected ? 'Needs inspection' : 'Inspected';
+        event.currentTarget.setAttribute('text', inspected ? 'Mark inspected' : 'Undo inspection');
+      });
+      const slider = document.getElementById('inspector-brightness');
+      const updateBrightness = (value) => {
+        document.getElementById('inspector-status').textContent = 'Brightness: ' + Math.round(value * 100) + '%';
+        document.getElementById('inspector-photo').style.filter = 'brightness(' + (0.5 + value) + ')';
+      };
+      slider.addEventListener('value-change', (event) => updateBrightness(event.detail.value));
+      document.getElementById('inspector-reset').addEventListener('click-action', () => {
+        slider.setAttribute('value', '0.5');
+        updateBrightness(0.5);
+      });
+    });
+  </script>
+</body>
+</html>
